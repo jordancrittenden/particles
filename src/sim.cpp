@@ -8,6 +8,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <OpenCL/cl.hpp>
 #include <OpenCL/cl_gl.h>
+#include <OpenGL/OpenGL.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -148,7 +149,7 @@ int init_opengl() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Electron and Proton Simulation", nullptr, nullptr);
+    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "ParticleSim", nullptr, nullptr);
     if (!window) {
         std::cerr << "Failed to create GLFW window!" << std::endl;
         glfwTerminate();
@@ -183,6 +184,15 @@ int main() {
     // Initialize particles
     create_particle_buffers();
 
+    // Obtain the current OpenGL CGL sharegroup
+    CGLContextObj cglContext = CGLGetCurrentContext();
+    CGLShareGroupObj shareGroup = CGLGetShareGroup(cglContext);
+
+    if (!shareGroup) {
+        std::cerr << "Failed to get CGL share group" << std::endl;
+        return -1;
+    }
+
     // Initialize OpenCL
     std::vector<cl::Platform> platforms;
     cl::Platform::get(&platforms);
@@ -206,7 +216,7 @@ int main() {
 
     // Check for OpenGL-OpenCL sharing support
     std::string extensions = device.getInfo<CL_DEVICE_EXTENSIONS>();
-    if (extensions.find("cl_khr_gl_sharing") == std::string::npos) {
+    if (extensions.find("cl_APPLE_gl_sharing") == std::string::npos) {
         std::cerr << "OpenCL-OpenGL sharing is not supported on this device" << std::endl;
         return -1;
     }
@@ -218,8 +228,7 @@ int main() {
         CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),
         CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
 #elif defined(__APPLE__)
-        CL_CONTEXT_PLATFORM, (cl_context_properties)(platform)(),
-        CL_CGL_SHAREGROUP_KHR, (cl_context_properties)glfwGetCurrentContext(),
+        CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, (cl_context_properties)shareGroup,
 #else // Linux
         CL_CONTEXT_PLATFORM, (cl_context_properties)(platform)(),
         CL_GL_CONTEXT_KHR, (cl_context_properties)glXGetCurrentContext(),
