@@ -17,9 +17,12 @@
 #include <ctime>
 #include "shader.h"
 
-#define N 1000 // number of particles
+
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 800
+
+#define N 10000 // number of particles
+#define DELTA_TIME 1.0f
 
 GLFWwindow* window;
 
@@ -184,6 +187,9 @@ int main() {
     // Initialize particles
     create_particle_buffers();
 
+    // Create VAOs for axes and particles
+    GLuint axesVAO = create_axes_buffer();
+
     // Obtain the current OpenGL CGL sharegroup
     CGLContextObj cglContext = CGLGetCurrentContext();
     CGLShareGroupObj shareGroup = CGLGetShareGroup(cglContext);
@@ -258,7 +264,15 @@ int main() {
     std::ifstream kernelFile("kernel/particles.cl");
     std::string src(std::istreambuf_iterator<char>(kernelFile), (std::istreambuf_iterator<char>()));
     cl::Program program(clContext, src);
-    program.build(devices);
+    cl_int buildErr = program.build(devices);
+    
+    if (buildErr != CL_SUCCESS) {
+        // Retrieve and print the error log
+        std::string buildLog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
+        std::cerr << "Build failed with errors:\n" << buildLog << std::endl;
+    } else {
+        std::cout << "Program built successfully!" << std::endl;
+    }
 
     // Create a shared OpenCL buffer from the OpenGL buffer
     cl_int posErr, velErr;
@@ -270,18 +284,37 @@ int main() {
     }
     std::vector<cl::Memory> glBuffers = {posBufCL, velBufCL};
 
-    // Create VAOs for axes and particles
-    GLuint axesVAO = create_axes_buffer();
+    // Set up kernel
+    cl::Kernel kernel(program, "computeMotion");
+    kernel.setArg(0, posBufCL);
+    kernel.setArg(1, velBufCL);
+    kernel.setArg(2, DELTA_TIME);
+    kernel.setArg(3, N);
 
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     // Main render loop
+    std::vector<cl_float4> positions(N);
+    int step = 0;
     while (!glfwWindowShouldClose(window)) {
         process_input(window);
 
         // Acquire the GL buffer for OpenCL to read and write
         queue.enqueueAcquireGLObjects(&glBuffers);
-        // updateParticles();
+        queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(N));
+
+        // Retrieve updated positions (optional, for debugging or visualization)
+        queue.enqueueReadBuffer(posBufCL, CL_TRUE, 0, sizeof(cl_float4) * N, positions.data());
+
+        // Print out some particle positions for debugging
+        for (int i = 0; i < 3 && step < 5; i++) { // Print only the first 5 particles for brevity
+            std::cout << "Particle " << i << ": Position (" 
+                        << positions[i].s[0] << ", " 
+                        << positions[i].s[1] << ", " 
+                        << positions[i].s[2] << ")\n";
+        }
+        step++;
+
         // Release the buffer back to OpenGL
         queue.enqueueReleaseGLObjects(&glBuffers);
         queue.finish();
@@ -314,44 +347,6 @@ int main() {
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-
-
-
-    // // Create buffers
-    // cl::Buffer posBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * NUM_PARTICLES, positions.data());
-    // cl::Buffer velBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * NUM_PARTICLES, velocities.data());
-    // cl::Buffer typeBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(int) * NUM_PARTICLES, types.data());
-
-    // // Set up kernel
-    // cl::Kernel kernel(program, "computeMotion");
-    // kernel.setArg(0, posBuffer);
-    // kernel.setArg(1, velBuffer);
-    // kernel.setArg(2, typeBuffer);
-    // kernel.setArg(3, DELTA_TIME);
-    // kernel.setArg(4, NUM_PARTICLES);
-
-    // // Simulation loop
-    // for (int step = 0; step < 100; step++) {
-    //     queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(NUM_PARTICLES));
-    //     queue.finish();
-
-    //     // Retrieve updated positions (optional, for debugging or visualization)
-    //     queue.enqueueReadBuffer(posBuffer, CL_TRUE, 0, sizeof(cl_float4) * NUM_PARTICLES, positions.data());
-
-    //     // Print out some particle positions for debugging
-    //     std::cout << "Step " << step << ":\n";
-    //     for (int i = 0; i < 5; i++) { // Print only the first 5 particles for brevity
-    //         std::cout << "Particle " << i << ": Position (" 
-    //                     << positions[i].s[0] << ", " 
-    //                     << positions[i].s[1] << ", " 
-    //                     << positions[i].s[2] << ")\n";
-    //     }
-    // }
-
-
-
-
 
     glDeleteVertexArrays(1, &axesVAO);
     glDeleteVertexArrays(1, &posVAO);
