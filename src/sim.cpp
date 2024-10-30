@@ -21,8 +21,8 @@
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 800
 
-#define N 10000 // number of particles
-#define DELTA_TIME 1.0f
+#define N 1000 // number of particles
+#define DELTA_TIME 0.0001f
 
 GLFWwindow* window;
 
@@ -32,7 +32,7 @@ GLuint velVAO, velVBO; // [x0, y0, z0, unused, x1, y1, z1, unused, ...]
 
 // Camera settings
 float angleX = 0.0f, angleY = 0.0f;
-float cameraDistance = 10.0f;
+float cameraDistance = 5.0f;
 
 
 // Create buffers for particle position/velocity
@@ -44,17 +44,18 @@ void create_particle_buffers() {
     for (int i = 0; i < N; ++i) {
         float chargeRand = static_cast<float>(rand()) / RAND_MAX;
         float charge = chargeRand < 0.33 ? 0.0 : (chargeRand < 0.66 ? 1.0 : -1.0);
+        //float charge = i == 0 ? 1.0f : -1.0f;
 
         // [x, y, z, type]
-        position_and_type.push_back(static_cast<float>(rand()) / RAND_MAX * 10.0f - 5.0f);
-        position_and_type.push_back(static_cast<float>(rand()) / RAND_MAX * 10.0f - 5.0f);
-        position_and_type.push_back(static_cast<float>(rand()) / RAND_MAX * 10.0f - 5.0f);
+        position_and_type.push_back(static_cast<float>(rand()) / RAND_MAX * 1.0f - 0.5f);
+        position_and_type.push_back(static_cast<float>(rand()) / RAND_MAX * 1.0f - 0.5f);
+        position_and_type.push_back(static_cast<float>(rand()) / RAND_MAX * 1.0f - 0.5f);
         position_and_type.push_back(charge);
 
         // [x, y, z, unused]
-        velocity.push_back(static_cast<float>(rand()) / RAND_MAX * 0.02f - 0.01f);
-        velocity.push_back(static_cast<float>(rand()) / RAND_MAX * 0.02f - 0.01f);
-        velocity.push_back(static_cast<float>(rand()) / RAND_MAX * 0.02f - 0.01f);
+        velocity.push_back(static_cast<float>(rand()) / RAND_MAX * 0.2f - 0.1f);
+        velocity.push_back(static_cast<float>(rand()) / RAND_MAX * 0.2f - 0.1f);
+        velocity.push_back(static_cast<float>(rand()) / RAND_MAX * 0.2f - 0.1f);
         velocity.push_back(0.0f);
     }
 
@@ -85,14 +86,14 @@ void create_particle_buffers() {
 GLuint create_axes_buffer() {
     float axisVertices[] = {
         // X-axis
-        -5.0f, 0.0f, 0.0f,   10.0f,
-         5.0f, 0.0f, 0.0f,   10.0f,
+        -1.0, 0.0f, 0.0f,   2.0f,
+         1.0, 0.0f, 0.0f,   2.0f,
         // Y-axis
-        0.0f, -5.0f, 0.0f,   10.0f,
-        0.0f,  5.0f, 0.0f,   10.0f,
+        0.0f, -1.0, 0.0f,   2.0f,
+        0.0f,  1.0, 0.0f,   2.0f,
         // Z-axis
-        0.0f, 0.0f, -5.0f,   10.0f,
-        0.0f, 0.0f,  5.0f,   10.0f,
+        0.0f, 0.0f, -1.0,   2.0f,
+        0.0f, 0.0f,  1.0,   2.0f,
     };
 
     GLuint VAO, VBO;
@@ -276,8 +277,10 @@ int main() {
 
     // Create a shared OpenCL buffer from the OpenGL buffer
     cl_int posErr, velErr;
+    std::vector<cl_float4> dbgBuf(N);
     cl::Buffer posBufCL = cl::BufferGL(clContext, CL_MEM_READ_WRITE, posVBO, &posErr);
     cl::Buffer velBufCL = cl::BufferGL(clContext, CL_MEM_READ_WRITE, velVBO, &velErr);
+    cl::Buffer dbgBufCL(clContext, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * N, dbgBuf.data());
     if (posErr != CL_SUCCESS || velErr != CL_SUCCESS) {
         std::cerr << "Failed to create OpenCL buffer from OpenGL buffer: " << posErr << std::endl;
         return -1;
@@ -288,8 +291,9 @@ int main() {
     cl::Kernel kernel(program, "computeMotion");
     kernel.setArg(0, posBufCL);
     kernel.setArg(1, velBufCL);
-    kernel.setArg(2, DELTA_TIME);
-    kernel.setArg(3, N);
+    kernel.setArg(2, dbgBufCL);
+    kernel.setArg(3, DELTA_TIME);
+    kernel.setArg(4, N);
 
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -304,16 +308,21 @@ int main() {
         queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(N));
 
         // Retrieve updated positions (optional, for debugging or visualization)
-        queue.enqueueReadBuffer(posBufCL, CL_TRUE, 0, sizeof(cl_float4) * N, positions.data());
+        // queue.enqueueReadBuffer(posBufCL, CL_TRUE, 0, sizeof(cl_float4) * N, positions.data());
+        // queue.enqueueReadBuffer(dbgBufCL, CL_TRUE, 0, sizeof(cl_float4) * N, dbgBuf.data());
 
-        // Print out some particle positions for debugging
-        for (int i = 0; i < 3 && step < 5; i++) { // Print only the first 5 particles for brevity
-            std::cout << "Particle " << i << ": Position (" 
-                        << positions[i].s[0] << ", " 
-                        << positions[i].s[1] << ", " 
-                        << positions[i].s[2] << ")\n";
-        }
-        step++;
+        // // Print out some particle positions for debugging
+        // for (int i = 0; i < N; i++) { // Print only the first 5 particles for brevity
+        //     std::cout << "Particle " << i << ": Position (" 
+        //                 << positions[i].s[0] << ", " 
+        //                 << positions[i].s[1] << ", " 
+        //                 << positions[i].s[2] << "), Debug (" 
+        //                 << dbgBuf[i].s[0] << ", " 
+        //                 << dbgBuf[i].s[1] << ", " 
+        //                 << dbgBuf[i].s[2] << ", " 
+        //                 << dbgBuf[i].s[3] << ")\n";
+        // }
+        // step++;
 
         // Release the buffer back to OpenGL
         queue.enqueueReleaseGLObjects(&glBuffers);
@@ -323,7 +332,7 @@ int main() {
 
         // Projection and view matrices
         glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 view = glm::lookAt(glm::vec3(cameraDistance * sin(angleY), 1.0f, cameraDistance * cos(angleY)), 
+        glm::mat4 view = glm::lookAt(glm::vec3(cameraDistance * sin(angleY), 0.5f, cameraDistance * cos(angleY)), 
                                      glm::vec3(0.0f, 0.0f, 0.0f), 
                                      glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.0f);
