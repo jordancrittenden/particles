@@ -1,13 +1,43 @@
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <cstdlib>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <OpenGL/OpenGL.h>
 
-std::string loadShaderSource(const char* filepath) {
+GLFWwindow* init_opengl(int windowWidth, int windowHeight) {
+    if (!glfwInit()) {
+        std::cerr << "Failed to initialize GLFW!" << std::endl;
+        return nullptr;
+    }
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, "ParticleSim", nullptr, nullptr);
+    if (!window) {
+        std::cerr << "Failed to create GLFW window!" << std::endl;
+        glfwTerminate();
+        return nullptr;
+    }
+
+    glfwMakeContextCurrent(window);
+    glewExperimental = GL_TRUE;
+    if (glewInit() != GLEW_OK) {
+        std::cerr << "Failed to initialize GLEW!" << std::endl;
+        return nullptr;
+    }
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_PROGRAM_POINT_SIZE);
+    glEnable(GL_POINT_SMOOTH);
+
+    return window;
+}
+
+std::string load_shader_source(const char* filepath) {
     std::ifstream file;
     std::stringstream buffer;
 
@@ -25,9 +55,9 @@ std::string loadShaderSource(const char* filepath) {
     return buffer.str();  // Return the content as a string
 }
 
-GLuint compileShader(const char* filepath, GLenum shaderType) {
+GLuint compile_shader(const char* filepath, GLenum shaderType) {
     // Load the shader source code from file
-    std::string shaderCode = loadShaderSource(filepath);  // Helper function to read file content
+    std::string shaderCode = load_shader_source(filepath);  // Helper function to read file content
     const char* shaderSource = shaderCode.c_str();
 
     // Create and compile the shader
@@ -47,12 +77,12 @@ GLuint compileShader(const char* filepath, GLenum shaderType) {
     return shaderID;
 }
 
-GLuint createShaderProgram(const char* vertexPath, const char* fragmentPath) {
+GLuint create_shader_program(const char* vertexPath, const char* fragmentPath) {
     // Compile the vertex shader
-    GLuint vertexShader = compileShader(vertexPath, GL_VERTEX_SHADER);
+    GLuint vertexShader = compile_shader(vertexPath, GL_VERTEX_SHADER);
     
     // Compile the fragment shader
-    GLuint fragmentShader = compileShader(fragmentPath, GL_FRAGMENT_SHADER);
+    GLuint fragmentShader = compile_shader(fragmentPath, GL_FRAGMENT_SHADER);
 
     // Create shader program and link shaders
     GLuint shaderProgram = glCreateProgram();

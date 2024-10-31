@@ -16,7 +16,7 @@ __kernel void computeMotion(
     __global float4* velocities,
     __global float4* debug,
     const float dt,
-    const int N)
+    const uint N)
 {
     int id = get_global_id(0);
     if (id >= N) return;
