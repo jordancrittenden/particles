@@ -6,7 +6,7 @@ clang++ \
     -I/opt/homebrew/Cellar/glew/2.2.0_1/include \
     -I/opt/homebrew/Cellar/glm/1.0.1//include \
     -Iinclude \
-    src/glad.c src/cl_util.cpp src/gl_util.cpp src/state.cpp src/sim.cpp \
+    src/glad.c src/cl_util.cpp src/gl_util.cpp src/torus.cpp src/state.cpp src/sim.cpp \
     /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib \
     /opt/homebrew/Cellar/glew/2.2.0_1/lib/libGLEW.2.2.0.dylib \
     /opt/homebrew/Cellar/glm/1.0.1/lib/libglm.dylib \

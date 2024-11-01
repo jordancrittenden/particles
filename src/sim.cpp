@@ -13,6 +13,7 @@
 
 #include "cl_util.h"
 #include "gl_util.h"
+#include "torus.h"
 #include "state.h"
 
 SimulationState state;
@@ -99,6 +100,22 @@ void create_particle_buffers() {
     glBindVertexArray(0);
 }
 
+GLBufPair create_torus_buffers(float torusR2, int loopSegments) {
+    GLBufPair buf;
+    std::vector<float> circleVertices = generateCircleVertices(torusR2, loopSegments);
+
+    glGenVertexArrays(1, &buf.vao);
+    glGenBuffers(1, &buf.vbo);
+    glBindVertexArray(buf.vao);
+    glBindBuffer(GL_ARRAY_BUFFER, buf.vbo);
+    glBufferData(GL_ARRAY_BUFFER, circleVertices.size() * sizeof(float), circleVertices.data(), GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    return buf;
+}
+
 // GLFW callback for handling keyboard input
 void process_input(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
@@ -118,6 +135,86 @@ void process_input(GLFWwindow* window) {
     }
 }
 
+void renderAxes(GLuint shader, glm::mat4 view, glm::mat4 projection) {
+    glUseProgram(shader);
+
+    glm::mat4 model = glm::mat4(1.0f);
+
+    GLuint modelLoc = glGetUniformLocation(shader, "model");
+    GLuint viewLoc = glGetUniformLocation(shader, "view");
+    GLuint projLoc = glGetUniformLocation(shader, "projection");
+
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+    // Draw axes
+    glBindVertexArray(state.axes.vao);
+    glDrawArrays(GL_LINES, 0, 6);
+}
+
+void renderParticles(GLuint shader, glm::mat4 view, glm::mat4 projection) {
+    glUseProgram(shader);
+
+    glm::mat4 model = glm::mat4(1.0f);
+
+    GLuint modelLoc = glGetUniformLocation(shader, "model");
+    GLuint viewLoc = glGetUniformLocation(shader, "view");
+    GLuint projLoc = glGetUniformLocation(shader, "projection");
+
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+    // Draw particles
+    glBindVertexArray(state.pos.vao);
+    glDrawArrays(GL_POINTS, 0, state.N);
+}
+
+void renderTorus(GLuint shader, glm::mat4 view, glm::mat4 projection) {
+    glUseProgram(shader);
+
+    // Set view and projection uniforms
+    GLint viewLoc = glGetUniformLocation(shader, "view");
+    GLint projLoc = glGetUniformLocation(shader, "projection");
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+    glBindVertexArray(state.torus.vao);
+
+    // Draw each circle in the torus
+    for (int i = 0; i < state.torusLoops; ++i) {
+        float angle = (2.0f * M_PI * i) / state.torusLoops;
+        glm::mat4 model = getCircleModelMatrix(angle, state.torusR1);
+
+        GLint modelLoc = glGetUniformLocation(shader, "model");
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+        glDrawArrays(GL_LINE_LOOP, 0, state.torusLoopSegments);  // Draw the circle as a line loop
+    }
+}
+
+void printDbg(const cl::Buffer& posBufCL, const cl::Buffer& dbgBufCL) {
+    std::vector<cl_float4> positions(state.N);
+    std::vector<cl_float4> dbgBuf(state.N);
+    
+    // Retrieve updated positions (optional, for debugging or visualization)
+    state.clState->queue->enqueueReadBuffer(posBufCL, CL_TRUE, 0, sizeof(cl_float4) * state.N, positions.data());
+    state.clState->queue->enqueueReadBuffer(dbgBufCL, CL_TRUE, 0, sizeof(cl_float4) * state.N, dbgBuf.data());
+
+    // Print out some particle positions for debugging
+    for (int i = 0; i < state.N; i++) { // Print only the first 5 particles for brevity
+        std::cout << "Particle " << i << ": Position (" 
+                    << positions[i].s[0] << ", " 
+                    << positions[i].s[1] << ", " 
+                    << positions[i].s[2] << "), Debug (" 
+                    << dbgBuf[i].s[0] << ", " 
+                    << dbgBuf[i].s[1] << ", " 
+                    << dbgBuf[i].s[2] << ", " 
+                    << dbgBuf[i].s[3] << ")\n";
+    }
+}
+
 // Main function
 int main() {
     state.window = init_opengl(state.windowWidth, state.windowHeight);
@@ -125,14 +222,17 @@ int main() {
     state.clState = init_opencl();
 
     // Load OpenGL shaders
-    GLuint shaderProgram = create_shader_program("shader/vertex_shader.glsl", "shader/fragment_shader.glsl");
-    glUseProgram(shaderProgram);
+    GLuint particlesShaderProgram = create_shader_program("shader/particles_vertex.glsl", "shader/particles_fragment.glsl");
+    GLuint torusShaderProgram = create_shader_program("shader/torus_vertex.glsl", "shader/torus_fragment.glsl");
 
     // Initialize particles
     create_particle_buffers();
 
-    // Create VAOs for axes and particles
+    // Create GL buffers for axes and particles
     state.axes = create_axes_buffers();
+
+    // Create GL buffers for torus
+    state.torus = create_torus_buffers(state.torusR2, state.torusLoopSegments);
 
     // Load kernel source
     std::ifstream kernelFile("kernel/particles.cl");
@@ -171,60 +271,33 @@ int main() {
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     // Main render loop
-    std::vector<cl_float4> positions(state.N);
     int step = 0;
     while (!glfwWindowShouldClose(state.window)) {
+        // Process keyboard input
         process_input(state.window);
 
+        // Do particle physics
         // Acquire the GL buffer for OpenCL to read and write
         state.clState->queue->enqueueAcquireGLObjects(&glBuffers);
         state.clState->queue->enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(state.N));
-
-        // // Retrieve updated positions (optional, for debugging or visualization)
-        // state.clState->queue->enqueueReadBuffer(posBufCL, CL_TRUE, 0, sizeof(cl_float4) * state.state.N, positions.data());
-        // state.clState->queue->enqueueReadBuffer(dbgBufCL, CL_TRUE, 0, sizeof(cl_float4) * state.state.N, dbgBuf.data());
-
-        // // Print out some particle positions for debugging
-        // for (int i = 0; i < state.N; i++) { // Print only the first 5 particles for brevity
-        //     std::cout << "Particle " << i << ": Position (" 
-        //                 << positions[i].s[0] << ", " 
-        //                 << positions[i].s[1] << ", " 
-        //                 << positions[i].s[2] << "), Debug (" 
-        //                 << dbgBuf[i].s[0] << ", " 
-        //                 << dbgBuf[i].s[1] << ", " 
-        //                 << dbgBuf[i].s[2] << ", " 
-        //                 << dbgBuf[i].s[3] << ")\n";
-        // }
-        // step++;
-
+        //printDbg(posBufCL, dbgBufCL);
         // Release the buffer back to OpenGL
         state.clState->queue->enqueueReleaseGLObjects(&glBuffers);
         state.clState->queue->finish();
 
+        // Draw a white background
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Projection and view matrices
-        glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 view = glm::lookAt(glm::vec3(state.cameraDistance * sin(state.rotAngle), 0.5f, state.cameraDistance * cos(state.rotAngle)), 
-                                     glm::vec3(0.0f, 0.0f, 0.0f), 
-                                     glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 view = glm::lookAt(
+            glm::vec3(state.cameraDistance * sin(state.rotAngle), 0.5f, state.cameraDistance * cos(state.rotAngle)), 
+            glm::vec3(0.0f, 0.0f, 0.0f), 
+            glm::vec3(0.0f, 1.0f, 0.0f)
+        );
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)state.windowWidth / (float)state.windowHeight, 0.1f, 100.0f);
 
-        GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
-        GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
-        GLuint projLoc = glGetUniformLocation(shaderProgram, "projection");
-
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-        // Draw axes
-        glBindVertexArray(state.axes.vao);
-        glDrawArrays(GL_LINES, 0, 6);
-
-        // Draw particles
-        glBindVertexArray(state.pos.vao);
-        glDrawArrays(GL_POINTS, 0, state.N);
+        renderAxes(particlesShaderProgram, view, projection);
+        renderTorus(torusShaderProgram, view, projection);
+        renderParticles(particlesShaderProgram, view, projection);
 
         glfwSwapBuffers(state.window);
         glfwPollEvents();
