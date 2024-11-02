@@ -3,7 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 // Generate vertices for a circle with radius r2
-std::vector<float> generateCircleVertices(float r2, int segments) {
+std::vector<float> generateCircleVerticesUnrolled(float r2, int segments) {
     std::vector<float> vertices;
     float thetaStep = 2.0f * M_PI / segments;
     for (int i = 0; i < segments; ++i) {

@@ -62,18 +62,19 @@ void create_particle_buffers() {
     srand(static_cast<unsigned int>(time(0)));
     for (int i = 0; i < state.N; ++i) {
         float chargeRand = static_cast<float>(rand()) / RAND_MAX;
-        float charge = chargeRand < 0.33 ? 0.0 : (chargeRand < 0.66 ? 1.0 : -1.0);
+        //float charge = chargeRand < 0.33 ? 0.0 : (chargeRand < 0.66 ? 1.0 : -1.0);
+        float charge = chargeRand < 0.5 ? 1.0 : -1.0;
 
         // [x, y, z, type]
-        position_and_type.push_back(static_cast<float>(rand()) / RAND_MAX * 1.0f - 0.5f);
-        position_and_type.push_back(static_cast<float>(rand()) / RAND_MAX * 1.0f - 0.5f);
-        position_and_type.push_back(static_cast<float>(rand()) / RAND_MAX * 1.0f - 0.5f);
+        position_and_type.push_back(static_cast<float>(rand()) / RAND_MAX * 0.1f - 0.05f + 1.0f);
+        position_and_type.push_back(static_cast<float>(rand()) / RAND_MAX * 0.1f - 0.05f);
+        position_and_type.push_back(static_cast<float>(rand()) / RAND_MAX * 0.1f - 0.05f);
         position_and_type.push_back(charge);
 
-        // [x, y, z, unused]
-        velocity.push_back(static_cast<float>(rand()) / RAND_MAX * 0.2f - 0.1f);
-        velocity.push_back(static_cast<float>(rand()) / RAND_MAX * 0.2f - 0.1f);
-        velocity.push_back(static_cast<float>(rand()) / RAND_MAX * 0.2f - 0.1f);
+        // [dx, dy, dz, unused
+        velocity.push_back(static_cast<float>(rand()) / RAND_MAX * 10.0f - 5.0f);
+        velocity.push_back(static_cast<float>(rand()) / RAND_MAX * 10.0f - 5.0f);
+        velocity.push_back(static_cast<float>(rand()) / RAND_MAX * 10.0f - 5.0f);
         velocity.push_back(0.0f);
     }
 
@@ -102,7 +103,7 @@ void create_particle_buffers() {
 
 GLBufPair create_torus_buffers(float torusR2, int loopSegments) {
     GLBufPair buf;
-    std::vector<float> circleVertices = generateCircleVertices(torusR2, loopSegments);
+    std::vector<float> circleVertices = generateCircleVerticesUnrolled(torusR2, loopSegments);
 
     glGenVertexArrays(1, &buf.vao);
     glGenBuffers(1, &buf.vbo);
@@ -194,10 +195,43 @@ void renderTorus(GLuint shader, glm::mat4 view, glm::mat4 projection) {
     }
 }
 
+std::vector<CurrentVector> get_toroidal_currents(float torusCurrent) {
+    std::vector<CurrentVector> currents;
+
+    std::vector<float> circleVertexValues = generateCircleVerticesUnrolled(state.torusR2, state.torusLoopSegments);
+    std::vector<glm::vec4> circleVertices;
+    for (int i = 0; i < state.torusLoopSegments; i++) {
+        circleVertices.push_back(glm::vec4 { circleVertexValues[i*2], circleVertexValues[i*2 + 1], 0.0f, 1.0f });
+    }
+
+    int idx = 0;
+    int loopStartIdx = 0;
+    for (int i = 0; i < state.torusLoops; ++i) {
+        loopStartIdx = idx;
+
+        float angle = (2.0f * M_PI * i) / state.torusLoops;
+        glm::mat4 model = getCircleModelMatrix(angle, state.torusR1);
+
+        for (int j = 0; j < state.torusLoopSegments; ++j) {
+            CurrentVector current;
+            current.x = model * circleVertices[j];
+            current.i = torusCurrent;
+
+            if (j > 0) currents[idx-1].dx = current.x - currents[idx-1].x;
+
+            currents.push_back(current);
+            idx++;
+        }
+        currents[idx-1].dx = currents[loopStartIdx].x - currents[idx-1].x;
+    }
+
+    return currents;
+}
+
 void printDbg(const cl::Buffer& posBufCL, const cl::Buffer& dbgBufCL) {
     std::vector<cl_float4> positions(state.N);
     std::vector<cl_float4> dbgBuf(state.N);
-    
+
     // Retrieve updated positions (optional, for debugging or visualization)
     state.clState->queue->enqueueReadBuffer(posBufCL, CL_TRUE, 0, sizeof(cl_float4) * state.N, positions.data());
     state.clState->queue->enqueueReadBuffer(dbgBufCL, CL_TRUE, 0, sizeof(cl_float4) * state.N, dbgBuf.data());
@@ -234,6 +268,8 @@ int main() {
     // Create GL buffers for torus
     state.torus = create_torus_buffers(state.torusR2, state.torusLoopSegments);
 
+    std::vector<CurrentVector> torusCurrents = get_toroidal_currents(state.torusI);
+
     // Load kernel source
     std::ifstream kernelFile("kernel/particles.cl");
     std::string src(std::istreambuf_iterator<char>(kernelFile), (std::istreambuf_iterator<char>()));
@@ -250,23 +286,34 @@ int main() {
 
     // Create a shared OpenCL buffer from the OpenGL buffer
     cl_int posErr, velErr;
-    std::vector<cl_float4> dbgBuf(state.N);
     cl::Buffer posBufCL = cl::BufferGL(*state.clState->context, CL_MEM_READ_WRITE, state.pos.vbo, &posErr);
     cl::Buffer velBufCL = cl::BufferGL(*state.clState->context, CL_MEM_READ_WRITE, state.vel.vbo, &velErr);
-    cl::Buffer dbgBufCL(*state.clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * state.N, dbgBuf.data());
     if (posErr != CL_SUCCESS || velErr != CL_SUCCESS) {
         std::cerr << "Failed to create OpenCL buffer from OpenGL buffer: " << posErr << std::endl;
         return -1;
     }
     std::vector<cl::Memory> glBuffers = {posBufCL, velBufCL};
 
+    // Create additional OpenCL buffers
+    std::vector<cl_float4> dbgBuf(state.N);
+    std::vector<cl_float4> torusCurrentsUnrolled;
+    for (auto& cur : torusCurrents) {
+        torusCurrentsUnrolled.push_back(cl_float4 { cur.x[0], cur.x[1], cur.x[2], 0.0f });
+        torusCurrentsUnrolled.push_back(cl_float4 { cur.dx[0], cur.dx[1], cur.dx[2], 0.0f });
+        torusCurrentsUnrolled.push_back(cl_float4 { cur.i, 0.0f, 0.0f, 0.0f });
+    }
+    cl::Buffer dbgBufCL(*state.clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * state.N, dbgBuf.data());
+    cl::Buffer curBufCL(*state.clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * torusCurrentsUnrolled.size(), torusCurrentsUnrolled.data());
+
     // Set up kernel
     cl::Kernel kernel(program, "computeMotion");
     kernel.setArg(0, posBufCL);
     kernel.setArg(1, velBufCL);
-    kernel.setArg(2, dbgBufCL);
-    kernel.setArg(3, state.dt);
-    kernel.setArg(4, state.N);
+    kernel.setArg(2, curBufCL);
+    kernel.setArg(3, dbgBufCL);
+    kernel.setArg(4, state.dt);
+    kernel.setArg(5, state.N);
+    kernel.setArg(6, (cl_uint)torusCurrents.size());
 
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 

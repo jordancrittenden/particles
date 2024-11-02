@@ -14,9 +14,11 @@
 __kernel void computeMotion(
     __global float4* positions,
     __global float4* velocities,
+    __global float4* currents,
     __global float4* debug,
     const float dt,
-    const uint N)
+    const uint N,
+    const uint currentsN)
 {
     int id = get_global_id(0);
     if (id >= N) return;
@@ -58,11 +60,17 @@ __kernel void computeMotion(
 
         E += e;
         B += b;
+    }
 
-        debug[id][0] = e[0];
-        debug[id][1] = e[1];
-        debug[id][2] = e[2];
-        debug[id][3] = r_mag;
+    for (int j = 0; j < currentsN; j++) {
+        float3 current_x = (float3)(currents[j*3][0], currents[j*3][1], currents[j*3][2]);
+        float3 current_dx = (float3)(currents[j*3 + 1][0], currents[j*3 + 1][1], currents[j*3 + 1][2]);
+        float current_i = currents[j*3 + 2][0];
+
+        float3 r = pos - current_x;
+        float r_mag = length(r);
+
+        B += MU_0_OVER_4_PI * current_i * cross(current_dx, r) / (r_mag * r_mag * r_mag);
     }
 
     // Push the particle through the electric and magnetic field: dv/dt = q/m (E + v x B);
@@ -78,10 +86,10 @@ __kernel void computeMotion(
     velocities[id] = (float4)(vel_new[0], vel_new[1], vel_new[2], 0.0);
 
     // Keep the particles in their box
-    if (positions[id][0] >  1.0) velocities[id][0] = -velocities[id][0];
-    if (positions[id][0] < -1.0) velocities[id][0] = -velocities[id][0];
-    if (positions[id][1] >  1.0) velocities[id][1] = -velocities[id][1];
-    if (positions[id][1] < -1.0) velocities[id][1] = -velocities[id][1];
-    if (positions[id][2] >  1.0) velocities[id][2] = -velocities[id][2];
-    if (positions[id][2] < -1.0) velocities[id][2] = -velocities[id][2];
+    if (positions[id][0] >  2.0) velocities[id][0] = -velocities[id][0];
+    if (positions[id][0] < -2.0) velocities[id][0] = -velocities[id][0];
+    if (positions[id][1] >  2.0) velocities[id][1] = -velocities[id][1];
+    if (positions[id][1] < -2.0) velocities[id][1] = -velocities[id][1];
+    if (positions[id][2] >  2.0) velocities[id][2] = -velocities[id][2];
+    if (positions[id][2] < -2.0) velocities[id][2] = -velocities[id][2];
 }
