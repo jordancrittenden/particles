@@ -13,10 +13,50 @@
 
 #include "cl_util.h"
 #include "gl_util.h"
+#include "args.h"
 #include "torus.h"
 #include "state.h"
 
 SimulationState state;
+
+// GLFW callback for handling keyboard input
+void process_input(GLFWwindow* window) {
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, true);
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+        state.rotAngle -= 0.01f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+        state.rotAngle += 0.01f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS) {
+        state.cameraDistance *= 1.01f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) {
+        state.cameraDistance /= 1.01f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_EQUAL) == GLFW_PRESS) {
+        state.dt *= 1.2f;
+        print_state(state);
+    }
+    if (glfwGetKey(window, GLFW_KEY_MINUS) == GLFW_PRESS) {
+        state.dt /= 1.2f;
+        print_state(state);
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        state.showAxes = !state.showAxes;
+    }
+    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
+        state.showTorus = !state.showTorus;
+    }
+    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+        state.showParticles = !state.showParticles;
+    }
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
+        state.calcInterparticlePhysics = !state.calcInterparticlePhysics;
+    }
+}
 
 // Create buffer for axes (X, Y, Z)
 GLBufPair create_axes_buffers() {
@@ -117,26 +157,7 @@ GLBufPair create_torus_buffers(float torusR2, int loopSegments) {
     return buf;
 }
 
-// GLFW callback for handling keyboard input
-void process_input(GLFWwindow* window) {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, true);
-    }
-    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-        state.rotAngle -= 0.01f;
-    }
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-        state.rotAngle += 0.01f;
-    }
-    if (glfwGetKey(window, GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS) {
-        state.cameraDistance *= 1.01f;
-    }
-    if (glfwGetKey(window, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) {
-        state.cameraDistance /= 1.01f;
-    }
-}
-
-void renderAxes(GLuint shader, glm::mat4 view, glm::mat4 projection) {
+void render_axes(GLuint shader, glm::mat4 view, glm::mat4 projection) {
     glUseProgram(shader);
 
     glm::mat4 model = glm::mat4(1.0f);
@@ -154,7 +175,7 @@ void renderAxes(GLuint shader, glm::mat4 view, glm::mat4 projection) {
     glDrawArrays(GL_LINES, 0, 6);
 }
 
-void renderParticles(GLuint shader, glm::mat4 view, glm::mat4 projection) {
+void render_particles(GLuint shader, glm::mat4 view, glm::mat4 projection) {
     glUseProgram(shader);
 
     glm::mat4 model = glm::mat4(1.0f);
@@ -172,7 +193,7 @@ void renderParticles(GLuint shader, glm::mat4 view, glm::mat4 projection) {
     glDrawArrays(GL_POINTS, 0, state.N);
 }
 
-void renderTorus(GLuint shader, glm::mat4 view, glm::mat4 projection) {
+void render_torus(GLuint shader, glm::mat4 view, glm::mat4 projection) {
     glUseProgram(shader);
 
     // Set view and projection uniforms
@@ -250,7 +271,18 @@ void printDbg(const cl::Buffer& posBufCL, const cl::Buffer& dbgBufCL) {
 }
 
 // Main function
-int main() {
+int main(int argc, char* argv[]) {
+    try {
+        auto args = parse_args(argc, argv);
+        for (const auto& [key, value] : args) {
+            std::cout << key << " : " << value << std::endl;
+        }
+        extract_state_vars(args, &state);
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
+    }
+
     state.window = init_opengl(state.windowWidth, state.windowHeight);
     if (state.window == nullptr) return -1;
     state.clState = init_opencl();
@@ -314,6 +346,7 @@ int main() {
     kernel.setArg(4, state.dt);
     kernel.setArg(5, state.N);
     kernel.setArg(6, (cl_uint)torusCurrents.size());
+    kernel.setArg(7, (cl_uint)state.calcInterparticlePhysics);
 
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -322,6 +355,9 @@ int main() {
     while (!glfwWindowShouldClose(state.window)) {
         // Process keyboard input
         process_input(state.window);
+
+        // Update args that could have changed
+        kernel.setArg(4, state.dt);
 
         // Do particle physics
         // Acquire the GL buffer for OpenCL to read and write
@@ -342,9 +378,9 @@ int main() {
         );
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)state.windowWidth / (float)state.windowHeight, 0.1f, 100.0f);
 
-        renderAxes(particlesShaderProgram, view, projection);
-        renderTorus(torusShaderProgram, view, projection);
-        renderParticles(particlesShaderProgram, view, projection);
+        if (state.showAxes) render_axes(particlesShaderProgram, view, projection);
+        if (state.showTorus) render_torus(torusShaderProgram, view, projection);
+        if (state.showParticles) render_particles(particlesShaderProgram, view, projection);
 
         glfwSwapBuffers(state.window);
         glfwPollEvents();

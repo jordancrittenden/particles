@@ -35,6 +35,14 @@ typedef struct SimulationState {
     // Camera settings
     float rotAngle = 0.0f;
     float cameraDistance = 5.0f;
+
+    // Show/hide booleans
+    bool showAxes = true;
+    bool showTorus = true;
+    bool showParticles = true;
+
+    // Physics booleans
+    bool calcInterparticlePhysics = true;
 } SimulationState;
 
 void print_state(const SimulationState& state);

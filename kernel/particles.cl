@@ -18,7 +18,8 @@ __kernel void computeMotion(
     __global float4* debug,
     const float dt,
     const uint N,
-    const uint currentsN)
+    const uint currentsN,
+    const uint calcInterparticlePhysics)
 {
     int id = get_global_id(0);
     if (id >= N) return;
@@ -36,30 +37,33 @@ __kernel void computeMotion(
     // Calculate the E and B field at particle position
     float3 E = (float3)(0.0f, 0.0f, 0.0f);
     float3 B = (float3)(0.0f, 0.0f, 0.0f);
-    for (int j = 0; j < N; j++) {
-        if (j == id) continue;
 
-        float3 otherPos = (float3)(positions[j][0], positions[j][1], positions[j][2]);
-        float3 otherVel = (float3)(velocities[j][0], velocities[j][1], velocities[j][2]);
-        float otherType = positions[j][3];
-        float otherCharge = 0.0;
+    if (calcInterparticlePhysics) {
+        for (int j = 0; j < N; j++) {
+            if (j == id) continue;
 
-        if      (otherType == -1.0) otherCharge = -Q; // electron
-        else if (otherType ==  1.0) otherCharge = Q;  // proton
-        else if (otherType ==  0.0) otherCharge = 0;  // neutron
+            float3 otherPos = (float3)(positions[j][0], positions[j][1], positions[j][2]);
+            float3 otherVel = (float3)(velocities[j][0], velocities[j][1], velocities[j][2]);
+            float otherType = positions[j][3];
+            float otherCharge = 0.0;
 
-        float3 r = pos - otherPos;
-        float3 r_norm = normalize(r);
-        float r_mag = length(r);
+            if      (otherType == -1.0) otherCharge = -Q; // electron
+            else if (otherType ==  1.0) otherCharge = Q;  // proton
+            else if (otherType ==  0.0) otherCharge = 0;  // neutron
 
-        // Avoid division by zero
-        if (r_mag < 0.00001f) continue;
+            float3 r = pos - otherPos;
+            float3 r_norm = normalize(r);
+            float r_mag = length(r);
 
-        float3 e = ((K * otherCharge) / (r_mag * r_mag)) * r_norm;
-        float3 b = ((MU_0_OVER_4_PI * otherCharge) / (r_mag * r_mag)) * cross(otherVel, r_norm);
+            // Avoid division by zero
+            if (r_mag < 0.00001f) continue;
 
-        E += e;
-        B += b;
+            float3 e = ((K * otherCharge) / (r_mag * r_mag)) * r_norm;
+            float3 b = ((MU_0_OVER_4_PI * otherCharge) / (r_mag * r_mag)) * cross(otherVel, r_norm);
+
+            E += e;
+            B += b;
+        }
     }
 
     for (int j = 0; j < currentsN; j++) {
