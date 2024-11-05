@@ -17,6 +17,7 @@
 #include "torus.h"
 #include "state.h"
 
+TorusProperties torus;
 SimulationState state;
 
 // GLFW callback for handling keyboard input
@@ -111,7 +112,7 @@ void create_particle_buffers() {
         position_and_type.push_back(static_cast<float>(rand()) / RAND_MAX * 0.1f - 0.05f);
         position_and_type.push_back(charge);
 
-        // [dx, dy, dz, unused
+        // [dx, dy, dz, unused]
         velocity.push_back(static_cast<float>(rand()) / RAND_MAX * 10.0f - 5.0f);
         velocity.push_back(static_cast<float>(rand()) / RAND_MAX * 10.0f - 5.0f);
         velocity.push_back(static_cast<float>(rand()) / RAND_MAX * 10.0f - 5.0f);
@@ -143,7 +144,7 @@ void create_particle_buffers() {
 
 GLBufPair create_torus_buffers(float torusR2, int loopSegments) {
     GLBufPair buf;
-    std::vector<float> circleVertices = generateCircleVerticesUnrolled(torusR2, loopSegments);
+    std::vector<float> circleVertices = generate_coil_vertices_unrolled(torusR2, loopSegments);
 
     glGenVertexArrays(1, &buf.vao);
     glGenBuffers(1, &buf.vbo);
@@ -205,48 +206,15 @@ void render_torus(GLuint shader, glm::mat4 view, glm::mat4 projection) {
     glBindVertexArray(state.torus.vao);
 
     // Draw each circle in the torus
-    for (int i = 0; i < state.torusLoops; ++i) {
-        float angle = (2.0f * M_PI * i) / state.torusLoops;
-        glm::mat4 model = getCircleModelMatrix(angle, state.torusR1);
+    for (int i = 0; i < torus.toroidalCoils; ++i) {
+        float angle = (2.0f * M_PI * i) / torus.toroidalCoils;
+        glm::mat4 model = get_coil_model_matrix(angle, torus.r1);
 
         GLint modelLoc = glGetUniformLocation(shader, "model");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
-        glDrawArrays(GL_LINE_LOOP, 0, state.torusLoopSegments);  // Draw the circle as a line loop
+        glDrawArrays(GL_LINE_LOOP, 0, torus.coilLoopSegments);  // Draw the circle as a line loop
     }
-}
-
-std::vector<CurrentVector> get_toroidal_currents(float torusCurrent) {
-    std::vector<CurrentVector> currents;
-
-    std::vector<float> circleVertexValues = generateCircleVerticesUnrolled(state.torusR2, state.torusLoopSegments);
-    std::vector<glm::vec4> circleVertices;
-    for (int i = 0; i < state.torusLoopSegments; i++) {
-        circleVertices.push_back(glm::vec4 { circleVertexValues[i*2], circleVertexValues[i*2 + 1], 0.0f, 1.0f });
-    }
-
-    int idx = 0;
-    int loopStartIdx = 0;
-    for (int i = 0; i < state.torusLoops; ++i) {
-        loopStartIdx = idx;
-
-        float angle = (2.0f * M_PI * i) / state.torusLoops;
-        glm::mat4 model = getCircleModelMatrix(angle, state.torusR1);
-
-        for (int j = 0; j < state.torusLoopSegments; ++j) {
-            CurrentVector current;
-            current.x = model * circleVertices[j];
-            current.i = torusCurrent;
-
-            if (j > 0) currents[idx-1].dx = current.x - currents[idx-1].x;
-
-            currents.push_back(current);
-            idx++;
-        }
-        currents[idx-1].dx = currents[loopStartIdx].x - currents[idx-1].x;
-    }
-
-    return currents;
 }
 
 void printDbg(const cl::Buffer& posBufCL, const cl::Buffer& dbgBufCL) {
@@ -298,9 +266,9 @@ int main(int argc, char* argv[]) {
     state.axes = create_axes_buffers();
 
     // Create GL buffers for torus
-    state.torus = create_torus_buffers(state.torusR2, state.torusLoopSegments);
+    state.torus = create_torus_buffers(torus.r2, torus.coilLoopSegments);
 
-    std::vector<CurrentVector> torusCurrents = get_toroidal_currents(state.torusI);
+    std::vector<CurrentVector> torusCurrents = get_toroidal_currents(torus);
 
     // Load kernel source
     std::ifstream kernelFile("kernel/particles.cl");

@@ -18,11 +18,6 @@ typedef struct SimulationState {
     cl_float dt = 0.00001f;
 
     // Torus geometry and buffers
-    float torusR1 = 1.0f;       // Radius of torus, m
-    float torusR2 = 0.2f;       // Radius of torus cross section, m
-    int torusLoops = 12;        // Number of current loops
-    int torusLoopSegments = 10; // Number of current segments per circle for approximation
-    float torusI = 50000.0;     // Toroidal current, A
     GLBufPair torus;
 
     // Particle state buffers
