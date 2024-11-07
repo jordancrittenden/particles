@@ -18,6 +18,8 @@
 #include "scene.h"
 #include "torus.h"
 
+#define MU_0 (1.25663706144e-6f) /* kg m / A^2 s^2 */
+
 TorusProperties torus;
 SimulationState state;
 Scene scene;
@@ -58,6 +60,9 @@ void process_input(GLFWwindow* window) {
     }
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
         state.calcInterparticlePhysics = !state.calcInterparticlePhysics;
+    }
+    if (glfwGetKey(window, GLFW_KEY_PERIOD) == GLFW_PRESS) {
+        state.startPulse = true;
     }
 }
 
@@ -316,18 +321,32 @@ int main(int argc, char* argv[]) {
     kernel.setArg(4, state.dt);
     kernel.setArg(5, state.N);
     kernel.setArg(6, (cl_uint)torusCurrents.size());
-    kernel.setArg(7, (cl_uint)state.calcInterparticlePhysics);
+    kernel.setArg(7, 0.0f);
+    kernel.setArg(8, (cl_uint)state.calcInterparticlePhysics);
 
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     // Main render loop
-    int step = 0;
+    float pulseStartT = 0.0f;
+    float solenoidK = 0.5f * torus.pulseAlpha * MU_0 * (float)torus.solenoidN * torus.solenoidI * (torus.solenoidR * torus.solenoidR);
     while (!glfwWindowShouldClose(state.window)) {
         // Process keyboard input
         process_input(state.window);
 
+        // Kick off a pulse of the central solenoid
+        if (state.startPulse) {
+            state.startPulse = false;
+            pulseStartT = state.t;
+        }
+        float solenoidE0 = 0.0f;
+        if (pulseStartT > 0.0f) {
+            solenoidE0 = solenoidK * exp(-torus.pulseAlpha * (state.t - pulseStartT));
+            std::cout << "Pulse E0: " << solenoidE0 << std::endl;
+        }
+
         // Update args that could have changed
         kernel.setArg(4, state.dt);
+        kernel.setArg(7, solenoidE0);
 
         // Do particle physics
         // Acquire the GL buffer for OpenCL to read and write
@@ -354,6 +373,8 @@ int main(int argc, char* argv[]) {
 
         glfwSwapBuffers(state.window);
         glfwPollEvents();
+
+        state.t += state.dt;
     }
 
     glDeleteVertexArrays(1, &scene.axes.vao);

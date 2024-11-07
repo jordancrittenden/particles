@@ -19,6 +19,7 @@ __kernel void computeMotion(
     const float dt,
     const uint N,
     const uint currentsN,
+    const float solenoidE0,
     const uint calcInterparticlePhysics)
 {
     int id = get_global_id(0);
@@ -76,6 +77,12 @@ __kernel void computeMotion(
 
         B += MU_0_OVER_4_PI * current_i * cross(current_dx, r) / (r_mag * r_mag * r_mag);
     }
+
+    // Calculate the contribution of the central solenoid
+    float3 solenoid_r = (float3)(pos[0], 0.0, pos[2]);
+    float3 solenoid_r_norm = normalize(solenoid_r);
+    float solenoid_e_mag = solenoidE0 / length(solenoid_r);
+    E += solenoid_e_mag * cross((float3)(0.0, 1.0, 0.0), solenoid_r_norm);
 
     // Push the particle through the electric and magnetic field: dv/dt = q/m (E + v x B);
     float3 t = q_over_m * B * 0.5f * dt;

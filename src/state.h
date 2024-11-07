@@ -14,11 +14,13 @@ typedef struct SimulationState {
     CLState* clState = nullptr;
     
     // Simulation parameters
-    cl_uint N = 10000; // number of particles
-    cl_float dt = 0.00001f;
+    cl_uint N = 10000;       // Number of particles
+    cl_float t = 0.0f;       // Simulation time, s
+    cl_float dt = 0.000001f; // Simulation dt, s
 
     // Physics booleans
     bool calcInterparticlePhysics = true;
+    bool startPulse = true; // Kicks of a pulse of the central Solenoid
 } SimulationState;
 
 void print_state(const SimulationState& state);
