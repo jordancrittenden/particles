@@ -14,11 +14,13 @@
 #include "cl_util.h"
 #include "gl_util.h"
 #include "args.h"
-#include "torus.h"
 #include "state.h"
+#include "scene.h"
+#include "torus.h"
 
 TorusProperties torus;
 SimulationState state;
+Scene scene;
 
 // GLFW callback for handling keyboard input
 void process_input(GLFWwindow* window) {
@@ -26,16 +28,16 @@ void process_input(GLFWwindow* window) {
         glfwSetWindowShouldClose(window, true);
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-        state.rotAngle -= 0.01f;
+        scene.rotAngle -= 0.01f;
     }
     if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-        state.rotAngle += 0.01f;
+        scene.rotAngle += 0.01f;
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS) {
-        state.cameraDistance *= 1.01f;
+        scene.cameraDistance *= 1.01f;
     }
     if (glfwGetKey(window, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) {
-        state.cameraDistance /= 1.01f;
+        scene.cameraDistance /= 1.01f;
     }
     if (glfwGetKey(window, GLFW_KEY_EQUAL) == GLFW_PRESS) {
         state.dt *= 1.2f;
@@ -46,13 +48,13 @@ void process_input(GLFWwindow* window) {
         print_state(state);
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        state.showAxes = !state.showAxes;
+        scene.showAxes = !scene.showAxes;
     }
     if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
-        state.showTorus = !state.showTorus;
+        scene.showTorus = !scene.showTorus;
     }
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
-        state.showParticles = !state.showParticles;
+        scene.showParticles = !scene.showParticles;
     }
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
         state.calcInterparticlePhysics = !state.calcInterparticlePhysics;
@@ -120,10 +122,10 @@ void create_particle_buffers() {
     }
 
     // position/type buffer
-    glGenVertexArrays(1, &state.pos.vao);
-    glBindVertexArray(state.pos.vao);
-    glGenBuffers(1, &state.pos.vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, state.pos.vbo);
+    glGenVertexArrays(1, &scene.pos.vao);
+    glBindVertexArray(scene.pos.vao);
+    glGenBuffers(1, &scene.pos.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, scene.pos.vbo);
     glBufferData(GL_ARRAY_BUFFER, state.N * sizeof(cl_float4), position_and_type.data(), GL_DYNAMIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cl_float4), (void*)0); // position attribute
     glEnableVertexAttribArray(0);
@@ -133,10 +135,10 @@ void create_particle_buffers() {
     glBindVertexArray(0);
 
     // velocity buffer
-    glGenVertexArrays(1, &state.vel.vao);
-    glBindVertexArray(state.vel.vao);
-    glGenBuffers(1, &state.vel.vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, state.vel.vbo);
+    glGenVertexArrays(1, &scene.vel.vao);
+    glBindVertexArray(scene.vel.vao);
+    glGenBuffers(1, &scene.vel.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, scene.vel.vbo);
     glBufferData(GL_ARRAY_BUFFER, state.N * sizeof(cl_float4), velocity.data(), GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -172,7 +174,7 @@ void render_axes(GLuint shader, glm::mat4 view, glm::mat4 projection) {
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
     // Draw axes
-    glBindVertexArray(state.axes.vao);
+    glBindVertexArray(scene.axes.vao);
     glDrawArrays(GL_LINES, 0, 6);
 }
 
@@ -190,7 +192,7 @@ void render_particles(GLuint shader, glm::mat4 view, glm::mat4 projection) {
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
     // Draw particles
-    glBindVertexArray(state.pos.vao);
+    glBindVertexArray(scene.pos.vao);
     glDrawArrays(GL_POINTS, 0, state.N);
 }
 
@@ -203,7 +205,7 @@ void render_torus(GLuint shader, glm::mat4 view, glm::mat4 projection) {
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-    glBindVertexArray(state.torus.vao);
+    glBindVertexArray(scene.torus.vao);
 
     // Draw each circle in the torus
     for (int i = 0; i < torus.toroidalCoils; ++i) {
@@ -263,10 +265,10 @@ int main(int argc, char* argv[]) {
     create_particle_buffers();
 
     // Create GL buffers for axes and particles
-    state.axes = create_axes_buffers();
+    scene.axes = create_axes_buffers();
 
     // Create GL buffers for torus
-    state.torus = create_torus_buffers(torus.r2, torus.coilLoopSegments);
+    scene.torus = create_torus_buffers(torus.r2, torus.coilLoopSegments);
 
     std::vector<CurrentVector> torusCurrents = get_toroidal_currents(torus);
 
@@ -286,8 +288,8 @@ int main(int argc, char* argv[]) {
 
     // Create a shared OpenCL buffer from the OpenGL buffer
     cl_int posErr, velErr;
-    cl::Buffer posBufCL = cl::BufferGL(*state.clState->context, CL_MEM_READ_WRITE, state.pos.vbo, &posErr);
-    cl::Buffer velBufCL = cl::BufferGL(*state.clState->context, CL_MEM_READ_WRITE, state.vel.vbo, &velErr);
+    cl::Buffer posBufCL = cl::BufferGL(*state.clState->context, CL_MEM_READ_WRITE, scene.pos.vbo, &posErr);
+    cl::Buffer velBufCL = cl::BufferGL(*state.clState->context, CL_MEM_READ_WRITE, scene.vel.vbo, &velErr);
     if (posErr != CL_SUCCESS || velErr != CL_SUCCESS) {
         std::cerr << "Failed to create OpenCL buffer from OpenGL buffer: " << posErr << std::endl;
         return -1;
@@ -340,22 +342,22 @@ int main(int argc, char* argv[]) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glm::mat4 view = glm::lookAt(
-            glm::vec3(state.cameraDistance * sin(state.rotAngle), 0.5f, state.cameraDistance * cos(state.rotAngle)), 
+            glm::vec3(scene.cameraDistance * sin(scene.rotAngle), 0.5f, scene.cameraDistance * cos(scene.rotAngle)), 
             glm::vec3(0.0f, 0.0f, 0.0f), 
             glm::vec3(0.0f, 1.0f, 0.0f)
         );
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)state.windowWidth / (float)state.windowHeight, 0.1f, 100.0f);
 
-        if (state.showAxes) render_axes(particlesShaderProgram, view, projection);
-        if (state.showTorus) render_torus(torusShaderProgram, view, projection);
-        if (state.showParticles) render_particles(particlesShaderProgram, view, projection);
+        if (scene.showAxes) render_axes(particlesShaderProgram, view, projection);
+        if (scene.showTorus) render_torus(torusShaderProgram, view, projection);
+        if (scene.showParticles) render_particles(particlesShaderProgram, view, projection);
 
         glfwSwapBuffers(state.window);
         glfwPollEvents();
     }
 
-    glDeleteVertexArrays(1, &state.axes.vao);
-    glDeleteVertexArrays(1, &state.pos.vao);
+    glDeleteVertexArrays(1, &scene.axes.vao);
+    glDeleteVertexArrays(1, &scene.pos.vao);
 
     glfwTerminate();
     return 0;
