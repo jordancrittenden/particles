@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "state.h"
+#include "torus.h"
 
 std::unordered_map<std::string, std::string> parse_args(int argc, char* argv[]) {
     std::unordered_map<std::string, std::string> args;
@@ -33,9 +34,10 @@ std::unordered_map<std::string, std::string> parse_args(int argc, char* argv[]) 
     return args;
 }
 
-void extract_state_vars(std::unordered_map<std::string, std::string> args, SimulationState* state) {
+void extract_state_vars(std::unordered_map<std::string, std::string> args, SimulationState* state, TorusProperties* torus) {
      for (const auto& [key, value] : args) {
         if (key == "N") state->N = stoi(value);
         if (key == "calcInterparticle") state->calcInterparticlePhysics = (value == "true");
+        if (key == "pulseAlpha") torus->pulseAlpha = stof(value);
      }
 }

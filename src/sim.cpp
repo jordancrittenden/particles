@@ -18,11 +18,16 @@
 #include "scene.h"
 #include "torus.h"
 
+#define PI   (3.14159265953f)
 #define MU_0 (1.25663706144e-6f) /* kg m / A^2 s^2 */
 
 TorusProperties torus;
 SimulationState state;
 Scene scene;
+
+inline float rand_range(float min, float max) {
+    return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
+}
 
 // GLFW callback for handling keyboard input
 void process_input(GLFWwindow* window) {
@@ -113,10 +118,14 @@ void create_particle_buffers() {
         //float charge = chargeRand < 0.33 ? 0.0 : (chargeRand < 0.66 ? 1.0 : -1.0);
         float charge = chargeRand < 0.5 ? 1.0 : -1.0;
 
+        float r = rand_range(0.95f, 1.05f);
+        float theta = rand_range(0.0f, 2 * PI);
+        float y = rand_range(-0.05f, 0.05f);
+
         // [x, y, z, type]
-        position_and_type.push_back(static_cast<float>(rand()) / RAND_MAX * 0.1f - 0.05f + 1.0f);
-        position_and_type.push_back(static_cast<float>(rand()) / RAND_MAX * 0.1f - 0.05f);
-        position_and_type.push_back(static_cast<float>(rand()) / RAND_MAX * 0.1f - 0.05f);
+        position_and_type.push_back(r * sin(theta));
+        position_and_type.push_back(y);
+        position_and_type.push_back(r * cos(theta));
         position_and_type.push_back(charge);
 
         // [dx, dy, dz, unused]
@@ -252,7 +261,7 @@ int main(int argc, char* argv[]) {
         for (const auto& [key, value] : args) {
             std::cout << key << " : " << value << std::endl;
         }
-        extract_state_vars(args, &state);
+        extract_state_vars(args, &state, &torus);
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
@@ -338,10 +347,14 @@ int main(int argc, char* argv[]) {
             state.startPulse = false;
             pulseStartT = state.t;
         }
+        float pulseT = state.t - pulseStartT;
         float solenoidE0 = 0.0f;
         if (pulseStartT > 0.0f) {
-            solenoidE0 = solenoidK * exp(-torus.pulseAlpha * (state.t - pulseStartT));
-            std::cout << "Pulse E0: " << solenoidE0 << std::endl;
+            solenoidE0 = solenoidK * exp(-torus.pulseAlpha * pulseT);
+            std::cout << "Pulse T: " << pulseT << ", E0: " << solenoidE0 << std::endl;
+        }
+        if (pulseT > torus.pulseAlpha) {
+            pulseStartT = 0.0f;
         }
 
         // Update args that could have changed

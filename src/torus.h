@@ -13,15 +13,15 @@ typedef struct CurrentVector {
 
 typedef struct TorusProperties {
     float r1 = 1.0f;            // Radius of torus, m
-    float r2 = 0.2f;            // Radius of torus cross section, m
+    float r2 = 0.4f;            // Radius of torus cross section, m
     float solenoidR = 0.2f;     // Radius of the central solenoid, m
     float solenoidN = 10;       // Number of turns of the solenoid
     int toroidalCoils = 12;     // Number of toroidal coils
-    int coilLoopSegments = 10;  // Number of current segments per circle for approximation
+    int coilLoopSegments = 20;  // Number of current segments per circle for approximation
 
     float toroidalI = 50000.0f; // Toroidal current, A
-    float solenoidI = 40000.0f; // Central solenoid pulse peak current, A
-    float pulseAlpha = 1.0f;    // Pulse exponential parameter
+    float solenoidI = 10000.0f; // Central solenoid pulse peak current, A
+    float pulseAlpha = 0.01f;   // Pulse exponential parameter
 } TorusProperties;
 
 std::vector<float> generate_coil_vertices_unrolled(float r2, int segments);
