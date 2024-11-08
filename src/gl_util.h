@@ -1,11 +1,15 @@
 #ifndef __GL_UTIL_H__
 #define __GL_UTIL_H__
 
+#define GL_SILENCE_DEPRECATION
+#define GLM_ENABLE_EXPERIMENT
+
 #include <GLFW/glfw3.h>
 
-typedef struct GLBufPair {
+typedef struct GLBuffers {
     GLuint vbo; // vertex buffer
     GLuint vao; // vertex array
+    GLuint instance_vbo; // instance buffer
 } GLBufPair;
 
 GLFWwindow* init_opengl(int windowWidth, int windowHeight);

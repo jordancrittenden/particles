@@ -10,6 +10,7 @@ clang++ \
     src/cl_util.cpp \
     src/gl_util.cpp \
     src/torus.cpp \
+    src/field_vector.cpp \
     src/state.cpp \
     src/args.cpp \
     src/sim.cpp \

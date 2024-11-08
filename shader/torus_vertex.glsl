@@ -1,5 +1,5 @@
 #version 330 core
-layout(location = 0) in vec2 aPos;        // Position on unit circle for each circle
+layout(location = 0) in vec2 aPos; // Position on unit circle for each circle
 
 uniform mat4 model;
 uniform mat4 view;

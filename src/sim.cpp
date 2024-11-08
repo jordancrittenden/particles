@@ -1,8 +1,11 @@
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 #include <OpenGL/OpenGL.h>
 #include <iostream>
 #include <fstream>
@@ -17,9 +20,12 @@
 #include "state.h"
 #include "scene.h"
 #include "torus.h"
+#include "field_vector.h"
 
 #define PI   (3.14159265953f)
 #define MU_0 (1.25663706144e-6f) /* kg m / A^2 s^2 */
+
+#define NUM_VECTORS 100
 
 TorusProperties torus;
 SimulationState state;
@@ -71,8 +77,8 @@ void process_input(GLFWwindow* window) {
     }
 }
 
-// Create buffer for axes (X, Y, Z)
-GLBufPair create_axes_buffers() {
+// Create buffers for axes (X, Y, Z)
+GLBuffers create_axes_buffers() {
     float axisVertices[] = {
         // X-axis
         -1.0, 0.0f, 0.0f,   2.0f,
@@ -85,7 +91,7 @@ GLBufPair create_axes_buffers() {
         0.0f, 0.0f,  1.0,   2.0f,
     };
 
-    GLBufPair buf;
+    GLBuffers buf;
     glGenVertexArrays(1, &buf.vao);
     glGenBuffers(1, &buf.vbo);
 
@@ -158,8 +164,8 @@ void create_particle_buffers() {
     glBindVertexArray(0);
 }
 
-GLBufPair create_torus_buffers(float torusR2, int loopSegments) {
-    GLBufPair buf;
+GLBuffers create_torus_buffers(float torusR2, int loopSegments) {
+    GLBuffers buf;
     std::vector<float> circleVertices = generate_coil_vertices_unrolled(torusR2, loopSegments);
 
     glGenVertexArrays(1, &buf.vao);
@@ -233,6 +239,20 @@ void render_torus(GLuint shader, glm::mat4 view, glm::mat4 projection) {
     }
 }
 
+void render_fields(GLuint shader, glm::mat4 view, glm::mat4 projection) {
+    glUseProgram(shader);
+
+    // Set view and projection uniforms
+    GLint viewLoc = glGetUniformLocation(shader, "view");
+    GLint projLoc = glGetUniformLocation(shader, "projection");
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+    glBindVertexArray(scene.e_field.vao);
+    glDrawArraysInstanced(GL_LINES, 0, 2, NUM_VECTORS);
+    glDrawArraysInstanced(GL_TRIANGLE_FAN, 2, 4, NUM_VECTORS);
+}
+
 void printDbg(const cl::Buffer& posBufCL, const cl::Buffer& dbgBufCL) {
     std::vector<cl_float4> positions(state.N);
     std::vector<cl_float4> dbgBuf(state.N);
@@ -274,6 +294,7 @@ int main(int argc, char* argv[]) {
     // Load OpenGL shaders
     GLuint particlesShaderProgram = create_shader_program("shader/particles_vertex.glsl", "shader/particles_fragment.glsl");
     GLuint torusShaderProgram = create_shader_program("shader/torus_vertex.glsl", "shader/torus_fragment.glsl");
+    GLuint vectorShaderProgram = create_shader_program("shader/vector_vertex.glsl", "shader/vector_fragment.glsl");
 
     // Initialize particles
     create_particle_buffers();
@@ -285,6 +306,9 @@ int main(int argc, char* argv[]) {
     scene.torus = create_torus_buffers(torus.r2, torus.coilLoopSegments);
 
     std::vector<CurrentVector> torusCurrents = get_toroidal_currents(torus);
+
+    std::vector<glm::vec3> directions = random_vectors(NUM_VECTORS);
+    scene.e_field = create_vectors_buffers(directions);
 
     // Load kernel source
     std::ifstream kernelFile("kernel/particles.cl");
@@ -370,6 +394,11 @@ int main(int argc, char* argv[]) {
         state.clState->queue->enqueueReleaseGLObjects(&glBuffers);
         state.clState->queue->finish();
 
+        for (auto& dir : directions) {
+            dir = glm::rotateY(dir, glm::radians(0.01f));
+        }
+        update_vectors_buffer(scene.e_field.instance_vbo, directions);
+
         // Draw a white background
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -383,6 +412,7 @@ int main(int argc, char* argv[]) {
         if (scene.showAxes) render_axes(particlesShaderProgram, view, projection);
         if (scene.showTorus) render_torus(torusShaderProgram, view, projection);
         if (scene.showParticles) render_particles(particlesShaderProgram, view, projection);
+        if (scene.showEField) render_fields(vectorShaderProgram, view, projection);
 
         glfwSwapBuffers(state.window);
         glfwPollEvents();
