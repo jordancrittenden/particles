@@ -250,7 +250,7 @@ void render_fields(GLuint shader, glm::mat4 view, glm::mat4 projection) {
 
     glBindVertexArray(scene.e_field.vao);
     glDrawArraysInstanced(GL_LINES, 0, 2, NUM_VECTORS);
-    glDrawArraysInstanced(GL_TRIANGLE_FAN, 2, 4, NUM_VECTORS);
+    glDrawArraysInstanced(GL_TRIANGLE_FAN, 2, 5, NUM_VECTORS);
 }
 
 void printDbg(const cl::Buffer& posBufCL, const cl::Buffer& dbgBufCL) {
@@ -308,7 +308,7 @@ int main(int argc, char* argv[]) {
     std::vector<CurrentVector> torusCurrents = get_toroidal_currents(torus);
 
     std::vector<glm::vec3> directions = random_vectors(NUM_VECTORS);
-    scene.e_field = create_vectors_buffers(directions);
+    scene.e_field = create_vectors_buffers(directions, 0.5f);
 
     // Load kernel source
     std::ifstream kernelFile("kernel/particles.cl");
@@ -394,8 +394,8 @@ int main(int argc, char* argv[]) {
         state.clState->queue->enqueueReleaseGLObjects(&glBuffers);
         state.clState->queue->finish();
 
-        for (auto& dir : directions) {
-            dir = glm::rotateY(dir, glm::radians(0.01f));
+        for (int i = 0; i < directions.size(); i++) {
+            directions[i] = glm::rotateY(directions[i], glm::radians(0.1f));
         }
         update_vectors_buffer(scene.e_field.instance_vbo, directions);
 

@@ -5,15 +5,17 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "gl_util.h"
 
-// Vector arrow geometry
-void create_vector_geometry(std::vector<float>& vertices) {
-    vertices.insert(vertices.end(), {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f});
-    float size = 0.05f;
+// Vector arrow geometry - points along the z-axis
+void create_vector_geometry(std::vector<float>& vertices, float length) {
+    vertices.insert(vertices.end(), {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, length});
+    float tipWidth = length / 20.0f;
+    float tipLenth = length / 10.0f;
     vertices.insert(vertices.end(), {
-        0.0f, 0.0f, 1.0f,  
-        size, size, 1.0f - size,  
-        -size, size, 1.0f - size,
-        0.0f, -size, 1.0f - size
+         0.0f,     0.0f,     length,
+         tipWidth, tipWidth, length - tipLenth,
+        -tipWidth, tipWidth, length - tipLenth,
+         0.0f,    -tipWidth, length - tipLenth,
+         tipWidth, tipWidth, length - tipLenth,
     });
 }
 
@@ -37,9 +39,9 @@ void update_vectors_buffer(GLuint instanceVBO, const std::vector<glm::vec3>& dir
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-GLBuffers create_vectors_buffers(std::vector<glm::vec3>& directions) {
+GLBuffers create_vectors_buffers(std::vector<glm::vec3>& directions, float length) {
     std::vector<float> vertices;
-    create_vector_geometry(vertices);
+    create_vector_geometry(vertices, length);
 
     std::vector<float> instanceData;
     srand(static_cast<unsigned int>(time(0)));

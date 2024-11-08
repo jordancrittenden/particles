@@ -8,7 +8,6 @@ out vec3 fragColor;
 
 uniform mat4 view;
 uniform mat4 projection;
-uniform float length;
 
 mat4 translate(vec3 translation) {
     return mat4(
@@ -40,7 +39,7 @@ void main() {
         vec4(0.0, 0.0, 0.0, 1.0)
     );
 
-    mat4 model = translate(instancePos) * rotation * scale(vec3(1.0, 1.0, length));
+    mat4 model = translate(instancePos) * rotation;
 
     gl_Position = projection * view * model * vec4(aPos, 1.0);
     fragColor = instanceColor;
