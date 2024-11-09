@@ -235,7 +235,7 @@ void render_torus(GLuint shader, glm::mat4 view, glm::mat4 projection) {
         GLint modelLoc = glGetUniformLocation(shader, "model");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
-        glDrawArrays(GL_LINE_LOOP, 0, torus.coilLoopSegments);  // Draw the circle as a line loop
+        glDrawArrays(GL_LINE_LOOP, 0, torus.coilLoopSegments);
     }
 }
 
@@ -307,8 +307,8 @@ int main(int argc, char* argv[]) {
 
     std::vector<CurrentVector> torusCurrents = get_toroidal_currents(torus);
 
-    std::vector<glm::vec3> directions = random_vectors(NUM_VECTORS);
-    scene.e_field = create_vectors_buffers(directions, 0.5f);
+    std::vector<glm::mat4> transforms = random_transforms(NUM_VECTORS);
+    scene.e_field = create_vectors_buffers(transforms, 0.5f);
 
     // Load kernel source
     std::ifstream kernelFile("kernel/particles.cl");
@@ -394,10 +394,10 @@ int main(int argc, char* argv[]) {
         state.clState->queue->enqueueReleaseGLObjects(&glBuffers);
         state.clState->queue->finish();
 
-        for (int i = 0; i < directions.size(); i++) {
-            directions[i] = glm::rotateY(directions[i], glm::radians(0.1f));
+        for (int i = 0; i < transforms.size(); i++) {
+            transforms[i] = glm::rotate(transforms[i], glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
         }
-        update_vectors_buffer(scene.e_field.instance_vbo, directions);
+        update_vectors_buffer(scene.e_field.instance_vbo, transforms);
 
         // Draw a white background
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -422,6 +422,8 @@ int main(int argc, char* argv[]) {
 
     glDeleteVertexArrays(1, &scene.axes.vao);
     glDeleteVertexArrays(1, &scene.pos.vao);
+    glDeleteVertexArrays(1, &scene.torus.vao);
+    glDeleteVertexArrays(1, &scene.e_field.vao);
 
     glfwTerminate();
     return 0;
