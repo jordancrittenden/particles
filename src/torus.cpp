@@ -1,4 +1,9 @@
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include "gl_util.h"
 #include "torus.h"
 
 #define MU_0 (1.25663706144e-6f) /* kg m / A^2 s^2 */
@@ -21,6 +26,45 @@ glm::mat4 get_coil_model_matrix(float angle, float r1) {
     model = glm::translate(model, glm::vec3(r1, 0.0f, 0.0f));
     model = glm::rotate(model, glm::half_pi<float>(), glm::vec3(0.0f, 0.0f, 1.0f));
     return model;
+}
+
+GLBuffers create_torus_buffers(TorusProperties& torus) {
+    GLBuffers buf;
+    std::vector<float> circleVertices = generate_coil_vertices_unrolled(torus.r2, torus.coilLoopSegments);
+
+    glGenVertexArrays(1, &buf.vao);
+    glGenBuffers(1, &buf.vbo);
+    glBindVertexArray(buf.vao);
+    glBindBuffer(GL_ARRAY_BUFFER, buf.vbo);
+    glBufferData(GL_ARRAY_BUFFER, circleVertices.size() * sizeof(float), circleVertices.data(), GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    return buf;
+}
+
+void render_torus(GLuint shader, TorusProperties& torus, GLBuffers torusBuf, glm::mat4 view, glm::mat4 projection) {
+    glUseProgram(shader);
+
+    // Set view and projection uniforms
+    GLint viewLoc = glGetUniformLocation(shader, "view");
+    GLint projLoc = glGetUniformLocation(shader, "projection");
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+    glBindVertexArray(torusBuf.vao);
+
+    // Draw each circle in the torus
+    for (int i = 0; i < torus.toroidalCoils; ++i) {
+        float angle = (2.0f * M_PI * i) / torus.toroidalCoils;
+        glm::mat4 model = get_coil_model_matrix(angle, torus.r1);
+
+        GLint modelLoc = glGetUniformLocation(shader, "model");
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+        glDrawArrays(GL_LINE_LOOP, 0, torus.coilLoopSegments);
+    }
 }
 
 std::vector<CurrentVector> get_toroidal_currents(TorusProperties& torus) {

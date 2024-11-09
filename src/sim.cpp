@@ -1,11 +1,8 @@
-#define GLM_ENABLE_EXPERIMENTAL
-
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/rotate_vector.hpp>
 #include <OpenGL/OpenGL.h>
 #include <iostream>
 #include <fstream>
@@ -164,22 +161,6 @@ void create_particle_buffers() {
     glBindVertexArray(0);
 }
 
-GLBuffers create_torus_buffers(float torusR2, int loopSegments) {
-    GLBuffers buf;
-    std::vector<float> circleVertices = generate_coil_vertices_unrolled(torusR2, loopSegments);
-
-    glGenVertexArrays(1, &buf.vao);
-    glGenBuffers(1, &buf.vbo);
-    glBindVertexArray(buf.vao);
-    glBindBuffer(GL_ARRAY_BUFFER, buf.vbo);
-    glBufferData(GL_ARRAY_BUFFER, circleVertices.size() * sizeof(float), circleVertices.data(), GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    return buf;
-}
-
 void render_axes(GLuint shader, glm::mat4 view, glm::mat4 projection) {
     glUseProgram(shader);
 
@@ -214,29 +195,6 @@ void render_particles(GLuint shader, glm::mat4 view, glm::mat4 projection) {
     // Draw particles
     glBindVertexArray(scene.pos.vao);
     glDrawArrays(GL_POINTS, 0, state.N);
-}
-
-void render_torus(GLuint shader, glm::mat4 view, glm::mat4 projection) {
-    glUseProgram(shader);
-
-    // Set view and projection uniforms
-    GLint viewLoc = glGetUniformLocation(shader, "view");
-    GLint projLoc = glGetUniformLocation(shader, "projection");
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-    glBindVertexArray(scene.torus.vao);
-
-    // Draw each circle in the torus
-    for (int i = 0; i < torus.toroidalCoils; ++i) {
-        float angle = (2.0f * M_PI * i) / torus.toroidalCoils;
-        glm::mat4 model = get_coil_model_matrix(angle, torus.r1);
-
-        GLint modelLoc = glGetUniformLocation(shader, "model");
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
-        glDrawArrays(GL_LINE_LOOP, 0, torus.coilLoopSegments);
-    }
 }
 
 void render_fields(GLuint shader, glm::mat4 view, glm::mat4 projection) {
@@ -303,7 +261,7 @@ int main(int argc, char* argv[]) {
     scene.axes = create_axes_buffers();
 
     // Create GL buffers for torus
-    scene.torus = create_torus_buffers(torus.r2, torus.coilLoopSegments);
+    scene.torus = create_torus_buffers(torus);
 
     std::vector<CurrentVector> torusCurrents = get_toroidal_currents(torus);
 
@@ -399,7 +357,7 @@ int main(int argc, char* argv[]) {
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)state.windowWidth / (float)state.windowHeight, 0.1f, 100.0f);
 
         if (scene.showAxes)      render_axes(particlesShaderProgram, view, projection);
-        if (scene.showTorus)     render_torus(torusShaderProgram, view, projection);
+        if (scene.showTorus)     render_torus(torusShaderProgram, torus, scene.torus, view, projection);
         if (scene.showParticles) render_particles(particlesShaderProgram, view, projection);
         if (scene.showEField)    render_fields(vectorShaderProgram, view, projection);
 

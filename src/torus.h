@@ -23,7 +23,7 @@ typedef struct TorusProperties {
     float pulseAlpha = 0.01f;   // Pulse exponential parameter
 } TorusProperties;
 
-std::vector<float> generate_coil_vertices_unrolled(float r2, int segments);
-glm::mat4 get_coil_model_matrix(float angle, float r1);
+GLBuffers create_torus_buffers(TorusProperties& torus);
+void render_torus(GLuint shader, TorusProperties& torus, GLBuffers torusBuf, glm::mat4 view, glm::mat4 projection);
 std::vector<CurrentVector> get_toroidal_currents(TorusProperties& torus);
 float solenoid_pulse_e_field_multiplier(TorusProperties& torus, float t);
