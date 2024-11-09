@@ -44,7 +44,7 @@ GLBuffers create_torus_buffers(TorusProperties& torus) {
     return buf;
 }
 
-void render_torus(GLuint shader, TorusProperties& torus, GLBuffers torusBuf, glm::mat4 view, glm::mat4 projection) {
+void render_torus(GLuint shader, TorusProperties& torus, const GLBuffers& torusBuf, glm::mat4 view, glm::mat4 projection) {
     glUseProgram(shader);
 
     // Set view and projection uniforms

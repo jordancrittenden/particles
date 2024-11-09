@@ -11,6 +11,7 @@ clang++ \
     src/gl_util.cpp \
     src/torus.cpp \
     src/axes.cpp \
+    src/particles.cpp \
     src/field_vector.cpp \
     src/state.cpp \
     src/args.cpp \

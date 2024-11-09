@@ -40,7 +40,7 @@ GLBuffers create_axes_buffers() {
     return buf;
 }
 
-void render_axes(GLuint shader, GLBuffers axesBuf, glm::mat4 view, glm::mat4 projection) {
+void render_axes(GLuint shader, const GLBuffers& axesBuf, glm::mat4 view, glm::mat4 projection) {
     glUseProgram(shader);
 
     glm::mat4 model = glm::mat4(1.0f);

@@ -24,6 +24,6 @@ typedef struct TorusProperties {
 } TorusProperties;
 
 GLBuffers create_torus_buffers(TorusProperties& torus);
-void render_torus(GLuint shader, TorusProperties& torus, GLBuffers torusBuf, glm::mat4 view, glm::mat4 projection);
+void render_torus(GLuint shader, TorusProperties& torus, const GLBuffers& torusBuf, glm::mat4 view, glm::mat4 projection);
 std::vector<CurrentVector> get_toroidal_currents(TorusProperties& torus);
 float solenoid_pulse_e_field_multiplier(TorusProperties& torus, float t);

@@ -97,7 +97,7 @@ GLBuffers create_vectors_buffers(std::vector<glm::mat4>& transforms, float lengt
     return buf;
 }
 
-void render_fields(GLuint shader, int numFieldVectors, GLBuffers eFieldBuf, glm::mat4 view, glm::mat4 projection) {
+void render_fields(GLuint shader, int numFieldVectors, const GLBuffers& eFieldBuf, glm::mat4 view, glm::mat4 projection) {
     glUseProgram(shader);
 
     // Set view and projection uniforms
