@@ -5,8 +5,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "gl_util.h"
 
-#define PI   (3.14159265953f)
-
 inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
 }
@@ -39,7 +37,7 @@ std::vector<glm::mat4> random_transforms(int nVectors) {
     std::vector<glm::mat4> transforms;
     for (int i = 0; i < nVectors; ++i) {
         glm::mat4 xform = glm::mat4(1.0f);
-        xform = glm::rotate(xform, glm::radians(rand_range(0.0f, 2 * PI)), glm::vec3(rand_range(0.0f, 1.0f), rand_range(0.0f, 1.0f), rand_range(0.0f, 1.0f)));
+        xform = glm::rotate(xform, glm::radians(rand_range(0.0f, 2 * M_PI)), glm::vec3(rand_range(0.0f, 1.0f), rand_range(0.0f, 1.0f), rand_range(0.0f, 1.0f)));
         xform = glm::translate(xform, glm::vec3(rand_range(0.0f, 1.0f), rand_range(0.0f, 1.0f), rand_range(0.0f, 1.0f)));
         transforms.push_back(xform);
     }
@@ -47,8 +45,8 @@ std::vector<glm::mat4> random_transforms(int nVectors) {
 }
 
 // Update direction buffer data
-void update_vectors_buffer(GLuint instanceVBO, const std::vector<glm::mat4>& transforms) {
-    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+void update_vectors_buffer(GLuint vbo, const std::vector<glm::mat4>& transforms) {
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::mat4) * transforms.size(), transforms.data());
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }

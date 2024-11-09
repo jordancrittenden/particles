@@ -22,9 +22,6 @@
 #include "torus.h"
 #include "field_vector.h"
 
-#define PI   (3.14159265953f)
-#define MU_0 (1.25663706144e-6f) /* kg m / A^2 s^2 */
-
 #define NUM_VECTORS 100
 
 TorusProperties torus;
@@ -65,6 +62,9 @@ void process_input(GLFWwindow* window) {
     }
     if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
         scene.showTorus = !scene.showTorus;
+    }
+    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+        scene.showEField = !scene.showEField;
     }
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
         scene.showParticles = !scene.showParticles;
@@ -125,7 +125,7 @@ void create_particle_buffers() {
         float charge = chargeRand < 0.5 ? 1.0 : -1.0;
 
         float r = rand_range(0.95f, 1.05f);
-        float theta = rand_range(0.0f, 2 * PI);
+        float theta = rand_range(0.0f, 2 * M_PI);
         float y = rand_range(-0.05f, 0.05f);
 
         // [x, y, z, type]
@@ -361,7 +361,6 @@ int main(int argc, char* argv[]) {
 
     // Main render loop
     float pulseStartT = 0.0f;
-    float solenoidK = 0.5f * torus.pulseAlpha * MU_0 * (float)torus.solenoidN * torus.solenoidI * (torus.solenoidR * torus.solenoidR);
     while (!glfwWindowShouldClose(state.window)) {
         // Process keyboard input
         process_input(state.window);
@@ -374,7 +373,7 @@ int main(int argc, char* argv[]) {
         float pulseT = state.t - pulseStartT;
         float solenoidE0 = 0.0f;
         if (pulseStartT > 0.0f) {
-            solenoidE0 = solenoidK * exp(-torus.pulseAlpha * pulseT);
+            solenoidE0 = solenoid_pulse_e_field_multiplier(torus, pulseT);
             std::cout << "Pulse T: " << pulseT << ", E0: " << solenoidE0 << std::endl;
         }
         if (pulseT > torus.pulseAlpha) {
@@ -409,10 +408,10 @@ int main(int argc, char* argv[]) {
         );
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)state.windowWidth / (float)state.windowHeight, 0.1f, 100.0f);
 
-        if (scene.showAxes) render_axes(particlesShaderProgram, view, projection);
-        if (scene.showTorus) render_torus(torusShaderProgram, view, projection);
+        if (scene.showAxes)      render_axes(particlesShaderProgram, view, projection);
+        if (scene.showTorus)     render_torus(torusShaderProgram, view, projection);
         if (scene.showParticles) render_particles(particlesShaderProgram, view, projection);
-        if (scene.showEField) render_fields(vectorShaderProgram, view, projection);
+        if (scene.showEField)    render_fields(vectorShaderProgram, view, projection);
 
         glfwSwapBuffers(state.window);
         glfwPollEvents();
