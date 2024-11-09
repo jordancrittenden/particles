@@ -144,20 +144,6 @@ void render_particles(GLuint shader, glm::mat4 view, glm::mat4 projection) {
     glDrawArrays(GL_POINTS, 0, state.N);
 }
 
-void render_fields(GLuint shader, glm::mat4 view, glm::mat4 projection) {
-    glUseProgram(shader);
-
-    // Set view and projection uniforms
-    GLint viewLoc = glGetUniformLocation(shader, "view");
-    GLint projLoc = glGetUniformLocation(shader, "projection");
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-    glBindVertexArray(scene.e_field.vao);
-    glDrawArraysInstanced(GL_LINES, 0, 2, NUM_VECTORS);
-    glDrawArraysInstanced(GL_TRIANGLE_FAN, 2, 5, NUM_VECTORS);
-}
-
 void printDbg(const cl::Buffer& posBufCL, const cl::Buffer& dbgBufCL) {
     std::vector<cl_float4> positions(state.N);
     std::vector<cl_float4> dbgBuf(state.N);
@@ -306,7 +292,7 @@ int main(int argc, char* argv[]) {
         if (scene.showAxes)      render_axes(particlesShaderProgram, scene.axes, view, projection);
         if (scene.showTorus)     render_torus(torusShaderProgram, torus, scene.torus, view, projection);
         if (scene.showParticles) render_particles(particlesShaderProgram, view, projection);
-        if (scene.showEField)    render_fields(vectorShaderProgram, view, projection);
+        if (scene.showEField)    render_fields(vectorShaderProgram, NUM_VECTORS, scene.e_field, view, projection);
 
         glfwSwapBuffers(state.window);
         glfwPollEvents();

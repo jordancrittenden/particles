@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include "gl_util.h"
 
 inline float rand_range(float min, float max) {
@@ -94,4 +95,18 @@ GLBuffers create_vectors_buffers(std::vector<glm::mat4>& transforms, float lengt
     glBindVertexArray(0);
 
     return buf;
+}
+
+void render_fields(GLuint shader, int numFieldVectors, GLBuffers eFieldBuf, glm::mat4 view, glm::mat4 projection) {
+    glUseProgram(shader);
+
+    // Set view and projection uniforms
+    GLint viewLoc = glGetUniformLocation(shader, "view");
+    GLint projLoc = glGetUniformLocation(shader, "projection");
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+    glBindVertexArray(eFieldBuf.vao);
+    glDrawArraysInstanced(GL_LINES, 0, 2, numFieldVectors);
+    glDrawArraysInstanced(GL_TRIANGLE_FAN, 2, 5, numFieldVectors);
 }
