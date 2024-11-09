@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <OpenGL/OpenGL.h>
 #include "cl_util.h"
 
@@ -75,4 +76,22 @@ CLState* init_opencl() {
     std::cout << "OpenCL-OpenGL interop context created successfully." << std::endl;
 
     return state;
+}
+
+cl::Program build_kernel(CLState* clState, std::string kernelPath) {
+    // Load kernel source
+    std::ifstream kernelFile(kernelPath);
+    std::string src(std::istreambuf_iterator<char>(kernelFile), (std::istreambuf_iterator<char>()));
+    cl::Program program(*clState->context, src);
+    cl_int buildErr = program.build(clState->devices);
+    
+    if (buildErr != CL_SUCCESS) {
+        // Retrieve and print the error log
+        std::string buildLog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(*clState->selectedDevice);
+        std::cerr << "Build failed with errors:\n" << buildLog << std::endl;
+    } else {
+        std::cout << "Program built successfully!" << std::endl;
+    }
+
+    return program;
 }

@@ -15,3 +15,4 @@ typedef struct CLState {
 } CLState;
 
 CLState* init_opencl();
+cl::Program build_kernel(CLState* clState, std::string kernelPath);

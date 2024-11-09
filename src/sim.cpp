@@ -310,19 +310,8 @@ int main(int argc, char* argv[]) {
     std::vector<glm::mat4> transforms = random_transforms(NUM_VECTORS);
     scene.e_field = create_vectors_buffers(transforms, 0.5f);
 
-    // Load kernel source
-    std::ifstream kernelFile("kernel/particles.cl");
-    std::string src(std::istreambuf_iterator<char>(kernelFile), (std::istreambuf_iterator<char>()));
-    cl::Program program(*state.clState->context, src);
-    cl_int buildErr = program.build(state.clState->devices);
-    
-    if (buildErr != CL_SUCCESS) {
-        // Retrieve and print the error log
-        std::string buildLog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(*state.clState->selectedDevice);
-        std::cerr << "Build failed with errors:\n" << buildLog << std::endl;
-    } else {
-        std::cout << "Program built successfully!" << std::endl;
-    }
+    // Build particle physics kernel
+    cl::Program program = build_kernel(state.clState, "kernel/particles.cl");
 
     // Create a shared OpenCL buffer from the OpenGL buffer
     cl_int posErr, velErr;
@@ -393,6 +382,7 @@ int main(int argc, char* argv[]) {
         state.clState->queue->enqueueReleaseGLObjects(&glBuffers);
         state.clState->queue->finish();
 
+        // Update field vectors
         for (int i = 0; i < transforms.size(); i++) {
             transforms[i] = glm::rotate(transforms[i], glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
         }
