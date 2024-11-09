@@ -73,7 +73,6 @@ GLBuffers create_vectors_buffers(std::vector<glm::mat4>& transforms, float lengt
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     
     // need 4 vec4 attributes to store a mat4

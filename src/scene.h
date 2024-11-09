@@ -1,5 +1,4 @@
-#ifndef __SCENE_H__
-#define __SCENE_H__
+#pragma once
 
 #include "gl_util.h"
 
@@ -27,5 +26,3 @@ typedef struct Scene {
     bool showParticles = true;
     bool showEField = true;
 } Scene;
-
-#endif

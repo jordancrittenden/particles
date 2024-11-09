@@ -1,5 +1,4 @@
-#ifndef __TORUS_H__
-#define __TORUS_H__
+#pragma once
 
 #include <vector>
 #include <glm/glm.hpp>
@@ -27,5 +26,3 @@ typedef struct TorusProperties {
 std::vector<float> generate_coil_vertices_unrolled(float r2, int segments);
 glm::mat4 get_coil_model_matrix(float angle, float r1);
 std::vector<CurrentVector> get_toroidal_currents(TorusProperties& torus);
-
-#endif

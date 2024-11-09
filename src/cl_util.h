@@ -1,5 +1,4 @@
-#ifndef __CL_UTIL_H__
-#define __CL_UTIL_H__
+#pragma once
 
 #define CL_HPP_TARGET_OPENCL_VERSION 120
 #define CL_HPP_MINIMUM_OPENCL_VERSION 120
@@ -16,5 +15,3 @@ typedef struct CLState {
 } CLState;
 
 CLState* init_opencl();
-
-#endif

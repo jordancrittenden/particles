@@ -1,5 +1,4 @@
-#ifndef __STATE_H__
-#define __STATE_H__
+#pragma once
 
 #include "cl_util.h"
 #include "gl_util.h"
@@ -24,5 +23,3 @@ typedef struct SimulationState {
 } SimulationState;
 
 void print_state(const SimulationState& state);
-
-#endif
