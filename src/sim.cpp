@@ -126,14 +126,14 @@ int main(int argc, char* argv[]) {
     std::vector<CurrentVector> torusCurrents = get_toroidal_currents(torus);
 
     std::vector<Cell> cells = get_torus_simulation_cells(torus, 60, 10, 20);
-    std::vector<glm::mat4> transforms;
+    std::vector<glm::mat4> eFieldTranslation, eFieldRotation;
     for (auto& cell : cells) {
         glm::mat4 xform = glm::mat4(1.0f);
-        xform = glm::translate(xform, cell.pos);
-        transforms.push_back(xform);
+        eFieldTranslation.push_back(glm::translate(xform, cell.pos));
+        eFieldRotation.push_back(glm::rotate(xform, glm::radians(1.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
     }
 
-    scene.e_field = create_vectors_buffers(transforms, 0.02f);
+    scene.e_field = create_vectors_buffers(eFieldTranslation, eFieldRotation, 0.02f);
 
     // Create shared OpenCL buffers from the OpenGL buffer
     cl_int posErr, velErr;
@@ -221,10 +221,10 @@ int main(int argc, char* argv[]) {
         state.clState->queue->finish();
 
         // Update field vectors
-        for (int i = 0; i < transforms.size(); i++) {
-            transforms[i] = glm::rotate(transforms[i], glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
+        for (int i = 0; i < eFieldRotation.size(); i++) {
+            eFieldRotation[i] = glm::rotate(eFieldRotation[i], glm::radians(0.5f), glm::vec3(0.0f, 1.0f, 0.0f));
         }
-        //update_vectors_buffer(scene.e_field.instance_vbo, transforms);
+        update_vectors_buffer(scene.e_field, eFieldRotation);
 
         // Draw a white background
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -250,7 +250,7 @@ int main(int argc, char* argv[]) {
     glDeleteVertexArrays(1, &scene.axes.vao);
     glDeleteVertexArrays(1, &scene.pos.vao);
     glDeleteVertexArrays(1, &scene.torus.vao);
-    glDeleteVertexArrays(1, &scene.e_field.vao);
+    glDeleteVertexArrays(1, &scene.e_field.vectorBuf.vao);
 
     glfwTerminate();
     return 0;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gl_util.h"
+#include "field_vector.h"
 
 typedef struct Scene {
     // Torus geometry and buffers
@@ -14,7 +15,7 @@ typedef struct Scene {
     GLBuffers axes;
 
     // Field vectors
-    GLBuffers e_field;
+    FieldGLBuffers e_field;
 
     // Camera settings
     float rotAngle = 0.0f;
