@@ -21,8 +21,6 @@
 #include "axes.h"
 #include "field_vector.h"
 
-#define NUM_VECTORS 100
-
 TorusProperties torus;
 SimulationState state;
 Scene scene;
@@ -113,8 +111,8 @@ int main(int argc, char* argv[]) {
 
     // Load OpenGL shaders
     GLuint particlesShaderProgram = create_shader_program("shader/particles_vertex.glsl", "shader/particles_fragment.glsl");
-    GLuint torusShaderProgram = create_shader_program("shader/torus_vertex.glsl", "shader/torus_fragment.glsl");
-    GLuint vectorShaderProgram = create_shader_program("shader/vector_vertex.glsl", "shader/vector_fragment.glsl");
+    GLuint torusShaderProgram     = create_shader_program("shader/torus_vertex.glsl", "shader/torus_fragment.glsl");
+    GLuint vectorShaderProgram    = create_shader_program("shader/vector_vertex.glsl", "shader/vector_fragment.glsl");
 
     // Initialize particles
     create_particle_buffers(scene.pos, scene.vel, state.N);
@@ -127,8 +125,15 @@ int main(int argc, char* argv[]) {
 
     std::vector<CurrentVector> torusCurrents = get_toroidal_currents(torus);
 
-    std::vector<glm::mat4> transforms = random_transforms(NUM_VECTORS);
-    scene.e_field = create_vectors_buffers(transforms, 0.5f);
+    std::vector<Cell> cells = get_torus_simulation_cells(torus, 60, 10, 20);
+    std::vector<glm::mat4> transforms;
+    for (auto& cell : cells) {
+        glm::mat4 xform = glm::mat4(1.0f);
+        xform = glm::translate(xform, cell.pos);
+        transforms.push_back(xform);
+    }
+
+    scene.e_field = create_vectors_buffers(transforms, 0.02f);
 
     // Build particle physics kernel
     cl::Program program = build_kernel(state.clState, "kernel/particles.cl");
@@ -206,7 +211,7 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < transforms.size(); i++) {
             transforms[i] = glm::rotate(transforms[i], glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
         }
-        update_vectors_buffer(scene.e_field.instance_vbo, transforms);
+        //update_vectors_buffer(scene.e_field.instance_vbo, transforms);
 
         // Draw a white background
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -221,7 +226,7 @@ int main(int argc, char* argv[]) {
         if (scene.showAxes)      render_axes(particlesShaderProgram, scene.axes, view, projection);
         if (scene.showTorus)     render_torus(torusShaderProgram, torus, scene.torus, view, projection);
         if (scene.showParticles) render_particles(particlesShaderProgram, scene.pos, state.N, view, projection);
-        if (scene.showEField)    render_fields(vectorShaderProgram, NUM_VECTORS, scene.e_field, view, projection);
+        if (scene.showEField)    render_fields(vectorShaderProgram, cells.size(), scene.e_field, view, projection);
 
         glfwSwapBuffers(state.window);
         glfwPollEvents();

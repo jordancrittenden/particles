@@ -1,3 +1,4 @@
+#include <vector>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -28,7 +29,46 @@ glm::mat4 get_coil_model_matrix(float angle, float r1) {
     return model;
 }
 
-GLBuffers create_torus_buffers(TorusProperties& torus) {
+// Compute the cells over which the simulation will run
+std::vector<Cell> get_torus_simulation_cells(const TorusProperties& torus, int torusThetaSteps, int rSteps, int thetaSteps) {
+    float dTorusTheta = (2 * M_PI) / torusThetaSteps;
+    float dR = torus.r2 / rSteps;
+    float dTheta = (2 * M_PI) / thetaSteps;
+
+    std::vector<Cell> cells;
+    glm::vec4 cellPos = glm::vec4(torus.r1, 0.0f, 0.0f, 1.0f);
+    for (int i = 0; i < torusThetaSteps; i++) {
+        float torusTheta = i * dTorusTheta;
+        for (int j = 0; j < rSteps; j++) {
+            float r = j * dR;
+            for (int k = 0; k < thetaSteps; k++) {
+                float theta = k * dTheta;
+
+                Cell cell;
+                cell.torusTheta = torusTheta;
+                cell.dTorusTheta = (2 * M_PI) / torusThetaSteps;
+                cell.r = r;
+                cell.dR = torus.r2 / rSteps;
+                cell.theta = theta;
+                cell.dTheta = (2 * M_PI) / thetaSteps;
+
+                // Compute cartensian coords for the center of the cell
+                float coilX = (r + (dR / 2.0f)) * cos(theta);
+                float coilY = (r + (dR / 2.0f)) * sin(theta);
+                glm::mat4 xform = glm::mat4(1.0f);
+                xform = glm::rotate(xform, torusTheta + (dTorusTheta / 2.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+                xform = glm::translate(xform, glm::vec3(coilX, coilY, 0.0f));
+                glm::vec4 pos = xform * cellPos;
+                cell.pos = glm::vec3(pos.x, pos.y, pos.z);
+
+                cells.push_back(cell);
+            }
+        }
+    }
+    return cells;
+}
+
+GLBuffers create_torus_buffers(const TorusProperties& torus) {
     GLBuffers buf;
     std::vector<float> circleVertices = generate_coil_vertices_unrolled(torus.r2, torus.coilLoopSegments);
 
@@ -44,7 +84,7 @@ GLBuffers create_torus_buffers(TorusProperties& torus) {
     return buf;
 }
 
-void render_torus(GLuint shader, TorusProperties& torus, const GLBuffers& torusBuf, glm::mat4 view, glm::mat4 projection) {
+void render_torus(GLuint shader, const TorusProperties& torus, const GLBuffers& torusBuf, glm::mat4 view, glm::mat4 projection) {
     glUseProgram(shader);
 
     // Set view and projection uniforms
@@ -67,7 +107,7 @@ void render_torus(GLuint shader, TorusProperties& torus, const GLBuffers& torusB
     }
 }
 
-std::vector<CurrentVector> get_toroidal_currents(TorusProperties& torus) {
+std::vector<CurrentVector> get_toroidal_currents(const TorusProperties& torus) {
     std::vector<CurrentVector> currents;
 
     std::vector<float> circleVertexValues = generate_coil_vertices_unrolled(torus.r2, torus.coilLoopSegments);
@@ -104,10 +144,10 @@ std::vector<CurrentVector> get_toroidal_currents(TorusProperties& torus) {
 // Assuming a pulse current of I_0*e^(-alpha*t), the electric field becomes E_t = 1/2 * alpha*u_0*N*I_0*R2 * 1/r * e^(-alpha*t)
 // This function calculates that formula's constant
 // https://openstax.org/books/university-physics-volume-2/pages/13-4-induced-electric-fields
-float solenoid_pulse_e_field_parameter(TorusProperties& torus) {
+float solenoid_pulse_e_field_parameter(const TorusProperties& torus) {
     return 0.5f * torus.pulseAlpha * MU_0 * (float)torus.solenoidN * torus.solenoidI * (torus.solenoidR * torus.solenoidR);
 }
 
-float solenoid_pulse_e_field_multiplier(TorusProperties& torus, float t) {
+float solenoid_pulse_e_field_multiplier(const TorusProperties& torus, float t) {
     return solenoid_pulse_e_field_parameter(torus) * exp(-torus.pulseAlpha * t);
 }

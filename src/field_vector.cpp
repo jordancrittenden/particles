@@ -14,8 +14,8 @@ inline float rand_range(float min, float max) {
 std::vector<float> create_vector_geometry(float length) {
     std::vector<float> vertices;
 
-    float tipWidth = length / 20.0f;
-    float tipLenth = length / 10.0f;
+    float tipWidth = length / 6.0f;
+    float tipLenth = length / 3.0f;
     // Vertices for the arrow shaft
     vertices.insert(vertices.end(), {
         0.0f, 0.0f, 0.0f,
@@ -31,18 +31,6 @@ std::vector<float> create_vector_geometry(float length) {
     });
 
     return vertices;
-}
-
-// Initialize directions
-std::vector<glm::mat4> random_transforms(int nVectors) {
-    std::vector<glm::mat4> transforms;
-    for (int i = 0; i < nVectors; ++i) {
-        glm::mat4 xform = glm::mat4(1.0f);
-        xform = glm::rotate(xform, glm::radians(rand_range(0.0f, 2 * M_PI)), glm::vec3(rand_range(0.0f, 1.0f), rand_range(0.0f, 1.0f), rand_range(0.0f, 1.0f)));
-        xform = glm::translate(xform, glm::vec3(rand_range(0.0f, 1.0f), rand_range(0.0f, 1.0f), rand_range(0.0f, 1.0f)));
-        transforms.push_back(xform);
-    }
-    return transforms;
 }
 
 // Update direction buffer data

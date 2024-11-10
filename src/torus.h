@@ -10,6 +10,14 @@ typedef struct CurrentVector {
     float i;      // current in A
 } CurrentVector;
 
+typedef struct Cell {
+    glm::vec3 pos;                 // Cell center in cartensian coords
+
+    float r, dR;                   // Distance (and delta) from center of torus coil
+    float theta, dTheta;           // Angle (and delta) within the torus coil
+    float torusTheta, dTorusTheta; // Angle (and delta) around the torus itself 
+} Cell;
+
 typedef struct TorusProperties {
     float r1 = 1.0f;            // Radius of torus, m
     float r2 = 0.4f;            // Radius of torus cross section, m
@@ -23,7 +31,8 @@ typedef struct TorusProperties {
     float pulseAlpha = 0.01f;   // Pulse exponential parameter
 } TorusProperties;
 
-GLBuffers create_torus_buffers(TorusProperties& torus);
-void render_torus(GLuint shader, TorusProperties& torus, const GLBuffers& torusBuf, glm::mat4 view, glm::mat4 projection);
-std::vector<CurrentVector> get_toroidal_currents(TorusProperties& torus);
-float solenoid_pulse_e_field_multiplier(TorusProperties& torus, float t);
+GLBuffers create_torus_buffers(const TorusProperties& torus);
+void render_torus(GLuint shader, const TorusProperties& torus, const GLBuffers& torusBuf, glm::mat4 view, glm::mat4 projection);
+std::vector<CurrentVector> get_toroidal_currents(const TorusProperties& torus);
+std::vector<Cell> get_torus_simulation_cells(const TorusProperties& torus, int torusThetaSteps, int rSteps, int thetaSteps);
+float solenoid_pulse_e_field_multiplier(const TorusProperties& torus, float t);
