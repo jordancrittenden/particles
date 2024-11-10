@@ -6,13 +6,14 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "gl_util.h"
 #include "cl_util.h"
+#include "torus.h"
 
 inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
 }
 
 // Create buffers for particle position/velocity
-void create_particle_buffers(GLBuffers& posBuf, GLBuffers& velBuf, int nParticles) {
+void create_particle_buffers(const TorusProperties& torus, GLBuffers& posBuf, GLBuffers& velBuf, int nParticles) {
     std::vector<float> position_and_type;
     std::vector<float> velocity;
 
@@ -22,9 +23,9 @@ void create_particle_buffers(GLBuffers& posBuf, GLBuffers& velBuf, int nParticle
         //float charge = chargeRand < 0.33 ? 0.0 : (chargeRand < 0.66 ? 1.0 : -1.0);
         float charge = chargeRand < 0.5 ? 1.0 : -1.0;
 
-        float r = rand_range(0.95f, 1.05f);
+        float r = rand_range(torus.r1 - (torus.r2 / 2.0f), torus.r1 + (torus.r2 / 2.0f));
         float theta = rand_range(0.0f, 2 * M_PI);
-        float y = rand_range(-0.05f, 0.05f);
+        float y = rand_range(-torus.r2 / 2.0f, torus.r2 / 2.0f);
 
         // [x, y, z, type]
         position_and_type.push_back(r * sin(theta));

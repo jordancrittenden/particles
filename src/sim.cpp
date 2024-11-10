@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
     GLuint vectorShaderProgram    = create_shader_program("shader/vector_vertex.glsl", "shader/vector_fragment.glsl");
 
     // Initialize particles
-    create_particle_buffers(scene.pos, scene.vel, state.nParticles);
+    create_particle_buffers(torus, scene.pos, scene.vel, state.nParticles);
 
     // Create GL buffers for axes and particles
     scene.axes = create_axes_buffers();

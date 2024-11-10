@@ -39,7 +39,7 @@ __kernel void computeFields(
             if (j == id) continue;
 
             float3 pos = (float3)(particlePos[j][0], particlePos[j][1], particlePos[j][2]);
-            float3 vel = (float3)(velocities[j][0], velocities[j][1], velocities[j][2]);
+            float3 vel = (float3)(particleVel[j][0], particleVel[j][1], particleVel[j][2]);
             float type = particlePos[j][3];
             float charge = 0.0;
 
@@ -79,6 +79,6 @@ __kernel void computeFields(
     float solenoid_e_mag = solenoidE0 / length(solenoid_r);
     E += solenoid_e_mag * cross((float3)(0.0, 1.0, 0.0), solenoid_r_norm);
 
-    eField[id] = E;
-    bField[id] = B;
+    eField[id] = (float4)(E, 0.0);
+    bField[id] = (float4)(B, 0.0);
 }

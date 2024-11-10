@@ -3,5 +3,5 @@
 #include <glm/glm.hpp>
 #include "gl_util.h"
 
-void create_particle_buffers(GLBuffers& posBuf, GLBuffers& velBuf, int nParticles);
+void create_particle_buffers(const TorusProperties& torus, GLBuffers& posBuf, GLBuffers& velBuf, int nParticles);
 void render_particles(GLuint shader, GLBuffers& posBuf, int nParticles, glm::mat4 view, glm::mat4 projection);
