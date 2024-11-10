@@ -12,23 +12,23 @@
 #define Q_OVER_M_PROTON   ( 9.57883424534e7f)                 /* A s / kg */
 
 __kernel void computeMotion(
-    __global float4* positions,
-    __global float4* velocities,
-    __global float4* currents,
+    __global float4* particlePos,
+    __global float4* particleVel,
+    __global float4* currentSegments,
     __global float4* debug,
     const float dt,
-    const uint N,
-    const uint currentsN,
+    const uint nParticles,
+    const uint nCurrentSegments,
     const float solenoidE0,
     const uint calcInterparticlePhysics)
 {
     int id = get_global_id(0);
-    if (id >= N) return;
+    if (id >= nParticles) return;
 
     // Extract position and charge-to-mass ratio for this particle
-    float3 pos = (float3)(positions[id][0], positions[id][1], positions[id][2]);
-    float3 vel = (float3)(velocities[id][0], velocities[id][1], velocities[id][2]);
-    float type = positions[id][3];
+    float3 pos = (float3)(particlePos[id][0], particlePos[id][1], particlePos[id][2]);
+    float3 vel = (float3)(particleVel[id][0], particleVel[id][1], particleVel[id][2]);
+    float type = particlePos[id][3];
     float q_over_m = 0.0;
 
     if      (type == -1.0) q_over_m = Q_OVER_M_ELECTRON;
@@ -40,12 +40,12 @@ __kernel void computeMotion(
     float3 B = (float3)(0.0f, 0.0f, 0.0f);
 
     if (calcInterparticlePhysics) {
-        for (int j = 0; j < N; j++) {
+        for (int j = 0; j < nParticles; j++) {
             if (j == id) continue;
 
-            float3 otherPos = (float3)(positions[j][0], positions[j][1], positions[j][2]);
-            float3 otherVel = (float3)(velocities[j][0], velocities[j][1], velocities[j][2]);
-            float otherType = positions[j][3];
+            float3 otherPos = (float3)(particlePos[j][0], particlePos[j][1], particlePos[j][2]);
+            float3 otherVel = (float3)(particleVel[j][0], particleVel[j][1], particleVel[j][2]);
+            float otherType = particlePos[j][3];
             float otherCharge = 0.0;
 
             if      (otherType == -1.0) otherCharge = -Q; // electron
@@ -67,10 +67,10 @@ __kernel void computeMotion(
         }
     }
 
-    for (int j = 0; j < currentsN; j++) {
-        float3 current_x = (float3)(currents[j*3][0], currents[j*3][1], currents[j*3][2]);
-        float3 current_dx = (float3)(currents[j*3 + 1][0], currents[j*3 + 1][1], currents[j*3 + 1][2]);
-        float current_i = currents[j*3 + 2][0];
+    for (int j = 0; j < nCurrentSegments; j++) {
+        float3 current_x = (float3)(currentSegments[j*3][0], currentSegments[j*3][1], currentSegments[j*3][2]);
+        float3 current_dx = (float3)(currentSegments[j*3 + 1][0], currentSegments[j*3 + 1][1], currentSegments[j*3 + 1][2]);
+        float current_i = currentSegments[j*3 + 2][0];
 
         float3 r = pos - current_x;
         float r_mag = length(r);
@@ -93,14 +93,14 @@ __kernel void computeMotion(
     float3 vel_new = v_plus + (q_over_m * E * 0.5f * dt);
     float3 pos_new = pos + (vel_new * dt);
 
-    positions[id]  = (float4)(pos_new[0], pos_new[1], pos_new[2], type);
-    velocities[id] = (float4)(vel_new[0], vel_new[1], vel_new[2], 0.0);
+    particlePos[id]  = (float4)(pos_new[0], pos_new[1], pos_new[2], type);
+    particleVel[id] = (float4)(vel_new[0], vel_new[1], vel_new[2], 0.0);
 
     // Keep the particles in their box
-    if (positions[id][0] >  2.0) velocities[id][0] = -velocities[id][0];
-    if (positions[id][0] < -2.0) velocities[id][0] = -velocities[id][0];
-    if (positions[id][1] >  2.0) velocities[id][1] = -velocities[id][1];
-    if (positions[id][1] < -2.0) velocities[id][1] = -velocities[id][1];
-    if (positions[id][2] >  2.0) velocities[id][2] = -velocities[id][2];
-    if (positions[id][2] < -2.0) velocities[id][2] = -velocities[id][2];
+    if (particlePos[id][0] >  2.0) particleVel[id][0] = -particleVel[id][0];
+    if (particlePos[id][0] < -2.0) particleVel[id][0] = -particleVel[id][0];
+    if (particlePos[id][1] >  2.0) particleVel[id][1] = -particleVel[id][1];
+    if (particlePos[id][1] < -2.0) particleVel[id][1] = -particleVel[id][1];
+    if (particlePos[id][2] >  2.0) particleVel[id][2] = -particleVel[id][2];
+    if (particlePos[id][2] < -2.0) particleVel[id][2] = -particleVel[id][2];
 }

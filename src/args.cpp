@@ -36,7 +36,7 @@ std::unordered_map<std::string, std::string> parse_args(int argc, char* argv[]) 
 
 void extract_state_vars(std::unordered_map<std::string, std::string> args, SimulationState* state, TorusProperties* torus) {
      for (const auto& [key, value] : args) {
-        if (key == "N") state->N = stoi(value);
+        if (key == "N") state->nParticles = stoi(value);
         if (key == "calcInterparticle") state->calcInterparticlePhysics = (value == "true");
         if (key == "pulseAlpha") torus->pulseAlpha = stof(value);
      }
