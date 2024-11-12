@@ -18,6 +18,7 @@ __kernel void computeFields(
     __global float4* particlePos,
     __global float4* particleVel,
     __global float4* currentSegments,
+    __global float4* debug,
     const uint nCells,
     const uint nParticles,
     const uint nCurrentSegments,
@@ -74,11 +75,15 @@ __kernel void computeFields(
     }
 
     // Calculate the contribution of the central solenoid
+    float3 solenoid_axis = (float3)(0.0, 1.0, 0.0);
     float3 solenoid_r = (float3)(loc[0], 0.0, loc[2]);
     float3 solenoid_r_norm = normalize(solenoid_r);
     float solenoid_e_mag = solenoidE0 / length(solenoid_r);
-    E += solenoid_e_mag * cross((float3)(0.0, 1.0, 0.0), solenoid_r_norm);
+    float3 solenoid_e = solenoid_e_mag * cross(solenoid_axis, solenoid_r_norm);
+    E += solenoid_e;
 
     eField[id] = (float4)(E, 0.0);
     bField[id] = (float4)(B, 0.0);
+
+    debug[id] = (float4)(loc[0], loc[1], loc[2], 0.0);
 }
