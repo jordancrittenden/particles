@@ -37,5 +37,9 @@ void main() {
     mat3 rotation = rotationMatrix(vec3(field));
     mat4 rotation4 = mat4(rotation);
     gl_Position = projection * view * translate(loc) * rotation4 * vec4(aPos, 1.0);
-    fragColor = vec3(1.0, 0.0, 1.0);
+    if (loc.w == 0.0) {
+        fragColor = vec3(1.0, 0.0, 1.0);
+    } else {
+        fragColor = vec3(0.0, 1.0, 1.0);
+    }
 }

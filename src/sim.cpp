@@ -56,8 +56,11 @@ void process_input(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
         scene.showTorus = !scene.showTorus;
     }
-    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
         scene.showEField = !scene.showEField;
+    }
+    if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS) {
+        scene.showBField = !scene.showBField;
     }
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
         scene.showParticles = !scene.showParticles;
@@ -121,18 +124,18 @@ int main(int argc, char* argv[]) {
 
     std::vector<CurrentVector> torusCurrents = get_toroidal_currents(torus);
 
-    std::vector<Cell> cells = get_torus_simulation_cells(torus, 12, 1, 1);
+    std::vector<Cell> cells = get_torus_simulation_cells(torus, 60, 10, 20);
     std::vector<glm::vec4> eFieldLoc, eFieldVec;
     std::vector<glm::vec4> bFieldLoc, bFieldVec;
     for (auto& cell : cells) {
-        eFieldLoc.push_back(glm::vec4(cell.pos, 0.0f));
+        eFieldLoc.push_back(glm::vec4(cell.pos, 0.0f)); // Last element indicates E vs B
         eFieldVec.push_back(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
-        bFieldLoc.push_back(glm::vec4(cell.pos, 0.0f));
+        bFieldLoc.push_back(glm::vec4(cell.pos, 1.0f)); // Last element indicates E vs B
         bFieldVec.push_back(glm::vec4(-1.0f, 1.0f, 0.0f, 0.0f));
     }
 
-    scene.e_field = create_vectors_buffers(eFieldLoc, eFieldVec, 0.1f);
-    scene.b_field = create_vectors_buffers(bFieldLoc, bFieldVec, 0.1f);
+    scene.e_field = create_vectors_buffers(eFieldLoc, eFieldVec, 0.03f);
+    scene.b_field = create_vectors_buffers(bFieldLoc, bFieldVec, 0.03f);
 
     // Create shared OpenCL buffers from the OpenGL buffer
     cl_int posErr, velErr, eFieldVecErr, bFieldVecErr;
@@ -252,6 +255,7 @@ int main(int argc, char* argv[]) {
         if (scene.showTorus)     render_torus(torusShaderProgram, torus, scene.torus, view, projection);
         if (scene.showParticles) render_particles(particlesShaderProgram, scene.pos, state.nParticles, view, projection);
         if (scene.showEField)    render_fields(vectorShaderProgram, cells.size(), scene.e_field, view, projection);
+        if (scene.showBField)    render_fields(vectorShaderProgram, cells.size(), scene.b_field, view, projection);
 
         glfwSwapBuffers(state.window);
         glfwPollEvents();
@@ -263,6 +267,7 @@ int main(int argc, char* argv[]) {
     glDeleteVertexArrays(1, &scene.pos.vao);
     glDeleteVertexArrays(1, &scene.torus.vao);
     glDeleteVertexArrays(1, &scene.e_field.arrowBuf.vao);
+    glDeleteVertexArrays(1, &scene.b_field.arrowBuf.vao);
 
     glfwTerminate();
     return 0;

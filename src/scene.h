@@ -26,5 +26,6 @@ typedef struct Scene {
     bool showAxes = true;
     bool showTorus = true;
     bool showParticles = true;
-    bool showEField = true;
+    bool showEField = false;
+    bool showBField = false;
 } Scene;
