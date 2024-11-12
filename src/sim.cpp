@@ -195,6 +195,7 @@ int main(int argc, char* argv[]) {
     fieldsKernel.setArg(10, 0.0f);
     fieldsKernel.setArg(11, (cl_uint)state.calcInterparticlePhysics);
 
+    glEnable(GL_DEPTH_TEST);
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     // Main render loop

@@ -9,18 +9,6 @@
 
 #define MU_0 (1.25663706144e-6f) /* kg m / A^2 s^2 */
 
-// Generate vertices for a circle with radius r2
-std::vector<float> generate_coil_vertices_unrolled(float r2, int segments) {
-    std::vector<float> vertices;
-    float thetaStep = 2.0f * M_PI / segments;
-    for (int i = 0; i < segments; ++i) {
-        float theta = i * thetaStep;
-        vertices.push_back(r2 * cos(theta));
-        vertices.push_back(r2 * sin(theta));
-    }
-    return vertices;
-}
-
 // Set up transformation matrix for each circle
 glm::mat4 get_coil_model_matrix(float angle, float r1) {
     glm::mat4 model = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -68,18 +56,85 @@ std::vector<Cell> get_torus_simulation_cells(const TorusProperties& torus, int t
     return cells;
 }
 
+void generate_ring_vertices(const TorusProperties& torus, std::vector<float>& vertices, std::vector<unsigned int>& indices) {
+    int radialSegments = 64;
+    int depthSegments = 1;
+    float t = 0.05;
+    float d = 0.1;
+    float outerRadius = torus.r2 + t;
+
+    // Generate vertices for inner and outer circles at both front and back faces
+    for (int j = 0; j <= depthSegments; ++j) {
+        float z = (j == 0) ? -d / 2.0f : d / 2.0f;
+
+        for (int i = 0; i <= radialSegments; ++i) {
+            float angle = i * 2.0f * glm::pi<float>() / radialSegments;
+            float xInner = torus.r2 * cos(angle);
+            float yInner = torus.r2 * sin(angle);
+            float xOuter = outerRadius * cos(angle);
+            float yOuter = outerRadius * sin(angle);
+
+            // Inner vertex
+            vertices.insert(vertices.end(), { xInner, yInner, z, 0.0f, 0.0f, (j == 0) ? -1.0f : 1.0f });
+            // Outer vertex
+            vertices.insert(vertices.end(), { xOuter, yOuter, z, 0.0f, 0.0f, (j == 0) ? -1.0f : 1.0f });
+        }
+    }
+
+    // Generate indices for front and back faces of the ring
+    for (int j = 0; j <= depthSegments; ++j) {
+        for (int i = 0; i < radialSegments; ++i) {
+            unsigned int idx = (radialSegments + 1) * 2 * j + i * 2;
+
+            // Front and back faces
+            indices.insert(indices.end(), { idx, idx + 1, idx + 3 });
+            indices.insert(indices.end(), { idx, idx + 3, idx + 2 });
+        }
+    }
+
+    // Generate indices for radial sides (connecting inner and outer radii around the ring)
+    for (int i = 0; i < radialSegments; ++i) {
+        unsigned int innerStart = i * 2;
+        unsigned int outerStart = innerStart + (radialSegments + 1) * 2;
+
+        // Connecting outer radius vertices on front and back faces
+        indices.insert(indices.end(), { innerStart, outerStart, outerStart + 2 });
+        indices.insert(indices.end(), { innerStart, outerStart + 2, innerStart + 2 });
+
+        // Connecting inner radius vertices on front and back faces
+        indices.insert(indices.end(), { innerStart + 1, outerStart + 1, outerStart + 3 });
+        indices.insert(indices.end(), { innerStart + 1, outerStart + 3, innerStart + 3 });
+    }
+}
+
 GLBuffers create_torus_buffers(const TorusProperties& torus) {
     GLBuffers buf;
-    std::vector<float> circleVertices = generate_coil_vertices_unrolled(torus.r2, torus.coilLoopSegments);
+
+    // Generate ring vertices and indices
+    std::vector<float> vertices;
+    generate_ring_vertices(torus, vertices, buf.indices);
 
     glGenVertexArrays(1, &buf.vao);
     glGenBuffers(1, &buf.vbo);
-    glBindVertexArray(buf.vao);
-    glBindBuffer(GL_ARRAY_BUFFER, buf.vbo);
-    glBufferData(GL_ARRAY_BUFFER, circleVertices.size() * sizeof(float), circleVertices.data(), GL_STATIC_DRAW);
+    glGenBuffers(1, &buf.ebo);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glBindVertexArray(buf.vao);
+
+    glBindBuffer(GL_ARRAY_BUFFER, buf.vbo);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf.ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, buf.indices.size() * sizeof(unsigned int), buf.indices.data(), GL_STATIC_DRAW);
+
+    // Position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+
+    // Normal attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    glBindVertexArray(0);
 
     return buf;
 }
@@ -103,17 +158,19 @@ void render_torus(GLuint shader, const TorusProperties& torus, const GLBuffers& 
         GLint modelLoc = glGetUniformLocation(shader, "model");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
-        glDrawArrays(GL_LINE_LOOP, 0, torus.coilLoopSegments);
+        glBindVertexArray(torusBuf.vao);
+        glDrawElements(GL_TRIANGLES, torusBuf.indices.size(), GL_UNSIGNED_INT, 0);
     }
 }
 
 std::vector<CurrentVector> get_toroidal_currents(const TorusProperties& torus) {
     std::vector<CurrentVector> currents;
 
-    std::vector<float> circleVertexValues = generate_coil_vertices_unrolled(torus.r2, torus.coilLoopSegments);
     std::vector<glm::vec4> circleVertices;
+    float thetaStep = 2.0f * M_PI / torus.coilLoopSegments;
     for (int i = 0; i < torus.coilLoopSegments; i++) {
-        circleVertices.push_back(glm::vec4 { circleVertexValues[i*2], circleVertexValues[i*2 + 1], 0.0f, 1.0f });
+        float theta = i * thetaStep;
+        circleVertices.push_back(glm::vec4 { torus.r2 * cos(theta), torus.r2 * sin(theta), 0.0f, 1.0f });
     }
 
     int idx = 0;
