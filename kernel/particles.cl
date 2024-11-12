@@ -93,7 +93,7 @@ __kernel void computeMotion(
     float3 vel_new = v_plus + (q_over_m * E * 0.5f * dt);
     float3 pos_new = pos + (vel_new * dt);
 
-    particlePos[id]  = (float4)(pos_new[0], pos_new[1], pos_new[2], type);
+    particlePos[id] = (float4)(pos_new[0], pos_new[1], pos_new[2], type);
     particleVel[id] = (float4)(vel_new[0], vel_new[1], vel_new[2], 0.0);
 
     // Keep the particles in their box
