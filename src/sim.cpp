@@ -8,6 +8,7 @@
 #include <fstream>
 #include <vector>
 #include <cmath>
+#include <chrono>
 #include <cstdlib>
 #include <ctime>
 
@@ -26,6 +27,16 @@ SimulationState state;
 Scene scene;
 
 // GLFW callback for handling keyboard input
+auto lastInputTime = std::chrono::high_resolution_clock::now();
+
+bool debounce_input() {
+    auto now = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = now - lastInputTime;
+    if (diff.count() < 0.1) return false;
+    lastInputTime = now;
+    return true;
+}
+
 void process_input(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
@@ -50,25 +61,25 @@ void process_input(GLFWwindow* window) {
         state.dt /= 1.2f;
         print_state(state);
     }
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && debounce_input()) {
         scene.showAxes = !scene.showAxes;
     }
-    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS && debounce_input()) {
         scene.showTorus = !scene.showTorus;
     }
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && debounce_input()) {
         scene.showEField = !scene.showEField;
     }
-    if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && debounce_input()) {
         scene.showBField = !scene.showBField;
     }
-    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS && debounce_input()) {
         scene.showParticles = !scene.showParticles;
     }
-    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS && debounce_input()) {
         state.calcInterparticlePhysics = !state.calcInterparticlePhysics;
     }
-    if (glfwGetKey(window, GLFW_KEY_PERIOD) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_PERIOD) == GLFW_PRESS && debounce_input()) {
         state.startPulse = true;
     }
 }
