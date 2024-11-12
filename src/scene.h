@@ -16,6 +16,7 @@ typedef struct Scene {
 
     // Field vectors
     FieldGLBuffers e_field;
+    FieldGLBuffers b_field;
 
     // Camera settings
     float rotAngle = 0.0f;
