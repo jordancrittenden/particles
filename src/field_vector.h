@@ -5,11 +5,11 @@
 #include "gl_util.h"
 
 typedef struct FieldGLBuffers {
-    GLBuffers vectorBuf;
-    GLuint instanceTranslationBuf;
-    GLuint instanceRotationBuf;
+    GLBuffers arrowBuf;
+    GLuint instanceLocBuf;
+    GLuint instanceVecBuf;
 } FieldGLBuffers;
 
-FieldGLBuffers create_vectors_buffers(std::vector<glm::mat4>& translations, std::vector<glm::mat4>& rotations, float length);
-void update_vectors_buffer(FieldGLBuffers& eFieldBuf, const std::vector<glm::mat4>& rotations);
+FieldGLBuffers create_vectors_buffers(std::vector<glm::vec4>& loc, std::vector<glm::vec4>& vec, float length);
+void update_vectors_buffer(FieldGLBuffers& eFieldBuf, const std::vector<glm::vec4>& vec);
 void render_fields(GLuint shader, int numFieldVectors, const FieldGLBuffers& eFieldBuf, glm::mat4 view, glm::mat4 projection);

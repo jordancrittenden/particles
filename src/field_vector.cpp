@@ -34,71 +34,51 @@ std::vector<float> create_vector_geometry(float length) {
 }
 
 // Update direction buffer data
-void update_vectors_buffer(FieldGLBuffers& eFieldBuf, const std::vector<glm::mat4>& rotations) {
-    glBindBuffer(GL_ARRAY_BUFFER, eFieldBuf.instanceRotationBuf);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::mat4) * rotations.size(), rotations.data());
+void update_vectors_buffer(FieldGLBuffers& fieldBuf, const std::vector<glm::vec4>& vec) {
+    glBindBuffer(GL_ARRAY_BUFFER, fieldBuf.instanceVecBuf);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec4) * vec.size(), vec.data());
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-FieldGLBuffers create_vectors_buffers(std::vector<glm::mat4>& translations, std::vector<glm::mat4>& rotations, float length) {
+FieldGLBuffers create_vectors_buffers(std::vector<glm::vec4>& loc, std::vector<glm::vec4>& vec, float length) {
     FieldGLBuffers field;
 
     std::vector<float> vertices = create_vector_geometry(length);
 
     // Instance buffers
-    glGenBuffers(1, &field.instanceTranslationBuf);
-    glBindBuffer(GL_ARRAY_BUFFER, field.instanceTranslationBuf);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * translations.size(), translations.data(), GL_STATIC_DRAW);
+    glGenBuffers(1, &field.instanceLocBuf);
+    glBindBuffer(GL_ARRAY_BUFFER, field.instanceLocBuf);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * loc.size(), loc.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glGenBuffers(1, &field.instanceRotationBuf);
-    glBindBuffer(GL_ARRAY_BUFFER, field.instanceRotationBuf);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * rotations.size(), rotations.data(), GL_STATIC_DRAW);
+    glGenBuffers(1, &field.instanceVecBuf);
+    glBindBuffer(GL_ARRAY_BUFFER, field.instanceVecBuf);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * vec.size(), vec.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     // Model buffer
-    glGenVertexArrays(1, &field.vectorBuf.vao);
-    glGenBuffers(1, &field.vectorBuf.vbo);
-    glBindVertexArray(field.vectorBuf.vao);
+    glGenVertexArrays(1, &field.arrowBuf.vao);
+    glGenBuffers(1, &field.arrowBuf.vbo);
+    glBindVertexArray(field.arrowBuf.vao);
 
-    glBindBuffer(GL_ARRAY_BUFFER, field.vectorBuf.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, field.arrowBuf.vbo);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     
-    // need 4 vec4 attributes to store a mat4
-    std::size_t vec4Size = sizeof(glm::vec4);
-    glBindBuffer(GL_ARRAY_BUFFER, field.instanceTranslationBuf); // this attribute comes from a different vertex buffer
+    glBindBuffer(GL_ARRAY_BUFFER, field.instanceLocBuf); // this attribute comes from a different vertex buffer
     glEnableVertexAttribArray(1); 
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
-    glEnableVertexAttribArray(2); 
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(1 * vec4Size));
-    glEnableVertexAttribArray(3); 
-    glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(2 * vec4Size));
-    glEnableVertexAttribArray(4); 
-    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(3 * vec4Size));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (void*)0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, field.instanceRotationBuf); // this attribute comes from a different vertex buffer
-    glEnableVertexAttribArray(5); 
-    glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
-    glEnableVertexAttribArray(6); 
-    glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(1 * vec4Size));
-    glEnableVertexAttribArray(7); 
-    glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(2 * vec4Size));
-    glEnableVertexAttribArray(8); 
-    glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(3 * vec4Size));
+    glBindBuffer(GL_ARRAY_BUFFER, field.instanceVecBuf); // this attribute comes from a different vertex buffer
+    glEnableVertexAttribArray(2); 
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (void*)0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     glVertexAttribDivisor(1, 1);
     glVertexAttribDivisor(2, 1);
-    glVertexAttribDivisor(3, 1);
-    glVertexAttribDivisor(4, 1);
-    glVertexAttribDivisor(5, 1);
-    glVertexAttribDivisor(6, 1);
-    glVertexAttribDivisor(7, 1);
-    glVertexAttribDivisor(8, 1);
 
     glBindVertexArray(0);
 
@@ -114,7 +94,7 @@ void render_fields(GLuint shader, int numFieldVectors, const FieldGLBuffers& eFi
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-    glBindVertexArray(eFieldBuf.vectorBuf.vao);
+    glBindVertexArray(eFieldBuf.arrowBuf.vao);
     glDrawArraysInstanced(GL_LINES, 0, 2, numFieldVectors);
     glDrawArraysInstanced(GL_TRIANGLE_FAN, 2, 5, numFieldVectors);
 }
