@@ -10,8 +10,8 @@ uniform mat4 projection;
 
 // Compute rotation matrix to map vector [0, 0, 1] onto vector b
 mat3 rotationMatrix(vec3 b) {
-    vec3 u = vec3(0.0, 0.0, 1.0);
-    vec3 v = normalize(b);
+    vec3 u = normalize(b);
+    vec3 v = vec3(0.0, 0.0, 1.0);
 
     vec3 axis = cross(u, v);
     float cosA = dot(u, v);

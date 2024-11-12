@@ -222,12 +222,12 @@ int main(int argc, char* argv[]) {
 
         // Compute fields
         // Acquire the GL buffer for OpenCL to read and write
-        //state.clState->queue->enqueueAcquireGLObjects(&fieldKernelGLBuffers);
-        //state.clState->queue->enqueueNDRangeKernel(fieldsKernel, cl::NullRange, cl::NDRange(cells.size()));
+        state.clState->queue->enqueueAcquireGLObjects(&fieldKernelGLBuffers);
+        state.clState->queue->enqueueNDRangeKernel(fieldsKernel, cl::NullRange, cl::NDRange(cells.size()));
         //printDbg(dbgBufCL, cells.size());
         // Release the buffer back to OpenGL
-        //state.clState->queue->enqueueReleaseGLObjects(&fieldKernelGLBuffers);
-        //state.clState->queue->finish();
+        state.clState->queue->enqueueReleaseGLObjects(&fieldKernelGLBuffers);
+        state.clState->queue->finish();
 
         // Do particle physics
         // Acquire the GL buffer for OpenCL to read and write
@@ -237,12 +237,6 @@ int main(int argc, char* argv[]) {
         // Release the buffer back to OpenGL
         state.clState->queue->enqueueReleaseGLObjects(&particleKernelGLBuffers);
         state.clState->queue->finish();
-
-        // Update field vectors
-        for (int i = 0; i < eFieldVec.size(); i++) {
-            eFieldVec[i] = glm::vec4(cos(state.t * 5000), 0.0, sin(state.t * 5000), 0.0);
-        }
-        update_vectors_buffer(scene.e_field, eFieldVec);
 
         // Draw a white background
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

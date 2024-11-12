@@ -6,6 +6,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "field_vector.h"
 
+#define ARROW_TIP_SEGMENTS 10
+
 inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
 }
@@ -15,7 +17,7 @@ std::vector<float> create_vector_geometry(float length) {
     std::vector<float> vertices;
 
     float tipWidth = length / 6.0f;
-    float tipLenth = length / 3.0f;
+    float tipLength = length / 3.0f;
     // Vertices for the arrow shaft
     vertices.insert(vertices.end(), {
         0.0f, 0.0f, 0.0f,
@@ -23,12 +25,14 @@ std::vector<float> create_vector_geometry(float length) {
     });
     // Vertices for the arrow tip
     vertices.insert(vertices.end(), {
-         0.0f,     0.0f,     length,
-         tipWidth, tipWidth, length - tipLenth,
-        -tipWidth, tipWidth, length - tipLenth,
-         0.0f,    -tipWidth, length - tipLenth,
-         tipWidth, tipWidth, length - tipLenth,
+         0.0f, 0.0f, length,
     });
+    for (int i = 0; i <= ARROW_TIP_SEGMENTS; i++) {
+        float angle = i * (2 * M_PI) / (float)ARROW_TIP_SEGMENTS;
+        vertices.insert(vertices.end(), {
+            tipWidth * cos(angle), tipWidth * sin(angle), length - tipLength
+        });
+    }
 
     return vertices;
 }
@@ -96,5 +100,5 @@ void render_fields(GLuint shader, int numFieldVectors, const FieldGLBuffers& eFi
 
     glBindVertexArray(eFieldBuf.arrowBuf.vao);
     glDrawArraysInstanced(GL_LINES, 0, 2, numFieldVectors);
-    glDrawArraysInstanced(GL_TRIANGLE_FAN, 2, 5, numFieldVectors);
+    glDrawArraysInstanced(GL_TRIANGLE_FAN, 2, ARROW_TIP_SEGMENTS + 2, numFieldVectors);
 }

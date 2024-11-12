@@ -82,8 +82,8 @@ __kernel void computeFields(
     float3 solenoid_e = solenoid_e_mag * cross(solenoid_axis, solenoid_r_norm);
     E += solenoid_e;
 
-    eField[id] = (float4)(E, 0.0);
-    bField[id] = (float4)(B, 0.0);
+    eField[id] = (float4)(E[0], E[1], E[2], 0.0);
+    bField[id] = (float4)(B[0], B[1], B[2], 0.0);
 
     debug[id] = (float4)(loc[0], loc[1], loc[2], 0.0);
 }
