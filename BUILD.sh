@@ -9,6 +9,7 @@ clang++ \
     src/glad.c \
     src/cl_util.cpp \
     src/gl_util.cpp \
+    src/keyboard.cpp \
     src/torus.cpp \
     src/axes.cpp \
     src/particles.cpp \
