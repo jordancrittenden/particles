@@ -196,15 +196,3 @@ std::vector<CurrentVector> get_toroidal_currents(const TorusProperties& torus) {
 
     return currents;
 }
-
-// Outside of a solenoid, the electric field is given by E_t = -1/(2*pi*r) d(Phi)/dt
-// Assuming a pulse current of I_0*e^(-alpha*t), the electric field becomes E_t = 1/2 * alpha*u_0*N*I_0*R2 * 1/r * e^(-alpha*t)
-// This function calculates that formula's constant
-// https://openstax.org/books/university-physics-volume-2/pages/13-4-induced-electric-fields
-float solenoid_pulse_e_field_parameter(const TorusProperties& torus) {
-    return 0.5f * torus.pulseAlpha * MU_0 * (float)torus.solenoidN * torus.solenoidI * (torus.solenoidR * torus.solenoidR);
-}
-
-float solenoid_pulse_e_field_multiplier(const TorusProperties& torus, float t) {
-    return solenoid_pulse_e_field_parameter(torus) * exp(-torus.pulseAlpha * t);
-}

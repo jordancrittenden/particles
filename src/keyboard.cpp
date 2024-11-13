@@ -63,6 +63,6 @@ void process_input(GLFWwindow* window, SimulationState& state, Scene& scene) {
         state.calcInterparticlePhysics = !state.calcInterparticlePhysics;
     }
     if (glfwGetKey(window, GLFW_KEY_PERIOD) == GLFW_PRESS && debounce_input()) {
-        state.startPulse = true;
+        state.pulseSolenoid = !state.pulseSolenoid;
     }
 }

@@ -15,11 +15,11 @@ typedef struct SimulationState {
     // Simulation parameters
     cl_uint nParticles = 10000; // Number of particles
     cl_float t = 0.0f;          // Simulation time, s
-    cl_float dt = 0.000001f;    // Simulation dt, s
+    cl_float dt = 0.0000001f;   // Simulation dt, s
 
     // Physics booleans
     bool calcInterparticlePhysics = true;
-    bool startPulse = true; // Kicks of a pulse of the central Solenoid
+    bool pulseSolenoid = false; // If true, central solenoid is active
 } SimulationState;
 
 void print_state(const SimulationState& state);

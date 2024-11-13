@@ -128,7 +128,7 @@ int main(int argc, char* argv[]) {
     particlesKernel.setArg(4, state.dt);
     particlesKernel.setArg(5, state.nParticles);
     particlesKernel.setArg(6, (cl_uint)torusCurrents.size());
-    particlesKernel.setArg(7, 0.0f);
+    particlesKernel.setArg(7, /* solenoidFlux= */ 0.0f);
     particlesKernel.setArg(8, (cl_uint)state.calcInterparticlePhysics);
 
     // Set up field kernel parameters
@@ -144,37 +144,24 @@ int main(int argc, char* argv[]) {
     fieldsKernel.setArg(7, (cl_uint)cells.size());
     fieldsKernel.setArg(8, state.nParticles);
     fieldsKernel.setArg(9, (cl_uint)torusCurrents.size());
-    fieldsKernel.setArg(10, 0.0f);
+    fieldsKernel.setArg(10, /* solenoidFlux= */ 0.0f);
     fieldsKernel.setArg(11, (cl_uint)state.calcInterparticlePhysics);
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     // Main render loop
-    float pulseStartT = 0.0f;
     while (!glfwWindowShouldClose(state.window)) {
         // Process keyboard input
         process_input(state.window, state, scene);
 
-        // Kick off a pulse of the central solenoid
-        if (state.startPulse) {
-            state.startPulse = false;
-            pulseStartT = state.t;
-        }
-        float pulseT = state.t - pulseStartT;
-        float solenoidE0 = 0.0f;
-        if (pulseStartT > 0.0f) {
-            solenoidE0 = solenoid_pulse_e_field_multiplier(torus, pulseT);
-            std::cout << "Pulse T: " << pulseT << ", E0: " << solenoidE0 << std::endl;
-        }
-        if (pulseT > torus.pulseAlpha) {
-            pulseStartT = 0.0f;
-        }
-
         // Update args that could have changed
+        float solenoidFlux = state.pulseSolenoid ? torus.solenoidFlux : 0.0f;
         particlesKernel.setArg(4, state.dt);
-        particlesKernel.setArg(7, solenoidE0);
-        fieldsKernel.setArg(10, solenoidE0);
+        particlesKernel.setArg(7, solenoidFlux);
+        fieldsKernel.setArg(10, solenoidFlux);
 
         // Compute fields
         // Acquire the GL buffer for OpenCL to read and write

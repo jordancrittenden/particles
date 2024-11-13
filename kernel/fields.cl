@@ -22,7 +22,7 @@ __kernel void computeFields(
     const uint nCells,
     const uint nParticles,
     const uint nCurrentSegments,
-    const float solenoidE0,
+    const float solenoidFlux,
     const uint calcInterparticlePhysics)
 {
     int id = get_global_id(0);
@@ -77,10 +77,8 @@ __kernel void computeFields(
     // Calculate the contribution of the central solenoid
     float3 solenoid_axis = (float3)(0.0, 1.0, 0.0);
     float3 solenoid_r = (float3)(loc[0], 0.0, loc[2]);
-    float3 solenoid_r_norm = normalize(solenoid_r);
-    float solenoid_e_mag = solenoidE0 / length(solenoid_r);
-    float3 solenoid_e = solenoid_e_mag * cross(solenoid_axis, solenoid_r_norm);
-    E += solenoid_e;
+    float solenoid_e_mag = solenoidFlux / (2.0 * PI * length(solenoid_r));
+    E += solenoid_e_mag * cross(solenoid_axis, normalize(solenoid_r));
 
     eField[id] = (float4)(E[0], E[1], E[2], 0.0);
     bField[id] = (float4)(B[0], B[1], B[2], 0.0);
