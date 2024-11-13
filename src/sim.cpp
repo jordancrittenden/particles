@@ -42,10 +42,16 @@ void process_input(GLFWwindow* window) {
         glfwSetWindowShouldClose(window, true);
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-        scene.rotAngle -= 0.01f;
+        scene.cameraPhi -= 0.01f;
     }
     if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-        scene.rotAngle += 0.01f;
+        scene.cameraPhi += 0.01f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        scene.cameraTheta += 0.01f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+        scene.cameraTheta -= 0.01f;
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS) {
         scene.cameraDistance *= 1.01f;
@@ -256,8 +262,11 @@ int main(int argc, char* argv[]) {
         // Draw a white background
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        float cameraX = scene.cameraDistance * sin(scene.cameraTheta) * sin(scene.cameraPhi);
+        float cameraY = scene.cameraDistance * cos(scene.cameraTheta);
+        float cameraZ = scene.cameraDistance * sin(scene.cameraTheta) * cos(scene.cameraPhi);
         glm::mat4 view = glm::lookAt(
-            glm::vec3(scene.cameraDistance * sin(scene.rotAngle), 0.5f, scene.cameraDistance * cos(scene.rotAngle)), 
+            glm::vec3(cameraX, cameraY, cameraZ), 
             glm::vec3(0.0f, 0.0f, 0.0f), 
             glm::vec3(0.0f, 1.0f, 0.0f)
         );

@@ -19,8 +19,9 @@ typedef struct Scene {
     FieldGLBuffers b_field;
 
     // Camera settings
-    float rotAngle = 0.0f;
     float cameraDistance = 5.0f;
+    float cameraTheta = 5.0f/6.0f * M_PI_2;
+    float cameraPhi = 1.0f/6.0f * M_PI_2;
 
     // Show/hide booleans
     bool showAxes = true;
