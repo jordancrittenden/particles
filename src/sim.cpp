@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
     particlesKernel.setArg(5, state.nParticles);
     particlesKernel.setArg(6, (cl_uint)torusCurrents.size());
     particlesKernel.setArg(7, /* solenoidFlux= */ 0.0f);
-    particlesKernel.setArg(8, (cl_uint)state.calcInterparticlePhysics);
+    particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
 
     // Set up field kernel parameters
     cl::Program fieldsProgram = build_kernel(state.clState, "kernel/fields.cl");
@@ -145,11 +145,9 @@ int main(int argc, char* argv[]) {
     fieldsKernel.setArg(8, state.nParticles);
     fieldsKernel.setArg(9, (cl_uint)torusCurrents.size());
     fieldsKernel.setArg(10, /* solenoidFlux= */ 0.0f);
-    fieldsKernel.setArg(11, (cl_uint)state.calcInterparticlePhysics);
+    fieldsKernel.setArg(11, (cl_uint)state.enableInterparticlePhysics);
 
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     // Main render loop
@@ -158,10 +156,12 @@ int main(int argc, char* argv[]) {
         process_input(state.window, state, scene);
 
         // Update args that could have changed
-        float solenoidFlux = state.pulseSolenoid ? torus.solenoidFlux : 0.0f;
+        float solenoidFlux = state.enableSolenoidFlux ? torus.solenoidFlux : 0.0f;
         particlesKernel.setArg(4, state.dt);
+        particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
         particlesKernel.setArg(7, solenoidFlux);
         fieldsKernel.setArg(10, solenoidFlux);
+        fieldsKernel.setArg(11, (cl_uint)state.enableInterparticlePhysics);
 
         // Compute fields
         // Acquire the GL buffer for OpenCL to read and write

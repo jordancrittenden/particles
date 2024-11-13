@@ -20,7 +20,7 @@ __kernel void computeMotion(
     const uint nParticles,
     const uint nCurrentSegments,
     const float solenoidFlux,
-    const uint calcInterparticlePhysics)
+    const uint enableInterparticlePhysics)
 {
     int id = get_global_id(0);
     if (id >= nParticles) return;
@@ -39,7 +39,7 @@ __kernel void computeMotion(
     float3 E = (float3)(0.0f, 0.0f, 0.0f);
     float3 B = (float3)(0.0f, 0.0f, 0.0f);
 
-    if (calcInterparticlePhysics) {
+    if (enableInterparticlePhysics) {
         for (int j = 0; j < nParticles; j++) {
             if (j == id) continue;
 

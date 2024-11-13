@@ -1,4 +1,5 @@
 #include <chrono>
+#include <iostream>
 
 #include "state.h"
 #include "scene.h"
@@ -38,11 +39,11 @@ void process_input(GLFWwindow* window, SimulationState& state, Scene& scene) {
     }
     if (glfwGetKey(window, GLFW_KEY_EQUAL) == GLFW_PRESS) {
         state.dt *= 1.2f;
-        print_state(state);
+        std::cout << "dt: " << state.dt << std::endl;
     }
     if (glfwGetKey(window, GLFW_KEY_MINUS) == GLFW_PRESS) {
         state.dt /= 1.2f;
-        print_state(state);
+        std::cout << "dt: " << state.dt << std::endl;
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && debounce_input()) {
         scene.showAxes = !scene.showAxes;
@@ -60,9 +61,15 @@ void process_input(GLFWwindow* window, SimulationState& state, Scene& scene) {
         scene.showParticles = !scene.showParticles;
     }
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS && debounce_input()) {
-        state.calcInterparticlePhysics = !state.calcInterparticlePhysics;
+        state.enableInterparticlePhysics = !state.enableInterparticlePhysics;
+        std::cout << "interparticle physics: " << (state.enableInterparticlePhysics ? "ENABLED" : "DISABLED") << std::endl;
+    }
+    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && debounce_input()) {
+        state.enableToroidalRings = !state.enableToroidalRings;
+        std::cout << "toroidal rings: " << (state.enableToroidalRings ? "ENABLED" : "DISABLED") << std::endl;
     }
     if (glfwGetKey(window, GLFW_KEY_PERIOD) == GLFW_PRESS && debounce_input()) {
-        state.pulseSolenoid = !state.pulseSolenoid;
+        state.enableSolenoidFlux = !state.enableSolenoidFlux;
+        std::cout << "solenoid: " << (state.enableSolenoidFlux ? "ENABLED" : "DISABLED") << std::endl;
     }
 }

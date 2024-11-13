@@ -18,8 +18,9 @@ typedef struct SimulationState {
     cl_float dt = 0.0000001f;   // Simulation dt, s
 
     // Physics booleans
-    bool calcInterparticlePhysics = true;
-    bool pulseSolenoid = false; // If true, central solenoid is active
+    bool enableInterparticlePhysics = false;
+    bool enableToroidalRings = false;
+    bool enableSolenoidFlux = false;
 } SimulationState;
 
 void print_state(const SimulationState& state);
