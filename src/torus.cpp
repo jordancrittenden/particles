@@ -1,4 +1,5 @@
 #include <vector>
+#include <cmath>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -80,6 +81,37 @@ std::vector<Cell> get_torus_linear_cells(const TorusProperties& torus, int torus
 
                 Cell cell;
                 cell.pos = glm::vec3(pos.x, pos.y, pos.z);
+
+                cells.push_back(cell);
+            }
+        }
+    }
+    return cells;
+}
+
+std::vector<Cell> get_torus_grid_cells(const TorusProperties& torus, glm::vec3 minCoord, glm::vec3 maxCoord, float dx) {
+    std::vector<Cell> cells;
+
+    glm::vec4 torusCenterPos = glm::vec4(0.0, 0.0f, torus.r1, 1.0f);
+    for (float x = minCoord.x; x <= maxCoord.x; x += dx) {
+        for (float z = minCoord.z; z <= maxCoord.z; z += dx) {
+            // Find azimuthal angle
+            float torusTheta = atan2(x, z);
+
+            // Find closest torus centerpoint
+            glm::mat4 xform = glm::mat4(1.0f);
+            xform = glm::rotate(xform, torusTheta, glm::vec3(0.0f, 1.0f, 0.0f));
+            glm::vec4 nearestTorusCenter = xform * torusCenterPos;
+
+            for (float y = minCoord.y; y <= maxCoord.y; y += dx) {
+                float xDiff = x - nearestTorusCenter.x;
+                float yDiff = y - nearestTorusCenter.y;
+                float zDiff = z - nearestTorusCenter.z;
+
+                if (xDiff*xDiff + yDiff*yDiff + zDiff*zDiff > torus.r2*torus.r2) continue;
+
+                Cell cell;
+                cell.pos = glm::vec3(x, y, z);
 
                 cells.push_back(cell);
             }
