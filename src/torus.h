@@ -3,12 +3,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "cl_util.h"
-
-typedef struct CurrentVector {
-    glm::vec4 x;  // position of the current in space
-    glm::vec4 dx; // direction of the current in space
-    float i;      // current in A
-} CurrentVector;
+#include "current_segment.h"
 
 typedef struct Cell {
     glm::vec3 pos;                 // Cell center in cartensian coords

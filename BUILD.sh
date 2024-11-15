@@ -14,6 +14,7 @@ clang++ \
     src/axes.cpp \
     src/particles.cpp \
     src/field_vector.cpp \
+    src/current_segment.cpp \
     src/state.cpp \
     src/args.cpp \
     src/sim.cpp \

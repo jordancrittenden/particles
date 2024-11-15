@@ -20,20 +20,21 @@
 #include "particles.h"
 #include "axes.h"
 #include "field_vector.h"
+#include "current_segment.h"
 
 TorusProperties torus;
 SimulationState state;
 Scene scene;
 
-void printDbg(const cl::Buffer& dbgBufCL, int n) {
+void printDbgBufFloat4(const cl::Buffer& dbgBufCL, int n) {
     std::vector<cl_float4> dbgBuf(n);
 
-    // Retrieve updated positions (optional, for debugging or visualization)
+    // Retrieve buffer values
     state.clState->queue->enqueueReadBuffer(dbgBufCL, CL_TRUE, 0, sizeof(cl_float4) * n, dbgBuf.data());
 
     // Print out some particle positions for debugging
     for (int i = 0; i < 12; i++) { // Print only the first 5 entries for brevity
-        std::cout << "Particle " << i << ": Debug (" 
+        std::cout << "Entry " << i << ": Debug (" 
                     << dbgBuf[i].s[0] << ", " 
                     << dbgBuf[i].s[1] << ", " 
                     << dbgBuf[i].s[2] << ", " 
@@ -104,19 +105,13 @@ int main(int argc, char* argv[]) {
 
     // Create additional OpenCL buffers
     std::vector<cl_float4> dbgBuf(state.nParticles);
-    std::vector<cl_float4> torusCurrentsUnrolled;
-    for (auto& cur : torusCurrents) {
-        torusCurrentsUnrolled.push_back(cl_float4 { cur.x[0], cur.x[1], cur.x[2], 0.0f });
-        torusCurrentsUnrolled.push_back(cl_float4 { cur.dx[0], cur.dx[1], cur.dx[2], 0.0f });
-        torusCurrentsUnrolled.push_back(cl_float4 { cur.i, 0.0f, 0.0f, 0.0f });
-    }
     std::vector<cl_float4> cellLocations;
     for (auto& cell : cells) {
         cellLocations.push_back(cl_float4 { cell.pos.x, cell.pos.y, cell.pos.z, 0.0f });
     }
     cl::Buffer dbgBufCL(*state.clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * state.nParticles, dbgBuf.data());
-    cl::Buffer currentSegmentBufCL(*state.clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * torusCurrentsUnrolled.size(), torusCurrentsUnrolled.data());
     cl::Buffer cellLocationBufCL(*state.clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * cellLocations.size(), cellLocations.data());
+    cl::Buffer currentSegmentBufCL = get_current_segment_buffer(state.clState->context, torusCurrents);
 
     // Set up particle kernel parameters
     cl::Program particlesProgram = build_kernel(state.clState, "kernel/particles.cl");
@@ -155,7 +150,7 @@ int main(int argc, char* argv[]) {
         // Process keyboard input
         process_input(state.window, state, scene);
 
-        // Update args that could have changed
+        // Update kernel args that could have changed
         float solenoidFlux = state.enableSolenoidFlux ? torus.solenoidFlux : 0.0f;
         particlesKernel.setArg(4, state.dt);
         particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
@@ -167,7 +162,7 @@ int main(int argc, char* argv[]) {
         // Acquire the GL buffer for OpenCL to read and write
         state.clState->queue->enqueueAcquireGLObjects(&fieldKernelGLBuffers);
         state.clState->queue->enqueueNDRangeKernel(fieldsKernel, cl::NullRange, cl::NDRange(cells.size()));
-        //printDbg(dbgBufCL, cells.size());
+        //printDbgBufFloat4(dbgBufCL, cells.size());
         // Release the buffer back to OpenGL
         state.clState->queue->enqueueReleaseGLObjects(&fieldKernelGLBuffers);
         state.clState->queue->finish();
@@ -176,7 +171,7 @@ int main(int argc, char* argv[]) {
         // Acquire the GL buffer for OpenCL to read and write
         state.clState->queue->enqueueAcquireGLObjects(&particleKernelGLBuffers);
         state.clState->queue->enqueueNDRangeKernel(particlesKernel, cl::NullRange, cl::NDRange(state.nParticles));
-        //printDbg(particlePosBufCL, dbgBufCL);
+        //printDbgBufFloat4(particlePosBufCL, state.nParticles);
         // Release the buffer back to OpenGL
         state.clState->queue->enqueueReleaseGLObjects(&particleKernelGLBuffers);
         state.clState->queue->finish();
@@ -188,11 +183,12 @@ int main(int argc, char* argv[]) {
         float cameraY = scene.cameraDistance * cos(scene.cameraTheta);
         float cameraZ = scene.cameraDistance * sin(scene.cameraTheta) * cos(scene.cameraPhi);
         glm::mat4 view = glm::lookAt(
-            glm::vec3(cameraX, cameraY, cameraZ), 
-            glm::vec3(0.0f, 0.0f, 0.0f), 
-            glm::vec3(0.0f, 1.0f, 0.0f)
+            glm::vec3(cameraX, cameraY, cameraZ), // eye
+            glm::vec3(0.0f, 0.0f, 0.0f),          // target
+            glm::vec3(0.0f, 1.0f, 0.0f)           // up
         );
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)state.windowWidth / (float)state.windowHeight, 0.1f, 100.0f);
+        float aspectRatio = (float)state.windowWidth / (float)state.windowHeight;
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
 
         if (scene.showAxes)      render_axes(axesShaderProgram, scene.axes, view, projection);
         if (scene.showTorus)     render_torus(torusShaderProgram, torus, scene.torus, view, projection);
