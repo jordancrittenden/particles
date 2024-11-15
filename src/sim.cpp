@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
 
     std::vector<CurrentVector> torusCurrents = get_toroidal_currents(torus);
 
-    std::vector<Cell> cells = get_torus_simulation_cells(torus, 60, 10, 20);
+    std::vector<Cell> cells = get_torus_linear_cells(torus, 60, 10, 10);
     std::vector<glm::vec4> eFieldLoc, eFieldVec;
     std::vector<glm::vec4> bFieldLoc, bFieldVec;
     for (auto& cell : cells) {
