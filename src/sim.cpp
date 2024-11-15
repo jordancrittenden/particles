@@ -42,6 +42,17 @@ void printDbgBufFloat4(const cl::Buffer& dbgBufCL, int n) {
     }
 }
 
+glm::mat4 get_orbit_view_matrix() {
+    float cameraX = scene.cameraDistance * sin(scene.cameraTheta) * sin(scene.cameraPhi);
+    float cameraY = scene.cameraDistance * cos(scene.cameraTheta);
+    float cameraZ = scene.cameraDistance * sin(scene.cameraTheta) * cos(scene.cameraPhi);
+    return glm::lookAt(
+        glm::vec3(cameraX, cameraY, cameraZ), // eye
+        glm::vec3(0.0f, 0.0f, 0.0f),          // target
+        glm::vec3(0.0f, 1.0f, 0.0f)           // up
+    );
+}
+
 // Main function
 int main(int argc, char* argv[]) {
     // Parse CLI arguments into state variables
@@ -179,14 +190,7 @@ int main(int argc, char* argv[]) {
         // Draw a white background
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        float cameraX = scene.cameraDistance * sin(scene.cameraTheta) * sin(scene.cameraPhi);
-        float cameraY = scene.cameraDistance * cos(scene.cameraTheta);
-        float cameraZ = scene.cameraDistance * sin(scene.cameraTheta) * cos(scene.cameraPhi);
-        glm::mat4 view = glm::lookAt(
-            glm::vec3(cameraX, cameraY, cameraZ), // eye
-            glm::vec3(0.0f, 0.0f, 0.0f),          // target
-            glm::vec3(0.0f, 1.0f, 0.0f)           // up
-        );
+        glm::mat4 view = get_orbit_view_matrix();
         float aspectRatio = (float)state.windowWidth / (float)state.windowHeight;
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
 
