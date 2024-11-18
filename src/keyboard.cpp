@@ -37,11 +37,11 @@ void process_input(GLFWwindow* window, SimulationState& state, Scene& scene) {
     if (glfwGetKey(window, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) {
         scene.cameraDistance /= 1.01f;
     }
-    if (glfwGetKey(window, GLFW_KEY_EQUAL) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_EQUAL) == GLFW_PRESS && debounce_input()) {
         state.dt *= 1.2f;
         std::cout << "dt: " << state.dt << std::endl;
     }
-    if (glfwGetKey(window, GLFW_KEY_MINUS) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_MINUS) == GLFW_PRESS && debounce_input()) {
         state.dt /= 1.2f;
         std::cout << "dt: " << state.dt << std::endl;
     }
