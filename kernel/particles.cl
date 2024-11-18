@@ -29,7 +29,12 @@ __kernel void computeMotion(
     float3 pos = (float3)(particlePos[id][0], particlePos[id][1], particlePos[id][2]);
     float3 vel = (float3)(particleVel[id][0], particleVel[id][1], particleVel[id][2]);
     float type = particlePos[id][3];
+    float mass = 0.0;
     float q_over_m = 0.0;
+
+    if      (type == -1.0) mass = M_ELECTRON;
+    else if (type ==  1.0) mass = M_PROTON;
+    else if (type ==  0.0) mass = M_NEUTRON;
 
     if      (type == -1.0) q_over_m = Q_OVER_M_ELECTRON;
     else if (type ==  1.0) q_over_m = Q_OVER_M_PROTON;
@@ -59,11 +64,8 @@ __kernel void computeMotion(
             // Avoid division by zero
             if (r_mag < 0.00001f) continue;
 
-            float3 e = ((K * otherCharge) / (r_mag * r_mag)) * r_norm;
-            float3 b = ((MU_0_OVER_4_PI * otherCharge) / (r_mag * r_mag)) * cross(otherVel, r_norm);
-
-            E += e;
-            B += b;
+            E += ((K * otherCharge) / (r_mag * r_mag)) * r_norm;
+            B += ((MU_0_OVER_4_PI * otherCharge) / (r_mag * r_mag)) * cross(otherVel, r_norm);
         }
     }
 
@@ -95,6 +97,9 @@ __kernel void computeMotion(
 
     particlePos[id] = (float4)(pos_new[0], pos_new[1], pos_new[2], type);
     particleVel[id] = (float4)(vel_new[0], vel_new[1], vel_new[2], 0.0);
+
+    float v_mag = length(vel_new);
+    debug[id] = (float4)(0.5 * mass * v_mag * v_mag, type, 0.0, 0.0);
 
     // Keep the particles in their box
     if (particlePos[id][0] >  2.0) particleVel[id][0] = -particleVel[id][0];

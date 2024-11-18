@@ -40,6 +40,13 @@ void printDbgBufFloat4(const cl::Buffer& dbgBufCL, int n) {
                     << dbgBuf[i].s[2] << ", " 
                     << dbgBuf[i].s[3] << ")\n";
     }
+
+    float tot = 0.0f;
+    for (int i = 0; i < n; i++) {
+        tot += dbgBuf[i].s[0];
+    }
+    float avg = tot / n;
+    std::cout << "Temp: " << (avg / 1.06e-19) << " eV" << std::endl;
 }
 
 glm::mat4 get_orbit_view_matrix() {
@@ -186,7 +193,7 @@ int main(int argc, char* argv[]) {
         // Acquire the GL buffer for OpenCL to read and write
         state.clState->queue->enqueueAcquireGLObjects(&particleKernelGLBuffers);
         state.clState->queue->enqueueNDRangeKernel(particlesKernel, cl::NullRange, cl::NDRange(state.nParticles));
-        //printDbgBufFloat4(particlePosBufCL, state.nParticles);
+        printDbgBufFloat4(dbgBufCL, state.nParticles);
         // Release the buffer back to OpenGL
         state.clState->queue->enqueueReleaseGLObjects(&particleKernelGLBuffers);
         state.clState->queue->finish();
