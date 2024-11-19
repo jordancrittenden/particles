@@ -41,6 +41,7 @@ void extract_state_vars(std::unordered_map<std::string, std::string> args, Simul
         else if (key == "fps") scene->targetFPS = stoi(value);
         else if (key == "width") scene->windowWidth = stoi(value);
         else if (key == "height") scene->windowHeight = stoi(value);
+        else if (key == "cellSpacing") state->cellSpacing = stof(value);
         else if (key == "interparticle") state->enableInterparticlePhysics = (value == "true");
         else throw std::invalid_argument("Invalid argument '" + key + "'");
      }

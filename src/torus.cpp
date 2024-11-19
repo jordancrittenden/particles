@@ -39,10 +39,10 @@ std::vector<Cell> get_torus_grid_cells(const TorusProperties& torus, glm::vec3 m
                 float yDiff = y - nearestTorusCenter.y;
                 float zDiff = z - nearestTorusCenter.z;
 
-                if (xDiff*xDiff + yDiff*yDiff + zDiff*zDiff > torus.r2*torus.r2) continue;
+                bool isActive = xDiff*xDiff + yDiff*yDiff + zDiff*zDiff > torus.r2*torus.r2;
 
                 Cell cell;
-                cell.pos = cl_float4 { x, y, z, 0.0f };
+                cell.pos = cl_float4 { x, y, z, isActive ? 1.0f : 0.0f };
                 cells.push_back(cell);
             }
         }
