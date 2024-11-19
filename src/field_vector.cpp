@@ -16,7 +16,7 @@ inline float rand_range(float min, float max) {
 std::vector<float> create_vector_geometry(float length) {
     std::vector<float> vertices;
 
-    float tipWidth = length / 6.0f;
+    float tipWidth = length / 15.0f;
     float tipLength = length / 3.0f;
     // Vertices for the arrow shaft
     vertices.insert(vertices.end(), {

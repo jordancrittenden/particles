@@ -2,6 +2,10 @@
 
 #include "cl_util.h"
 
+typedef struct Cell {
+    cl_float4 pos; // [centerX, centerY, centerZ, isActive]
+} Cell;
+
 typedef struct SimulationState {
     // OpenCL state
     CLState* clState = nullptr;

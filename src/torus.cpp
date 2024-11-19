@@ -5,7 +5,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
 #include "gl_util.h"
+#include "state.h"
 #include "torus.h"
 
 #define MU_0 (1.25663706144e-6f) /* kg m / A^2 s^2 */
@@ -16,77 +18,6 @@ glm::mat4 get_coil_model_matrix(float angle, float r1) {
     model = glm::translate(model, glm::vec3(r1, 0.0f, 0.0f));
     model = glm::rotate(model, glm::half_pi<float>(), glm::vec3(0.0f, 0.0f, 1.0f));
     return model;
-}
-
-// Compute the cells over which the simulation will run
-std::vector<Cell> get_torus_radial_cells(const TorusProperties& torus, int torusThetaSteps, int rSteps, int thetaSteps) {
-    // torusTheta/dTorusTheta: Angle (and delta) around the torus itself
-    // r/dR: Distance (and delta) from center of torus coil
-    // theta/dTheta: Angle (and delta) within the torus coil
-
-    float dTorusTheta = (2 * M_PI) / torusThetaSteps;
-    float dR = torus.r2 / rSteps;
-    float dTheta = (2 * M_PI) / thetaSteps;
-
-    std::vector<Cell> cells;
-    glm::vec4 cellPos = glm::vec4(torus.r1, 0.0f, 0.0f, 1.0f);
-    for (int i = 0; i < torusThetaSteps; i++) {
-        float torusTheta = i * dTorusTheta;
-        for (int j = 0; j < rSteps; j++) {
-            float r = j * dR;
-            for (int k = 0; k < thetaSteps; k++) {
-                float theta = k * dTheta;
-
-                // Compute cartensian coords for the center of the cell
-                float coilX = (r + (dR / 2.0f)) * cos(theta);
-                float coilY = (r + (dR / 2.0f)) * sin(theta);
-                glm::mat4 xform = glm::mat4(1.0f);
-                xform = glm::rotate(xform, torusTheta + (dTorusTheta / 2.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-                xform = glm::translate(xform, glm::vec3(coilX, coilY, 0.0f));
-                glm::vec4 pos = xform * cellPos;
-
-                Cell cell;
-                cell.pos = glm::vec3(pos.x, pos.y, pos.z);
-
-                cells.push_back(cell);
-            }
-        }
-    }
-    return cells;
-}
-
-std::vector<Cell> get_torus_linear_cells(const TorusProperties& torus, int torusThetaSteps, int xSteps, int ySteps) {
-    float dTorusTheta = (2 * M_PI) / torusThetaSteps;
-    if (xSteps % 2 == 0) xSteps++;
-    if (ySteps % 2 == 0) ySteps++;
-    float dX = 2 * torus.r2 / xSteps;
-    float dY = 2 * torus.r2 / ySteps;
-
-    std::vector<Cell> cells;
-    glm::vec4 cellPos = glm::vec4(torus.r1, 0.0f, 0.0f, 1.0f);
-    for (int i = 0; i < torusThetaSteps; i++) {
-        float torusTheta = i * dTorusTheta;
-        for (int j = -xSteps/2; j <= xSteps/2; j++) {
-            float coilX = j * dX;
-            for (int k = -ySteps; k <= ySteps/2; k++) {
-                float coilY = k * dY;
-
-                // throw away points outside of the torus
-                if (coilX*coilX + coilY*coilY > torus.r2*torus.r2) continue;
-
-                glm::mat4 xform = glm::mat4(1.0f);
-                xform = glm::rotate(xform, torusTheta + (dTorusTheta / 2.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-                xform = glm::translate(xform, glm::vec3(coilX, coilY, 0.0f));
-                glm::vec4 pos = xform * cellPos;
-
-                Cell cell;
-                cell.pos = glm::vec3(pos.x, pos.y, pos.z);
-
-                cells.push_back(cell);
-            }
-        }
-    }
-    return cells;
 }
 
 std::vector<Cell> get_torus_grid_cells(const TorusProperties& torus, glm::vec3 minCoord, glm::vec3 maxCoord, float dx) {
@@ -111,8 +42,7 @@ std::vector<Cell> get_torus_grid_cells(const TorusProperties& torus, glm::vec3 m
                 if (xDiff*xDiff + yDiff*yDiff + zDiff*zDiff > torus.r2*torus.r2) continue;
 
                 Cell cell;
-                cell.pos = glm::vec3(x, y, z);
-
+                cell.pos = cl_float4 { x, y, z, 0.0f };
                 cells.push_back(cell);
             }
         }

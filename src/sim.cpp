@@ -105,9 +105,9 @@ int main(int argc, char* argv[]) {
     std::vector<glm::vec4> eFieldLoc, eFieldVec;
     std::vector<glm::vec4> bFieldLoc, bFieldVec;
     for (auto& cell : cells) {
-        eFieldLoc.push_back(glm::vec4(cell.pos, 0.0f)); // Last element indicates E vs B
+        eFieldLoc.push_back(glm::vec4(cell.pos.s[0], cell.pos.s[1], cell.pos.s[2], 0.0f)); // Last element indicates E vs B
         eFieldVec.push_back(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
-        bFieldLoc.push_back(glm::vec4(cell.pos, 1.0f)); // Last element indicates E vs B
+        bFieldLoc.push_back(glm::vec4(cell.pos.s[0], cell.pos.s[1], cell.pos.s[2], 1.0f)); // Last element indicates E vs B
         bFieldVec.push_back(glm::vec4(-1.0f, 1.0f, 0.0f, 0.0f));
     }
 
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
     std::vector<cl_float4> dbgBuf(state.nParticles);
     std::vector<cl_float4> cellLocations;
     for (auto& cell : cells) {
-        cellLocations.push_back(cl_float4 { cell.pos.x, cell.pos.y, cell.pos.z, 0.0f });
+        cellLocations.push_back(cell.pos);
     }
     cl::Buffer dbgBufCL(*state.clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * state.nParticles, dbgBuf.data());
     cl::Buffer cellLocationBufCL(*state.clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * cellLocations.size(), cellLocations.data());

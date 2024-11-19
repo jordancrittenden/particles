@@ -4,11 +4,8 @@
 #include <glm/glm.hpp>
 #include "gl_util.h"
 #include "cl_util.h"
+#include "state.h"
 #include "current_segment.h"
-
-typedef struct Cell {
-    glm::vec3 pos; // Cell center in cartensian coords
-} Cell;
 
 typedef struct TorusProperties {
     float r1 = 1.0f;            // Radius of torus, m
@@ -25,6 +22,4 @@ typedef struct TorusProperties {
 GLBuffers create_torus_buffers(const TorusProperties& torus);
 void render_torus(GLuint shader, const TorusProperties& torus, const GLBuffers& torusBuf, glm::mat4 view, glm::mat4 projection);
 std::vector<CurrentVector> get_toroidal_currents(const TorusProperties& torus);
-std::vector<Cell> get_torus_radial_cells(const TorusProperties& torus, int torusThetaSteps, int rSteps, int thetaSteps);
-std::vector<Cell> get_torus_linear_cells(const TorusProperties& torus, int torusThetaSteps, int xSteps, int ySteps);
 std::vector<Cell> get_torus_grid_cells(const TorusProperties& torus, glm::vec3 minCoord, glm::vec3 maxCoord, float dx);
