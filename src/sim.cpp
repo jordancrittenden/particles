@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 
@@ -33,20 +34,24 @@ void printDbgBufFloat4(const cl::Buffer& dbgBufCL, int n) {
     state.clState->queue->enqueueReadBuffer(dbgBufCL, CL_TRUE, 0, sizeof(cl_float4) * n, dbgBuf.data());
 
     // Print out some particle positions for debugging
-    for (int i = 0; i < 12; i++) { // Print only the first 5 entries for brevity
-        std::cout << "Entry " << i << ": Debug (" 
-                    << dbgBuf[i].s[0] << ", " 
-                    << dbgBuf[i].s[1] << ", " 
-                    << dbgBuf[i].s[2] << ", " 
-                    << dbgBuf[i].s[3] << ")\n";
-    }
+    // for (int i = 0; i < 12; i++) { // Print only the first 5 entries for brevity
+    //     std::cout << "Entry " << i << ": Debug (" 
+    //                 << dbgBuf[i].s[0] << ", " 
+    //                 << dbgBuf[i].s[1] << ", " 
+    //                 << dbgBuf[i].s[2] << ", " 
+    //                 << dbgBuf[i].s[3] << ")\n";
+    // }
 
-    float tot = 0.0f;
+    float eTot = 0.0f, pTot = 0.0;
     for (int i = 0; i < n; i++) {
-        tot += dbgBuf[i].s[0];
+        if (dbgBuf[i].s[1] == 1.0)
+            pTot += dbgBuf[i].s[0];
+        else if (dbgBuf[i].s[1] == -1.0)
+            eTot += dbgBuf[i].s[0];
     }
-    float avg = tot / n;
-    std::cout << "Temp: " << (avg / 1.06e-19) << " eV" << std::endl;
+    float pAvg = pTot / n;
+    float eAvg = eTot / n;
+    std::cout << "eTemp: " << (eAvg / 1.06e-19) << " eV, pTemp: " <<  (pAvg / 1.06e-19) << std::endl;
 }
 
 glm::mat4 get_orbit_view_matrix() {
@@ -65,17 +70,14 @@ int main(int argc, char* argv[]) {
     // Parse CLI arguments into state variables
     try {
         auto args = parse_args(argc, argv);
-        for (const auto& [key, value] : args) {
-            std::cout << key << " : " << value << std::endl;
-        }
-        extract_state_vars(args, &state, &torus);
+        extract_state_vars(args, &state, &scene, &torus);
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
 
-    state.window = init_opengl(state.windowWidth, state.windowHeight);
-    if (state.window == nullptr) return -1;
+    scene.window = init_opengl(scene.windowWidth, scene.windowHeight);
+    if (scene.window == nullptr) return -1;
     state.clState = init_opencl();
 
     // Load OpenGL shaders
@@ -122,8 +124,8 @@ int main(int argc, char* argv[]) {
         std::cerr << "Failed to create OpenCL buffer from OpenGL buffer: " << posErr << std::endl;
         return -1;
     }
-    std::vector<cl::Memory> particleKernelGLBuffers = {particlePosBufCL, particleVelBufCL};
-    std::vector<cl::Memory> fieldKernelGLBuffers = {particlePosBufCL, particleVelBufCL, eFieldVecBufCL, bFieldVecBufCL};
+    std::vector<cl::Memory> particlesKernelGLBuffers = {particlePosBufCL, particleVelBufCL};
+    std::vector<cl::Memory> fieldsKernelGLBuffers = {particlePosBufCL, particleVelBufCL, eFieldVecBufCL, bFieldVecBufCL};
 
     // Create additional OpenCL buffers
     std::vector<cl_float4> dbgBuf(state.nParticles);
@@ -168,41 +170,20 @@ int main(int argc, char* argv[]) {
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     // Main render loop
-    while (!glfwWindowShouldClose(state.window)) {
+    int frameCount = 0;
+    int simulationStep = 0;
+    float frameTimeSec = 1.0f / (float)scene.targetFPS;
+    while (!glfwWindowShouldClose(scene.window)) {
+        auto frameStart = std::chrono::high_resolution_clock::now();
+
         // Process keyboard input
-        process_input(state.window, state, scene);
-
-        // Update kernel args that could have changed
-        float solenoidFlux = state.enableSolenoidFlux ? torus.solenoidFlux : 0.0f;
-        particlesKernel.setArg(4, state.dt);
-        particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
-        particlesKernel.setArg(7, solenoidFlux);
-        fieldsKernel.setArg(10, solenoidFlux);
-        fieldsKernel.setArg(11, (cl_uint)state.enableInterparticlePhysics);
-
-        // Compute fields
-        // Acquire the GL buffer for OpenCL to read and write
-        state.clState->queue->enqueueAcquireGLObjects(&fieldKernelGLBuffers);
-        state.clState->queue->enqueueNDRangeKernel(fieldsKernel, cl::NullRange, cl::NDRange(cells.size()));
-        //printDbgBufFloat4(dbgBufCL, cells.size());
-        // Release the buffer back to OpenGL
-        state.clState->queue->enqueueReleaseGLObjects(&fieldKernelGLBuffers);
-        state.clState->queue->finish();
-
-        // Do particle physics
-        // Acquire the GL buffer for OpenCL to read and write
-        state.clState->queue->enqueueAcquireGLObjects(&particleKernelGLBuffers);
-        state.clState->queue->enqueueNDRangeKernel(particlesKernel, cl::NullRange, cl::NDRange(state.nParticles));
-        printDbgBufFloat4(dbgBufCL, state.nParticles);
-        // Release the buffer back to OpenGL
-        state.clState->queue->enqueueReleaseGLObjects(&particleKernelGLBuffers);
-        state.clState->queue->finish();
+        process_input(scene.window, state, scene);
 
         // Draw a white background
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glm::mat4 view = get_orbit_view_matrix();
-        float aspectRatio = (float)state.windowWidth / (float)state.windowHeight;
+        float aspectRatio = (float)scene.windowWidth / (float)scene.windowHeight;
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
 
         if (scene.showAxes)      render_axes(axesShaderProgram, scene.axes, view, projection);
@@ -211,10 +192,46 @@ int main(int argc, char* argv[]) {
         if (scene.showEField)    render_fields(vectorShaderProgram, cells.size(), scene.e_field, view, projection);
         if (scene.showBField)    render_fields(vectorShaderProgram, cells.size(), scene.b_field, view, projection);
 
-        glfwSwapBuffers(state.window);
+        glfwSwapBuffers(scene.window);
         glfwPollEvents();
 
+        std::chrono::duration<double> frameDur;
+        do {
+            // Update kernel args that could have changed
+            float solenoidFlux = state.enableSolenoidFlux ? torus.solenoidFlux : 0.0f;
+            particlesKernel.setArg(4, state.dt);
+            particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
+            particlesKernel.setArg(7, solenoidFlux);
+            fieldsKernel.setArg(10, solenoidFlux);
+            fieldsKernel.setArg(11, (cl_uint)state.enableInterparticlePhysics);
+
+            // Compute fields
+            // Acquire the GL buffer for OpenCL to read and write
+            state.clState->queue->enqueueAcquireGLObjects(&fieldsKernelGLBuffers);
+            state.clState->queue->enqueueNDRangeKernel(fieldsKernel, cl::NullRange, cl::NDRange(cells.size()));
+            //printDbgBufFloat4(dbgBufCL, cells.size());
+            // Release the buffer back to OpenGL
+            state.clState->queue->enqueueReleaseGLObjects(&fieldsKernelGLBuffers);
+            state.clState->queue->finish();
+
+            // Do particle physics
+            // Acquire the GL buffer for OpenCL to read and write
+            state.clState->queue->enqueueAcquireGLObjects(&particlesKernelGLBuffers);
+            state.clState->queue->enqueueNDRangeKernel(particlesKernel, cl::NullRange, cl::NDRange(state.nParticles));
+            if (simulationStep % 100 == 0) {
+                std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << "):: ";
+                printDbgBufFloat4(dbgBufCL, state.nParticles);
+            }
+            // Release the buffer back to OpenGL
+            state.clState->queue->enqueueReleaseGLObjects(&particlesKernelGLBuffers);
+            state.clState->queue->finish();
+
+            frameDur = std::chrono::high_resolution_clock::now() - frameStart;
+            simulationStep++;
+        } while (frameDur.count() < frameTimeSec);
+
         state.t += state.dt;
+        frameCount++;
     }
 
     glDeleteVertexArrays(1, &scene.axes.vao);

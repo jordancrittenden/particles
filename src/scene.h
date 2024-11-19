@@ -4,6 +4,11 @@
 #include "field_vector.h"
 
 typedef struct Scene {
+    // OpenGL window
+    GLFWwindow* window = nullptr;
+    int windowWidth = 1600;
+    int windowHeight = 1200;
+
     // Torus geometry and buffers
     GLBuffers torus;
 
@@ -22,6 +27,9 @@ typedef struct Scene {
     float cameraDistance = 5.0f;
     float cameraTheta = 5.0f/6.0f * M_PI_2;
     float cameraPhi = 1.0f/6.0f * M_PI_2;
+
+    // FPS
+    int targetFPS = 60;
 
     // Show/hide booleans
     bool showAxes = true;

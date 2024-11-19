@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <glm/glm.hpp>
+#include "gl_util.h"
 #include "cl_util.h"
 #include "current_segment.h"
 

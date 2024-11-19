@@ -58,8 +58,8 @@ __kernel void computeFields(
             float3 e = ((K * charge) / (r_mag * r_mag)) * r_norm;
             float3 b = ((MU_0_OVER_4_PI * charge) / (r_mag * r_mag)) * cross(vel, r_norm);
 
-            E += e;
-            B += b;
+            E += ((K * charge) / (r_mag * r_mag)) * r_norm;
+            B += ((MU_0_OVER_4_PI * charge) / (r_mag * r_mag)) * cross(vel, r_norm);
         }
     }
 

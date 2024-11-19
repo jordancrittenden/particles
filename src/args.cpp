@@ -5,6 +5,7 @@
 
 #include "state.h"
 #include "torus.h"
+#include "scene.h"
 
 std::unordered_map<std::string, std::string> parse_args(int argc, char* argv[]) {
     std::unordered_map<std::string, std::string> args;
@@ -34,9 +35,13 @@ std::unordered_map<std::string, std::string> parse_args(int argc, char* argv[]) 
     return args;
 }
 
-void extract_state_vars(std::unordered_map<std::string, std::string> args, SimulationState* state, TorusProperties* torus) {
+void extract_state_vars(std::unordered_map<std::string, std::string> args, SimulationState* state, Scene* scene, TorusProperties* torus) {
      for (const auto& [key, value] : args) {
         if (key == "N") state->nParticles = stoi(value);
-        if (key == "interparticle") state->enableInterparticlePhysics = (value == "true");
+        else if (key == "fps") scene->targetFPS = stoi(value);
+        else if (key == "width") scene->windowWidth = stoi(value);
+        else if (key == "height") scene->windowHeight = stoi(value);
+        else if (key == "interparticle") state->enableInterparticlePhysics = (value == "true");
+        else throw std::invalid_argument("Invalid argument '" + key + "'");
      }
 }

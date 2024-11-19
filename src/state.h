@@ -1,14 +1,8 @@
 #pragma once
 
 #include "cl_util.h"
-#include "gl_util.h"
 
 typedef struct SimulationState {
-    // OpenGL window
-    GLFWwindow* window = nullptr;
-    int windowWidth = 1200;
-    int windowHeight = 800;
-
     // OpenCL state
     CLState* clState = nullptr;
     
