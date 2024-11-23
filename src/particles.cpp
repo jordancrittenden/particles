@@ -79,23 +79,33 @@ void create_particle_buffers(
     std::function<PARTICLE_SPECIES()> speciesF,
     GLBuffers& posBuf,
     GLBuffers& velBuf,
-    int nParticles)
+    int initialParticles,
+    int maxParticles)
 {
     std::vector<cl_float4> position_and_type;
     std::vector<cl_float4> velocity;
 
     srand(static_cast<unsigned int>(time(0)));
-    for (int i = 0; i < nParticles; ++i) {
-        PARTICLE_SPECIES species = speciesF();
-        cl_float4 pos = posF();
-        cl_float4 vel = velF(species);
+    for (int i = 0; i < maxParticles; ++i) {
+        if (i < initialParticles) {
+            PARTICLE_SPECIES species = speciesF();
+            cl_float4 pos = posF();
+            cl_float4 vel = velF(species);
 
-        pos.s[3] = (float)species;
+            pos.s[3] = (float)species;
 
-        // [x, y, z, species]
-        position_and_type.push_back(pos);
-        // [dx, dy, dz, unused]
-        velocity.push_back(vel);
+            // [x, y, z, species]
+            position_and_type.push_back(pos);
+            // [dx, dy, dz, unused]
+            velocity.push_back(vel);
+        } else {
+            // Placeholders for future particles that may be created via collisions
+
+            // [x, y, z, species]
+            position_and_type.push_back(cl_float4 { 0.0f, 0.0f, 0.0f, 0.0f });
+            // [dx, dy, dz, unused]
+            velocity.push_back(cl_float4 { 0.0f, 0.0f, 0.0f, 0.0f });
+        }
     }
 
     // position/type buffer
@@ -103,7 +113,7 @@ void create_particle_buffers(
     glBindVertexArray(posBuf.vao);
     glGenBuffers(1, &posBuf.vbo);
     glBindBuffer(GL_ARRAY_BUFFER, posBuf.vbo);
-    glBufferData(GL_ARRAY_BUFFER, nParticles * sizeof(cl_float4), position_and_type.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, maxParticles * sizeof(cl_float4), position_and_type.data(), GL_DYNAMIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cl_float4), (void*)0); // position attribute
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, sizeof(cl_float4), (void*)(3 * sizeof(float))); // charge attribute
@@ -116,7 +126,7 @@ void create_particle_buffers(
     glBindVertexArray(velBuf.vao);
     glGenBuffers(1, &velBuf.vbo);
     glBindBuffer(GL_ARRAY_BUFFER, velBuf.vbo);
-    glBufferData(GL_ARRAY_BUFFER, nParticles * sizeof(cl_float4), velocity.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, maxParticles * sizeof(cl_float4), velocity.data(), GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }

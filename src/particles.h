@@ -32,5 +32,6 @@ void create_particle_buffers(
     std::function<PARTICLE_SPECIES()> speciesF,
     GLBuffers& posBuf,
     GLBuffers& velBuf,
-    int nParticles);
+    int initialParticles,
+    int maxParticles);
 void render_particles(GLuint shader, GLBuffers& posBuf, int nParticles, glm::mat4 view, glm::mat4 projection);

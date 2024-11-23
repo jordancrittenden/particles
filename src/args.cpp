@@ -4,7 +4,6 @@
 #include <iostream>
 
 #include "state.h"
-#include "torus.h"
 #include "scene.h"
 
 std::unordered_map<std::string, std::string> parse_args(int argc, char* argv[]) {
@@ -35,14 +34,15 @@ std::unordered_map<std::string, std::string> parse_args(int argc, char* argv[]) 
     return args;
 }
 
-void extract_state_vars(std::unordered_map<std::string, std::string> args, SimulationState* state, Scene* scene, TorusProperties* torus) {
+void extract_state_vars(std::unordered_map<std::string, std::string> args, SimulationState* state, Scene* scene) {
      for (const auto& [key, value] : args) {
-        if (key == "N") state->nInitialParticles = stoi(value);
-        else if (key == "fps") scene->targetFPS = stoi(value);
-        else if (key == "width") scene->windowWidth = stoi(value);
-        else if (key == "height") scene->windowHeight = stoi(value);
-        else if (key == "cellSpacing") state->cellSpacing = stof(value);
-        else if (key == "interparticle") state->enableInterparticlePhysics = (value == "true");
+             if (key == "initialParticles") state->initialParticles           = stoi(value);
+        else if (key == "maxParticles")     state->maxParticles               = stoi(value);
+        else if (key == "fps")              scene->targetFPS                  = stoi(value);
+        else if (key == "width")            scene->windowWidth                = stoi(value);
+        else if (key == "height")           scene->windowHeight               = stoi(value);
+        else if (key == "cellSpacing")      state->cellSpacing                = stof(value);
+        else if (key == "interparticle")    state->enableInterparticlePhysics = (value == "true");
         else throw std::invalid_argument("Invalid argument '" + key + "'");
      }
 }

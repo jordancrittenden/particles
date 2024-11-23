@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
     // Parse CLI arguments into state variables
     try {
         auto args = parse_args(argc, argv);
-        extract_state_vars(args, &state, &scene, &torus);
+        extract_state_vars(args, &state, &scene);
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
@@ -87,13 +87,15 @@ int main(int argc, char* argv[]) {
     GLuint vectorShaderProgram    = create_shader_program("shader/vector_vertex.glsl", "shader/vector_fragment.glsl");
 
     // Initialize particles
+    state.nParticles = state.initialParticles;
     create_particle_buffers(
         [](){ return torus_rand_particle_position_and_type(torus); },
         [](PARTICLE_SPECIES species){ return maxwell_boltzmann_particle_velocty(state.initialTemperature, particle_mass(species)); },
         [](){ return rand_particle_species(0.0f, 0.3f, 0.7f, 0.0f, 0.0f, 0.0f, 0.0f); },
         scene.pos,
         scene.vel,
-        state.nInitialParticles);
+        state.initialParticles,
+        state.maxParticles);
 
     // Create GL buffers for axes and particles
     scene.axes = create_axes_buffers();
@@ -134,12 +136,12 @@ int main(int argc, char* argv[]) {
     std::vector<cl::Memory> fieldsKernelGLBuffers = {particlePosBufCL, particleVelBufCL, eFieldVecBufCL, bFieldVecBufCL};
 
     // Create additional OpenCL buffers
-    std::vector<cl_float4> dbgBuf(state.nInitialParticles);
+    std::vector<cl_float4> dbgBuf(state.maxParticles);
     std::vector<cl_float4> cellLocations;
     for (auto& cell : cells) {
         cellLocations.push_back(cell.pos);
     }
-    cl::Buffer dbgBufCL(*state.clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * state.nInitialParticles, dbgBuf.data());
+    cl::Buffer dbgBufCL(*state.clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * state.initialParticles, dbgBuf.data());
     cl::Buffer cellLocationBufCL(*state.clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * cellLocations.size(), cellLocations.data());
     cl::Buffer currentSegmentBufCL = get_current_segment_buffer(state.clState->context, torusCurrents);
 
@@ -151,7 +153,7 @@ int main(int argc, char* argv[]) {
     particlesKernel.setArg(2, currentSegmentBufCL);
     particlesKernel.setArg(3, dbgBufCL);
     particlesKernel.setArg(4, state.dt);
-    particlesKernel.setArg(5, state.nInitialParticles);
+    particlesKernel.setArg(5, state.nParticles);
     particlesKernel.setArg(6, (cl_uint)torusCurrents.size());
     particlesKernel.setArg(7, /* solenoidFlux= */ 0.0f);
     particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
@@ -167,7 +169,7 @@ int main(int argc, char* argv[]) {
     fieldsKernel.setArg(5, currentSegmentBufCL);
     fieldsKernel.setArg(6, dbgBufCL);
     fieldsKernel.setArg(7, (cl_uint)cells.size());
-    fieldsKernel.setArg(8, state.nInitialParticles);
+    fieldsKernel.setArg(8, state.nParticles);
     fieldsKernel.setArg(9, (cl_uint)torusCurrents.size());
     fieldsKernel.setArg(10, /* solenoidFlux= */ 0.0f);
     fieldsKernel.setArg(11, (cl_uint)state.enableInterparticlePhysics);
@@ -194,7 +196,7 @@ int main(int argc, char* argv[]) {
 
         if (scene.showAxes)      render_axes(axesShaderProgram, scene.axes, view, projection);
         if (scene.showTorus)     render_torus(torusShaderProgram, torus, scene.torus, view, projection);
-        if (scene.showParticles) render_particles(particlesShaderProgram, scene.pos, state.nInitialParticles, view, projection);
+        if (scene.showParticles) render_particles(particlesShaderProgram, scene.pos, state.nParticles, view, projection);
         if (scene.showEField)    render_fields(vectorShaderProgram, cells.size(), scene.e_field, view, projection);
         if (scene.showBField)    render_fields(vectorShaderProgram, cells.size(), scene.b_field, view, projection);
 
@@ -206,8 +208,10 @@ int main(int argc, char* argv[]) {
             // Update kernel args that could have changed
             float solenoidFlux = state.enableSolenoidFlux ? torus.solenoidFlux : 0.0f;
             particlesKernel.setArg(4, state.dt);
-            particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
+            particlesKernel.setArg(5, state.nParticles);
             particlesKernel.setArg(7, solenoidFlux);
+            particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
+            fieldsKernel.setArg(8, state.nParticles);
             fieldsKernel.setArg(10, solenoidFlux);
             fieldsKernel.setArg(11, (cl_uint)state.enableInterparticlePhysics);
 
@@ -223,10 +227,10 @@ int main(int argc, char* argv[]) {
             // Do particle physics
             // Acquire the GL buffer for OpenCL to read and write
             state.clState->queue->enqueueAcquireGLObjects(&particlesKernelGLBuffers);
-            state.clState->queue->enqueueNDRangeKernel(particlesKernel, cl::NullRange, cl::NDRange(state.nInitialParticles));
+            state.clState->queue->enqueueNDRangeKernel(particlesKernel, cl::NullRange, cl::NDRange(state.initialParticles));
             if (simulationStep % 100 == 0) {
                 std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << "):: ";
-                printDbgBufFloat4(dbgBufCL, state.nInitialParticles);
+                printDbgBufFloat4(dbgBufCL, state.nParticles);
             }
             // Release the buffer back to OpenGL
             state.clState->queue->enqueueReleaseGLObjects(&particlesKernelGLBuffers);
