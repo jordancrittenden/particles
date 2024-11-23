@@ -87,7 +87,13 @@ int main(int argc, char* argv[]) {
     GLuint vectorShaderProgram    = create_shader_program("shader/vector_vertex.glsl", "shader/vector_fragment.glsl");
 
     // Initialize particles
-    create_particle_buffers(torus, scene.pos, scene.vel, state.nParticles);
+    create_particle_buffers(
+        [](){ return torus_rand_particle_position_and_type(torus); },
+        [](){ return rand_particle_velocity(); },
+        [](){ return rand_particle_species(0.0f, 0.3f, 0.7f, 0.0f, 0.0f, 0.0f, 0.0f); },
+        scene.pos,
+        scene.vel,
+        state.nInitialParticles);
 
     // Create GL buffers for axes and particles
     scene.axes = create_axes_buffers();
@@ -128,12 +134,12 @@ int main(int argc, char* argv[]) {
     std::vector<cl::Memory> fieldsKernelGLBuffers = {particlePosBufCL, particleVelBufCL, eFieldVecBufCL, bFieldVecBufCL};
 
     // Create additional OpenCL buffers
-    std::vector<cl_float4> dbgBuf(state.nParticles);
+    std::vector<cl_float4> dbgBuf(state.nInitialParticles);
     std::vector<cl_float4> cellLocations;
     for (auto& cell : cells) {
         cellLocations.push_back(cell.pos);
     }
-    cl::Buffer dbgBufCL(*state.clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * state.nParticles, dbgBuf.data());
+    cl::Buffer dbgBufCL(*state.clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * state.nInitialParticles, dbgBuf.data());
     cl::Buffer cellLocationBufCL(*state.clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * cellLocations.size(), cellLocations.data());
     cl::Buffer currentSegmentBufCL = get_current_segment_buffer(state.clState->context, torusCurrents);
 
@@ -145,7 +151,7 @@ int main(int argc, char* argv[]) {
     particlesKernel.setArg(2, currentSegmentBufCL);
     particlesKernel.setArg(3, dbgBufCL);
     particlesKernel.setArg(4, state.dt);
-    particlesKernel.setArg(5, state.nParticles);
+    particlesKernel.setArg(5, state.nInitialParticles);
     particlesKernel.setArg(6, (cl_uint)torusCurrents.size());
     particlesKernel.setArg(7, /* solenoidFlux= */ 0.0f);
     particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
@@ -161,7 +167,7 @@ int main(int argc, char* argv[]) {
     fieldsKernel.setArg(5, currentSegmentBufCL);
     fieldsKernel.setArg(6, dbgBufCL);
     fieldsKernel.setArg(7, (cl_uint)cells.size());
-    fieldsKernel.setArg(8, state.nParticles);
+    fieldsKernel.setArg(8, state.nInitialParticles);
     fieldsKernel.setArg(9, (cl_uint)torusCurrents.size());
     fieldsKernel.setArg(10, /* solenoidFlux= */ 0.0f);
     fieldsKernel.setArg(11, (cl_uint)state.enableInterparticlePhysics);
@@ -188,7 +194,7 @@ int main(int argc, char* argv[]) {
 
         if (scene.showAxes)      render_axes(axesShaderProgram, scene.axes, view, projection);
         if (scene.showTorus)     render_torus(torusShaderProgram, torus, scene.torus, view, projection);
-        if (scene.showParticles) render_particles(particlesShaderProgram, scene.pos, state.nParticles, view, projection);
+        if (scene.showParticles) render_particles(particlesShaderProgram, scene.pos, state.nInitialParticles, view, projection);
         if (scene.showEField)    render_fields(vectorShaderProgram, cells.size(), scene.e_field, view, projection);
         if (scene.showBField)    render_fields(vectorShaderProgram, cells.size(), scene.b_field, view, projection);
 
@@ -217,10 +223,10 @@ int main(int argc, char* argv[]) {
             // Do particle physics
             // Acquire the GL buffer for OpenCL to read and write
             state.clState->queue->enqueueAcquireGLObjects(&particlesKernelGLBuffers);
-            state.clState->queue->enqueueNDRangeKernel(particlesKernel, cl::NullRange, cl::NDRange(state.nParticles));
+            state.clState->queue->enqueueNDRangeKernel(particlesKernel, cl::NullRange, cl::NDRange(state.nInitialParticles));
             if (simulationStep % 100 == 0) {
                 std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << "):: ";
-                printDbgBufFloat4(dbgBufCL, state.nParticles);
+                printDbgBufFloat4(dbgBufCL, state.nInitialParticles);
             }
             // Release the buffer back to OpenGL
             state.clState->queue->enqueueReleaseGLObjects(&particlesKernelGLBuffers);

@@ -1,43 +1,76 @@
 #include <vector>
+#include <iostream>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
 #include "gl_util.h"
 #include "cl_util.h"
-#include "torus.h"
+#include "particles.h"
 
 inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
 }
 
+cl_float4 rand_particle_velocity() {
+    float dx = rand_range(-5.0f, 5.0f);
+    float dy = rand_range(-5.0f, 5.0f);
+    float dz = rand_range(-5.0f, 5.0f);
+
+    // [dx, dy, dz, unused]
+    return cl_float4 { dx, dy, dz, 0.0f };
+}
+
+PARTICLE_SPECIES rand_particle_species(float partsNeutron, float partsElectron, float partsProton, float partsDeuterium, float partsTritium, float partsIonDeuterium, float partsIonTritium) {
+    float total = partsNeutron + partsElectron + partsProton + partsDeuterium + partsTritium + partsIonDeuterium + partsIonTritium;
+    float rnd = rand_range(0.0, total);
+
+    float level = partsNeutron;
+    if (rnd < level) return NEUTRON;
+    level += partsElectron;
+    if (rnd < level) return ELECTRON;
+    level += partsProton;
+    if (rnd < level) return PROTON;
+    level += partsDeuterium;
+    if (rnd < level) return DEUTERIUM;
+    level += partsTritium;
+    if (rnd < level) return TRITIUM;
+    level += partsIonDeuterium;
+    if (rnd < level) return DEUTERON;
+    level += partsIonTritium;
+    if (rnd < level) return TRITON;
+
+    std::cerr << "Invalid particle species" << std::endl;
+
+    return NEUTRON;
+}
+
 // Create buffers for particle position/velocity
-void create_particle_buffers(const TorusProperties& torus, GLBuffers& posBuf, GLBuffers& velBuf, int nParticles) {
-    std::vector<float> position_and_type;
-    std::vector<float> velocity;
+void create_particle_buffers(
+    std::function<cl_float4()> posF,
+    std::function<cl_float4()> velF,
+    std::function<PARTICLE_SPECIES()> speciesF,
+    GLBuffers& posBuf,
+    GLBuffers& velBuf,
+    int nParticles)
+{
+    std::vector<cl_float4> position_and_type;
+    std::vector<cl_float4> velocity;
 
     srand(static_cast<unsigned int>(time(0)));
     for (int i = 0; i < nParticles; ++i) {
-        float chargeRand = static_cast<float>(rand()) / RAND_MAX;
-        //float charge = chargeRand < 0.33 ? 0.0 : (chargeRand < 0.66 ? 1.0 : -1.0);
-        float charge = chargeRand < 0.5 ? 1.0 : -1.0;
+        cl_float4 pos = posF();
+        cl_float4 vel = velF();
+        PARTICLE_SPECIES species = speciesF();
 
-        float r = rand_range(torus.r1 - (torus.r2 / 2.0f), torus.r1 + (torus.r2 / 2.0f));
-        float theta = rand_range(0.0f, 2 * M_PI);
-        float y = rand_range(-torus.r2 / 2.0f, torus.r2 / 2.0f);
+        pos.s[3] = (float)species;
 
-        // [x, y, z, type]
-        position_and_type.push_back(r * sin(theta));
-        position_and_type.push_back(y);
-        position_and_type.push_back(r * cos(theta));
-        position_and_type.push_back(charge);
-
+        // [x, y, z, species]
+        position_and_type.push_back(pos);
         // [dx, dy, dz, unused]
-        velocity.push_back(static_cast<float>(rand()) / RAND_MAX * 10.0f - 5.0f);
-        velocity.push_back(static_cast<float>(rand()) / RAND_MAX * 10.0f - 5.0f);
-        velocity.push_back(static_cast<float>(rand()) / RAND_MAX * 10.0f - 5.0f);
-        velocity.push_back(0.0f);
+        velocity.push_back(rand_particle_velocity());
     }
 
     // position/type buffer

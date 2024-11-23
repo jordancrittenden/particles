@@ -37,7 +37,7 @@ std::unordered_map<std::string, std::string> parse_args(int argc, char* argv[]) 
 
 void extract_state_vars(std::unordered_map<std::string, std::string> args, SimulationState* state, Scene* scene, TorusProperties* torus) {
      for (const auto& [key, value] : args) {
-        if (key == "N") state->nParticles = stoi(value);
+        if (key == "N") state->nInitialParticles = stoi(value);
         else if (key == "fps") scene->targetFPS = stoi(value);
         else if (key == "width") scene->windowWidth = stoi(value);
         else if (key == "height") scene->windowHeight = stoi(value);

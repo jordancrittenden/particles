@@ -19,6 +19,7 @@ typedef struct TorusProperties {
     float solenoidFlux = 0.3f;  // Central solenoid magnetic flux, V*s
 } TorusProperties;
 
+cl_float4 torus_rand_particle_position_and_type(const TorusProperties& torus);
 GLBuffers create_torus_buffers(const TorusProperties& torus);
 void render_torus(GLuint shader, const TorusProperties& torus, const GLBuffers& torusBuf, glm::mat4 view, glm::mat4 projection);
 std::vector<CurrentVector> get_toroidal_currents(const TorusProperties& torus);

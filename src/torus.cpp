@@ -6,11 +6,25 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "cl_util.h"
 #include "gl_util.h"
 #include "state.h"
 #include "torus.h"
 
 #define MU_0 (1.25663706144e-6f) /* kg m / A^2 s^2 */
+
+inline float rand_range(float min, float max) {
+    return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
+}
+
+cl_float4 torus_rand_particle_position_and_type(const TorusProperties& torus) {
+    float r = rand_range(torus.r1 - (torus.r2 / 2.0f), torus.r1 + (torus.r2 / 2.0f));
+    float theta = rand_range(0.0f, 2 * M_PI);
+    float y = rand_range(-torus.r2 / 2.0f, torus.r2 / 2.0f);
+
+    // [x, y, z, unused]
+    return cl_float4 { r * sin(theta), y, r * cos(theta), 0.0f };
+}
 
 // Set up transformation matrix for each circle
 glm::mat4 get_coil_model_matrix(float angle, float r1) {

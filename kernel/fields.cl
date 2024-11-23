@@ -41,12 +41,17 @@ __kernel void computeFields(
 
             float3 pos = (float3)(particlePos[j][0], particlePos[j][1], particlePos[j][2]);
             float3 vel = (float3)(particleVel[j][0], particleVel[j][1], particleVel[j][2]);
-            float type = particlePos[j][3];
+            float species = particlePos[j][3];
             float charge = 0.0;
 
-            if      (type == -1.0) charge = -Q; // electron
-            else if (type ==  1.0) charge = Q;  // proton
-            else if (type ==  0.0) charge = 0;  // neutron
+            if      (species == 1.0) charge = 0;       // neutron
+            else if (species == 2.0) charge = -Q;      // electron
+            else if (species == 3.0) charge = Q;       // proton
+            else if (species == 4.0) charge = 0;       // deuterium
+            else if (species == 5.0) charge = 0;       // tritium
+            else if (species == 6.0) charge = 2.0 * Q; // helium4
+            else if (species == 7.0) charge = Q;       // ion_deuterium
+            else if (species == 8.0) charge = Q;       // ion_tritium
 
             float3 r = loc - pos;
             float3 r_norm = normalize(r);
