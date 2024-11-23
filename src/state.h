@@ -11,6 +11,7 @@ typedef struct SimulationState {
     CLState* clState = nullptr;
     
     // Particle initialization parameters
+    cl_float initialTemperature = 300; // Initial plasma temperature, K
     cl_uint nInitialParticles = 10000; // Number of initial particles
     cl_float pctFreeElectrons = 0.01f; // Percent of initial particles that are free electrons
     cl_float pctDeuterium = 0.495f;    // Percent of initial particles that are deuterium

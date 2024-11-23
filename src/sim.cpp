@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
     // Initialize particles
     create_particle_buffers(
         [](){ return torus_rand_particle_position_and_type(torus); },
-        [](){ return rand_particle_velocity(); },
+        [](PARTICLE_SPECIES species){ return maxwell_boltzmann_particle_velocty(state.initialTemperature, particle_mass(species)); },
         [](){ return rand_particle_species(0.0f, 0.3f, 0.7f, 0.0f, 0.0f, 0.0f, 0.0f); },
         scene.pos,
         scene.vel,

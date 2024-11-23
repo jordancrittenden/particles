@@ -1,5 +1,7 @@
 #include <vector>
 #include <iostream>
+#include <random>
+#include <cmath>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -10,17 +12,40 @@
 #include "cl_util.h"
 #include "particles.h"
 
+const double k_B = 1.380649e-23; // Boltzmann constant (J/K)
+
 inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
 }
 
-cl_float4 rand_particle_velocity() {
-    float dx = rand_range(-5.0f, 5.0f);
-    float dy = rand_range(-5.0f, 5.0f);
-    float dz = rand_range(-5.0f, 5.0f);
+float particle_mass(PARTICLE_SPECIES species) {
+    switch (species) {
+        case NEUTRON: return M_NEUTRON;
+        case ELECTRON: return M_ELECTRON;
+        case PROTON: return M_PROTON;
+        case DEUTERIUM: return M_DEUTERIUM;
+        case TRITIUM: return M_TRITIUM;
+        case HELIUM_4_NUC: return M_HELIUM_4_NUC;
+        case DEUTERON: return M_DEUTERON;
+        case TRITON: return M_TRITON;
+    }
+}
 
-    // [dx, dy, dz, unused]
-    return cl_float4 { dx, dy, dz, 0.0f };
+cl_float4 maxwell_boltzmann_particle_velocty(float T, float mass) {
+    // Define parameters for the Maxwell-Boltzmann distribution
+    float sigma = std::sqrt(k_B * T / mass); // Standard deviation for the velocity distribution
+
+    // Random number generation
+    std::random_device rd;  // Seed for the random number engine
+    std::mt19937 gen(rd()); // Mersenne Twister random number generator
+    std::normal_distribution<> normal(0.0, sigma); // Gaussian distribution with mean 0 and std dev sigma
+
+    // Sample velocities in 3D and calculate the magnitude
+    float vx = normal(gen);
+    float vy = normal(gen);
+    float vz = normal(gen);
+
+    return cl_float4 { vx, vy, vz, 0.0f };
 }
 
 PARTICLE_SPECIES rand_particle_species(float partsNeutron, float partsElectron, float partsProton, float partsDeuterium, float partsTritium, float partsIonDeuterium, float partsIonTritium) {
@@ -50,7 +75,7 @@ PARTICLE_SPECIES rand_particle_species(float partsNeutron, float partsElectron, 
 // Create buffers for particle position/velocity
 void create_particle_buffers(
     std::function<cl_float4()> posF,
-    std::function<cl_float4()> velF,
+    std::function<cl_float4(PARTICLE_SPECIES)> velF,
     std::function<PARTICLE_SPECIES()> speciesF,
     GLBuffers& posBuf,
     GLBuffers& velBuf,
@@ -61,16 +86,16 @@ void create_particle_buffers(
 
     srand(static_cast<unsigned int>(time(0)));
     for (int i = 0; i < nParticles; ++i) {
-        cl_float4 pos = posF();
-        cl_float4 vel = velF();
         PARTICLE_SPECIES species = speciesF();
+        cl_float4 pos = posF();
+        cl_float4 vel = velF(species);
 
         pos.s[3] = (float)species;
 
         // [x, y, z, species]
         position_and_type.push_back(pos);
         // [dx, dy, dz, unused]
-        velocity.push_back(rand_particle_velocity());
+        velocity.push_back(vel);
     }
 
     // position/type buffer
