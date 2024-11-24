@@ -25,6 +25,11 @@ CLState* init_opencl() {
 
     // Choose the first platform
     cl::Platform platform = platforms.front();
+
+    cl_int versionErr;
+    std::string version = platform.getInfo<CL_PLATFORM_VERSION>(&versionErr);
+    std::cout << "OpenCL Version: " << version << std::endl;
+        
     platform.getDevices(CL_DEVICE_TYPE_GPU, &state->devices);
     if (state->devices.empty()) {
         std::cerr << "No GPU devices found for the chosen platform" << std::endl;
