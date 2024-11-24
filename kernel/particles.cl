@@ -35,10 +35,12 @@ __kernel void computeMotion(
     int id = get_global_id(0);
     if (id >= nParticles) return;
 
+    float species = particlePos[id][3];
+    if (species == 0.0) return; // inactive particle
+
     // Extract position and charge-to-mass ratio for this particle
     float3 pos = (float3)(particlePos[id][0], particlePos[id][1], particlePos[id][2]);
     float3 vel = (float3)(particleVel[id][0], particleVel[id][1], particleVel[id][2]);
-    float species = particlePos[id][3];
     float mass = 0.0;
     float q_over_m = 0.0;
 
@@ -68,9 +70,11 @@ __kernel void computeMotion(
         for (int j = 0; j < nParticles; j++) {
             if (j == id) continue;
 
+            float otherSpecies = particlePos[j][3];
+            if (otherSpecies == 0.0) continue;
+
             float3 otherPos = (float3)(particlePos[j][0], particlePos[j][1], particlePos[j][2]);
             float3 otherVel = (float3)(particleVel[j][0], particleVel[j][1], particleVel[j][2]);
-            float otherSpecies = particlePos[j][3];
             float otherCharge = 0.0;
 
             if      (otherSpecies == 1.0) otherCharge = 0;       // neutron

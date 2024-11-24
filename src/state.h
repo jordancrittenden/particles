@@ -7,9 +7,6 @@ typedef struct Cell {
 } Cell;
 
 typedef struct SimulationState {
-    // OpenCL state
-    CLState* clState = nullptr;
-    
     // Particle initialization parameters
     cl_float initialTemperature = 300; // Initial plasma temperature, K
     cl_uint initialParticles = 10000;  // Number of initial particles

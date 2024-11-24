@@ -39,9 +39,11 @@ __kernel void computeFields(
         for (int j = 0; j < nParticles; j++) {
             if (j == id) continue;
 
+            float species = particlePos[j][3];
+            if (species == 0.0) continue; // inactive particle
+
             float3 pos = (float3)(particlePos[j][0], particlePos[j][1], particlePos[j][2]);
             float3 vel = (float3)(particleVel[j][0], particleVel[j][1], particleVel[j][2]);
-            float species = particlePos[j][3];
             float charge = 0.0;
 
             if      (species == 1.0) charge = 0;       // neutron
