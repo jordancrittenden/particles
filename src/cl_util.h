@@ -16,3 +16,4 @@ typedef struct CLState {
 
 CLState* init_opencl();
 cl::Program build_kernel(CLState* clState, std::string kernelPath);
+const char* getCLErrorString(cl_int err);

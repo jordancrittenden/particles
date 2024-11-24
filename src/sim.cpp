@@ -210,7 +210,11 @@ int main(int argc, char* argv[]) {
             // Compute fields
             // Acquire the GL buffer for OpenCL to read and write
             clState->queue->enqueueAcquireGLObjects(&fieldsKernelGLBuffers);
-            clState->queue->enqueueNDRangeKernel(fieldsKernel, cl::NullRange, cl::NDRange(cells.size()));
+            cl_int fieldsKernelErr = clState->queue->enqueueNDRangeKernel(fieldsKernel, cl::NullRange, cl::NDRange(cells.size()));
+            if (fieldsKernelErr != CL_SUCCESS) {
+                std::cerr << "Failed to enqueue kernel: " << getCLErrorString(fieldsKernelErr) << std::endl;
+                return 1;
+            }
             //printDbgBufFloat4(dbgBufCL, cells.size());
             // Release the buffer back to OpenGL
             clState->queue->enqueueReleaseGLObjects(&fieldsKernelGLBuffers);
@@ -219,7 +223,11 @@ int main(int argc, char* argv[]) {
             // Do particle physics
             // Acquire the GL buffer for OpenCL to read and write
             clState->queue->enqueueAcquireGLObjects(&particlesKernelGLBuffers);
-            clState->queue->enqueueNDRangeKernel(particlesKernel, cl::NullRange, cl::NDRange(state.nParticles));
+            cl_int particlesKernelErr = clState->queue->enqueueNDRangeKernel(particlesKernel, cl::NullRange, cl::NDRange(state.nParticles));
+            if (particlesKernelErr != CL_SUCCESS) {
+                std::cerr << "Failed to enqueue kernel: " << getCLErrorString(particlesKernelErr) << std::endl;
+                return 1;
+            }
             if (simulationStep % 100 == 0) {
                 std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << "):: ";
                 printDbgBufFloat4(dbgBufCL, state.nParticles);
