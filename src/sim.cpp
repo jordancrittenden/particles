@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
     // Create GL buffers for torus
     scene.torus = create_torus_buffers(torus);
 
-    std::vector<CurrentVector> torusCurrents = get_toroidal_currents(torus);
+    std::vector<CurrentVector> currents = get_toroidal_currents(torus);
 
     std::vector<Cell> cells = get_torus_grid_cells(torus, state.cellSpacing);
     std::cout << "Simulation cells: " << cells.size() << std::endl;
@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
     state.nParticlesCL = cl::Buffer(*clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(int), &state.initialParticles);
     cl::Buffer dbgBufCL(*clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * state.maxParticles, dbgBuf.data());
     cl::Buffer cellLocationBufCL(*clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * cellLocations.size(), cellLocations.data());
-    cl::Buffer currentSegmentBufCL = get_current_segment_buffer(clState->context, torusCurrents);
+    cl::Buffer currentSegmentBufCL = get_current_segment_buffer(clState->context, currents);
 
     // Set up particle kernel parameters
     cl::Program particlesProgram = build_kernel(clState, "kernel/particles.cl");
@@ -143,7 +143,7 @@ int main(int argc, char* argv[]) {
     particlesKernel.setArg(3, currentSegmentBufCL);
     particlesKernel.setArg(4, dbgBufCL);
     particlesKernel.setArg(5, state.dt);
-    particlesKernel.setArg(6, (cl_uint)torusCurrents.size());
+    particlesKernel.setArg(6, (cl_uint)currents.size());
     particlesKernel.setArg(7, /* solenoidFlux= */ 0.0f);
     particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
 
@@ -159,7 +159,7 @@ int main(int argc, char* argv[]) {
     fieldsKernel.setArg(6, currentSegmentBufCL);
     fieldsKernel.setArg(7, dbgBufCL);
     fieldsKernel.setArg(8, (cl_uint)cells.size());
-    fieldsKernel.setArg(9, (cl_uint)torusCurrents.size());
+    fieldsKernel.setArg(9, (cl_uint)currents.size());
     fieldsKernel.setArg(10, /* solenoidFlux= */ 0.0f);
     fieldsKernel.setArg(11, (cl_uint)state.enableInterparticlePhysics);
 
