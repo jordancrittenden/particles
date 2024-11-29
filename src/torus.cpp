@@ -34,8 +34,11 @@ glm::mat4 get_coil_model_matrix(float angle, float r1) {
     return model;
 }
 
-std::vector<Cell> get_torus_grid_cells(const TorusProperties& torus, glm::vec3 minCoord, glm::vec3 maxCoord, float dx) {
+std::vector<Cell> get_torus_grid_cells(const TorusProperties& torus, float dx) {
     std::vector<Cell> cells;
+
+    glm::vec3 minCoord(-(torus.r1 + torus.r2), -torus.r2, -(torus.r1 + torus.r2));
+    glm::vec3 maxCoord(torus.r1 + torus.r2, torus.r2, torus.r1 + torus.r2);
 
     glm::vec4 torusCenterPos = glm::vec4(0.0, 0.0f, torus.r1, 1.0f);
     for (float x = minCoord.x; x <= maxCoord.x; x += dx) {

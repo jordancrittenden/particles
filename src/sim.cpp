@@ -96,9 +96,7 @@ int main(int argc, char* argv[]) {
 
     std::vector<CurrentVector> torusCurrents = get_toroidal_currents(torus);
 
-    glm::vec3 minCoord(-(torus.r1 + torus.r2), -torus.r2, -(torus.r1 + torus.r2));
-    glm::vec3 maxCoord(torus.r1 + torus.r2, torus.r2, torus.r1 + torus.r2);
-    std::vector<Cell> cells = get_torus_grid_cells(torus, minCoord, maxCoord, state.cellSpacing);
+    std::vector<Cell> cells = get_torus_grid_cells(torus, state.cellSpacing);
     std::cout << "Simulation cells: " << cells.size() << std::endl;
     
     std::vector<glm::vec4> eFieldLoc, eFieldVec;

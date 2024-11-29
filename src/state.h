@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+#include <glm/glm.hpp>
 #include "cl_util.h"
 
 typedef struct Cell {
@@ -28,3 +30,5 @@ typedef struct SimulationState {
 } SimulationState;
 
 void print_state(const SimulationState& state);
+cl_float4 free_space_rand_particle_position(glm::vec3 minCoord, glm::vec3 maxCoord);
+std::vector<Cell> get_free_space_grid_cells(glm::vec3 minCoord, glm::vec3 maxCoord, float dx);

@@ -23,4 +23,4 @@ cl_float4 torus_rand_particle_position(const TorusProperties& torus);
 GLBuffers create_torus_buffers(const TorusProperties& torus);
 void render_torus(GLuint shader, const TorusProperties& torus, const GLBuffers& torusBuf, glm::mat4 view, glm::mat4 projection);
 std::vector<CurrentVector> get_toroidal_currents(const TorusProperties& torus);
-std::vector<Cell> get_torus_grid_cells(const TorusProperties& torus, glm::vec3 minCoord, glm::vec3 maxCoord, float dx);
+std::vector<Cell> get_torus_grid_cells(const TorusProperties& torus, float dx);
