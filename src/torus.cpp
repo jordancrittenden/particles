@@ -17,7 +17,7 @@ inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
 }
 
-cl_float4 torus_rand_particle_position_and_type(const TorusProperties& torus) {
+cl_float4 torus_rand_particle_position(const TorusProperties& torus) {
     float r = rand_range(torus.r1 - (torus.r2 / 2.0f), torus.r1 + (torus.r2 / 2.0f));
     float theta = rand_range(0.0f, 2 * M_PI);
     float y = rand_range(-torus.r2 / 2.0f, torus.r2 / 2.0f);
