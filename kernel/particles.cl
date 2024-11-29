@@ -21,19 +21,52 @@
 #define Q_OVER_M_DEUTERON     ( 4.79179449646e7f)                 /* A s / kg */
 #define Q_OVER_M_TRITON       ( 3.19964547001e7f)                 /* A s / kg */
 
+float particle_mass(float species) {
+    if      (species == 1.0) return M_NEUTRON;
+    else if (species == 2.0) return M_ELECTRON;
+    else if (species == 3.0) return M_PROTON;
+    else if (species == 4.0) return M_DEUTERIUM;
+    else if (species == 5.0) return M_TRITIUM;
+    else if (species == 6.0) return M_HELIUM_4_NUC;
+    else if (species == 7.0) return M_DEUTERON;
+    else if (species == 8.0) return M_TRITON;
+}
+
+float particle_charge(float species) {
+    if      (species == 1.0) return 0;       // neutron
+    else if (species == 2.0) return -Q;      // electron
+    else if (species == 3.0) return Q;       // proton
+    else if (species == 4.0) return 0;       // deuterium
+    else if (species == 5.0) return 0;       // tritium
+    else if (species == 6.0) return 2.0 * Q; // helium4
+    else if (species == 7.0) return Q;       // ion_deuterium
+    else if (species == 8.0) return Q;       // ion_tritium
+}
+
+float charge_to_mass_ratio(float species) {
+    if      (species == 1.0) return 0.0;
+    else if (species == 2.0) return Q_OVER_M_ELECTRON;
+    else if (species == 3.0) return Q_OVER_M_PROTON;
+    else if (species == 4.0) return 0;
+    else if (species == 5.0) return 0;
+    else if (species == 6.0) return Q_OVER_M_HELIUM_4_NUC;
+    else if (species == 7.0) return Q_OVER_M_DEUTERON;
+    else if (species == 8.0) return Q_OVER_M_TRITON;
+}
+
 __kernel void computeMotion(
+    __global uint* nParticles,
     __global float4* particlePos,
     __global float4* particleVel,
     __global float4* currentSegments,
     __global float4* debug,
     const float dt,
-    const uint nParticles,
     const uint nCurrentSegments,
     const float solenoidFlux,
     const uint enableInterparticlePhysics)
 {
     int id = get_global_id(0);
-    if (id >= nParticles) return;
+    if (id >= *nParticles) return;
 
     float species = particlePos[id][3];
     if (species == 0.0) return; // inactive particle
@@ -41,33 +74,20 @@ __kernel void computeMotion(
     // Extract position and charge-to-mass ratio for this particle
     float3 pos = (float3)(particlePos[id][0], particlePos[id][1], particlePos[id][2]);
     float3 vel = (float3)(particleVel[id][0], particleVel[id][1], particleVel[id][2]);
-    float mass = 0.0;
-    float q_over_m = 0.0;
-
-    if      (species == 1.0) mass = M_NEUTRON;
-    else if (species == 2.0) mass = M_ELECTRON;
-    else if (species == 3.0) mass = M_PROTON;
-    else if (species == 4.0) mass = M_DEUTERIUM;
-    else if (species == 5.0) mass = M_TRITIUM;
-    else if (species == 6.0) mass = M_HELIUM_4_NUC;
-    else if (species == 7.0) mass = M_DEUTERON;
-    else if (species == 8.0) mass = M_TRITON;
-
-    if      (species == 1.0) q_over_m = 0.0;
-    else if (species == 2.0) q_over_m = Q_OVER_M_ELECTRON;
-    else if (species == 3.0) q_over_m = Q_OVER_M_PROTON;
-    else if (species == 4.0) q_over_m = 0;
-    else if (species == 5.0) q_over_m = 0;
-    else if (species == 6.0) q_over_m = Q_OVER_M_HELIUM_4_NUC;
-    else if (species == 7.0) q_over_m = Q_OVER_M_DEUTERON;
-    else if (species == 8.0) q_over_m = Q_OVER_M_TRITON;
+    float mass = particle_mass(species);
+    float q_over_m = charge_to_mass_ratio(species);
 
     // Calculate the E and B field at particle position
     float3 E = (float3)(0.0f, 0.0f, 0.0f);
     float3 B = (float3)(0.0f, 0.0f, 0.0f);
 
     if (enableInterparticlePhysics) {
-        for (int j = 0; j < nParticles; j++) {
+        int collider_id = -1;
+        float collider_mass;
+        float3 collider_pos;
+        float3 collider_vel;
+        float3 collision_r_norm;
+        for (int j = 0; j < *nParticles; j++) {
             if (j == id) continue;
 
             float otherSpecies = particlePos[j][3];
@@ -75,26 +95,49 @@ __kernel void computeMotion(
 
             float3 otherPos = (float3)(particlePos[j][0], particlePos[j][1], particlePos[j][2]);
             float3 otherVel = (float3)(particleVel[j][0], particleVel[j][1], particleVel[j][2]);
-            float otherCharge = 0.0;
-
-            if      (otherSpecies == 1.0) otherCharge = 0;       // neutron
-            else if (otherSpecies == 2.0) otherCharge = -Q;      // electron
-            else if (otherSpecies == 3.0) otherCharge = Q;       // proton
-            else if (otherSpecies == 4.0) otherCharge = 0;       // deuterium
-            else if (otherSpecies == 5.0) otherCharge = 0;       // tritium
-            else if (otherSpecies == 6.0) otherCharge = 2.0 * Q; // helium4
-            else if (otherSpecies == 7.0) otherCharge = Q;       // ion_deuterium
-            else if (otherSpecies == 8.0) otherCharge = Q;       // ion_tritium
+            float otherCharge = particle_charge(otherSpecies);
 
             float3 r = pos - otherPos;
             float3 r_norm = normalize(r);
             float r_mag = length(r);
 
-            // Avoid division by zero
-            if (r_mag < 0.00001f) continue;
+            // Check for collisions
+            if (r_mag < 0.001f) {
+                collider_id = j;
+                collider_mass = particle_mass(otherSpecies);
+                collider_pos = otherPos;
+                collider_vel = otherVel;
+                collision_r_norm = r_norm;
+            } else {
+                E += ((K * otherCharge) / (r_mag * r_mag)) * r_norm;
+                B += ((MU_0_OVER_4_PI * otherCharge) / (r_mag * r_mag)) * cross(otherVel, r_norm);
+            }
+        }
+        // to avoid both work items spawning a new particle, check id < collider_id, which will only be true for one of them
+        if (collider_id >= 0 && id < collider_id) {
+            // Relative velocity
+            float3 v = collider_vel - vel;
 
-            E += ((K * otherCharge) / (r_mag * r_mag)) * r_norm;
-            B += ((MU_0_OVER_4_PI * otherCharge) / (r_mag * r_mag)) * cross(otherVel, r_norm);
+            // Relative velocity along the line of collision
+            float v_dot_r = dot(v, collision_r_norm);
+
+            // If the relative velocity along the line of collision is >= 0, they are moving apart
+            if (v_dot_r >= 0.0) return;
+
+            // Impulse scalar
+            float impulse = (2.0 * v_dot_r) / (mass + collider_mass);
+
+            // Compute new velocities
+            float3 vel_new = vel + impulse * mass * collision_r_norm;
+            float3 collider_vel_new = collider_vel - impulse * mass * collision_r_norm;
+
+            particleVel[id] = (float4)(vel_new.x, vel_new.y, vel_new.z, 0.0f);
+            particleVel[collider_id] = (float4)(collider_vel_new.x, collider_vel_new.y, collider_vel_new.z, 0.0f);
+
+            // Create new particle
+            uint new_idx = *nParticles + id;
+            particlePos[new_idx] = (float4)(pos[0] + 0.01, pos[1] + 0.01, pos[2] + 0.01, 1.0);
+            particleVel[new_idx] = (float4)(0.0, 10000.0, 0.0, 0.0);
         }
     }
 

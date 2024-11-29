@@ -79,7 +79,6 @@ int main(int argc, char* argv[]) {
     GLuint vectorShaderProgram    = create_shader_program("shader/vector_vertex.glsl", "shader/vector_fragment.glsl");
 
     // Initialize particles
-    state.nParticles = state.initialParticles;
     create_particle_buffers(
         [](){ return torus_rand_particle_position_and_type(torus); },
         [](PARTICLE_SPECIES species){ return maxwell_boltzmann_particle_velocty(state.initialTemperature, particle_mass(species)); },
@@ -126,6 +125,7 @@ int main(int argc, char* argv[]) {
     }
     std::vector<cl::Memory> particlesKernelGLBuffers = {particlePosBufCL, particleVelBufCL};
     std::vector<cl::Memory> fieldsKernelGLBuffers = {particlePosBufCL, particleVelBufCL, eFieldVecBufCL, bFieldVecBufCL};
+    std::vector<cl::Memory> defragKernelGLBuffers = {particlePosBufCL, particleVelBufCL};
 
     // Create additional OpenCL buffers
     std::vector<cl_float4> dbgBuf(state.maxParticles);
@@ -133,6 +133,7 @@ int main(int argc, char* argv[]) {
     for (auto& cell : cells) {
         cellLocations.push_back(cell.pos);
     }
+    state.nParticlesCL = cl::Buffer(*clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(int), &state.initialParticles);
     cl::Buffer dbgBufCL(*clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * state.maxParticles, dbgBuf.data());
     cl::Buffer cellLocationBufCL(*clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_float4) * cellLocations.size(), cellLocations.data());
     cl::Buffer currentSegmentBufCL = get_current_segment_buffer(clState->context, torusCurrents);
@@ -140,12 +141,12 @@ int main(int argc, char* argv[]) {
     // Set up particle kernel parameters
     cl::Program particlesProgram = build_kernel(clState, "kernel/particles.cl");
     cl::Kernel particlesKernel(particlesProgram, "computeMotion");
-    particlesKernel.setArg(0, particlePosBufCL);
-    particlesKernel.setArg(1, particleVelBufCL);
-    particlesKernel.setArg(2, currentSegmentBufCL);
-    particlesKernel.setArg(3, dbgBufCL);
-    particlesKernel.setArg(4, state.dt);
-    particlesKernel.setArg(5, state.nParticles);
+    particlesKernel.setArg(0, state.nParticlesCL);
+    particlesKernel.setArg(1, particlePosBufCL);
+    particlesKernel.setArg(2, particleVelBufCL);
+    particlesKernel.setArg(3, currentSegmentBufCL);
+    particlesKernel.setArg(4, dbgBufCL);
+    particlesKernel.setArg(5, state.dt);
     particlesKernel.setArg(6, (cl_uint)torusCurrents.size());
     particlesKernel.setArg(7, /* solenoidFlux= */ 0.0f);
     particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
@@ -153,23 +154,32 @@ int main(int argc, char* argv[]) {
     // Set up field kernel parameters
     cl::Program fieldsProgram = build_kernel(clState, "kernel/fields.cl");
     cl::Kernel fieldsKernel(fieldsProgram, "computeFields");
-    fieldsKernel.setArg(0, cellLocationBufCL);
-    fieldsKernel.setArg(1, eFieldVecBufCL);
-    fieldsKernel.setArg(2, bFieldVecBufCL);
-    fieldsKernel.setArg(3, particlePosBufCL);
-    fieldsKernel.setArg(4, particleVelBufCL);
-    fieldsKernel.setArg(5, currentSegmentBufCL);
-    fieldsKernel.setArg(6, dbgBufCL);
-    fieldsKernel.setArg(7, (cl_uint)cells.size());
-    fieldsKernel.setArg(8, state.nParticles);
+    fieldsKernel.setArg(0, state.nParticlesCL);
+    fieldsKernel.setArg(1, cellLocationBufCL);
+    fieldsKernel.setArg(2, eFieldVecBufCL);
+    fieldsKernel.setArg(3, bFieldVecBufCL);
+    fieldsKernel.setArg(4, particlePosBufCL);
+    fieldsKernel.setArg(5, particleVelBufCL);
+    fieldsKernel.setArg(6, currentSegmentBufCL);
+    fieldsKernel.setArg(7, dbgBufCL);
+    fieldsKernel.setArg(8, (cl_uint)cells.size());
     fieldsKernel.setArg(9, (cl_uint)torusCurrents.size());
     fieldsKernel.setArg(10, /* solenoidFlux= */ 0.0f);
     fieldsKernel.setArg(11, (cl_uint)state.enableInterparticlePhysics);
+
+    // Set up defrag kernel parameters
+    cl::Program defragProgram = build_kernel(clState, "kernel/defrag.cl");
+    cl::Kernel defragKernel(defragProgram, "defrag");
+    defragKernel.setArg(0, state.nParticlesCL);
+    defragKernel.setArg(1, particlePosBufCL);
+    defragKernel.setArg(2, particleVelBufCL);
+    defragKernel.setArg(3, state.maxParticles);
 
     glEnable(GL_DEPTH_TEST);
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     // Main render loop
+    cl_uint nParticles = state.initialParticles;
     int frameCount = 0;
     int simulationStep = 0;
     float frameTimeSec = 1.0f / (float)scene.targetFPS;
@@ -188,7 +198,7 @@ int main(int argc, char* argv[]) {
 
         if (scene.showAxes)      render_axes(axesShaderProgram, scene.axes, view, projection);
         if (scene.showTorus)     render_torus(torusShaderProgram, torus, scene.torus, view, projection);
-        if (scene.showParticles) render_particles(particlesShaderProgram, scene.pos, state.nParticles, view, projection);
+        if (scene.showParticles) render_particles(particlesShaderProgram, scene.pos, nParticles, view, projection);
         if (scene.showEField)    render_fields(vectorShaderProgram, cells.size(), scene.e_field, view, projection);
         if (scene.showBField)    render_fields(vectorShaderProgram, cells.size(), scene.b_field, view, projection);
 
@@ -199,11 +209,9 @@ int main(int argc, char* argv[]) {
         do {
             // Update kernel args that could have changed
             float solenoidFlux = state.enableSolenoidFlux ? torus.solenoidFlux : 0.0f;
-            particlesKernel.setArg(4, state.dt);
-            particlesKernel.setArg(5, state.nParticles);
+            particlesKernel.setArg(5, state.dt);
             particlesKernel.setArg(7, solenoidFlux);
             particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
-            fieldsKernel.setArg(8, state.nParticles);
             fieldsKernel.setArg(10, solenoidFlux);
             fieldsKernel.setArg(11, (cl_uint)state.enableInterparticlePhysics);
 
@@ -215,7 +223,6 @@ int main(int argc, char* argv[]) {
                 std::cerr << "Failed to enqueue kernel: " << getCLErrorString(fieldsKernelErr) << std::endl;
                 return 1;
             }
-            //printDbgBufFloat4(dbgBufCL, cells.size());
             // Release the buffer back to OpenGL
             clState->queue->enqueueReleaseGLObjects(&fieldsKernelGLBuffers);
             clState->queue->finish();
@@ -223,17 +230,29 @@ int main(int argc, char* argv[]) {
             // Do particle physics
             // Acquire the GL buffer for OpenCL to read and write
             clState->queue->enqueueAcquireGLObjects(&particlesKernelGLBuffers);
-            cl_int particlesKernelErr = clState->queue->enqueueNDRangeKernel(particlesKernel, cl::NullRange, cl::NDRange(state.nParticles));
+            cl_int particlesKernelErr = clState->queue->enqueueNDRangeKernel(particlesKernel, cl::NullRange, cl::NDRange(nParticles));
             if (particlesKernelErr != CL_SUCCESS) {
                 std::cerr << "Failed to enqueue kernel: " << getCLErrorString(particlesKernelErr) << std::endl;
                 return 1;
             }
             if (simulationStep % 100 == 0) {
-                std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << "):: ";
-                printDbgBufFloat4(dbgBufCL, state.nParticles);
+                std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << ") [" << nParticles << " particles]" << std::endl;
             }
             // Release the buffer back to OpenGL
             clState->queue->enqueueReleaseGLObjects(&particlesKernelGLBuffers);
+            clState->queue->finish();
+
+            // Defrag particle buffers
+            // Acquire the GL buffer for OpenCL to read and write
+            clState->queue->enqueueAcquireGLObjects(&defragKernelGLBuffers);
+            cl_int defragKernelErr = clState->queue->enqueueNDRangeKernel(defragKernel, cl::NullRange, cl::NDRange(1));
+            if (defragKernelErr != CL_SUCCESS) {
+                std::cerr << "Failed to enqueue kernel: " << getCLErrorString(defragKernelErr) << std::endl;
+                return 1;
+            }
+            clState->queue->enqueueReadBuffer(state.nParticlesCL, CL_TRUE, 0, sizeof(cl_uint), &nParticles);
+            // Release the buffer back to OpenGL
+            clState->queue->enqueueReleaseGLObjects(&defragKernelGLBuffers);
             clState->queue->finish();
 
             frameDur = std::chrono::high_resolution_clock::now() - frameStart;

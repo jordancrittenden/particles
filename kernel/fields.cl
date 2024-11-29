@@ -12,6 +12,7 @@
 #define Q_OVER_M_PROTON   ( 9.57883424534e7f)                 /* A s / kg */
 
 __kernel void computeFields(
+    __global uint* nParticles,
     __global float4* cellLocation,
     __global float4* eField,
     __global float4* bField,
@@ -20,7 +21,6 @@ __kernel void computeFields(
     __global float4* currentSegments,
     __global float4* debug,
     const uint nCells,
-    const uint nParticles,
     const uint nCurrentSegments,
     const float solenoidFlux,
     const uint enableInterparticlePhysics)
@@ -36,7 +36,7 @@ __kernel void computeFields(
     float3 B = (float3)(0.0f, 0.0f, 0.0f);
 
     if (enableInterparticlePhysics) {
-        for (int j = 0; j < nParticles; j++) {
+        for (int j = 0; j < *nParticles; j++) {
             if (j == id) continue;
 
             float species = particlePos[j][3];
