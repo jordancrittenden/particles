@@ -3,6 +3,13 @@
 #include <OpenGL/OpenGL.h>
 #include "cl_util.h"
 
+void cl_exit_if_err(cl_int err, const char* msg) {
+    if (err != CL_SUCCESS) {
+        std::cerr << msg << ": " << get_cl_err_string(err) << std::endl;
+        exit(1);
+    }
+}
+
 CLState* init_opencl() {
     CLState* state = new CLState();
 
@@ -66,17 +73,11 @@ CLState* init_opencl() {
     // Create OpenCL context with OpenGL sharing enabled
     cl_int err;
     state->context = new cl::Context(state->devices, properties, nullptr, nullptr, &err);
-    if (err != CL_SUCCESS) {
-        std::cerr << "Failed to create OpenCL context with OpenGL sharing: " << getCLErrorString(err) << std::endl;
-        return nullptr;
-    }
+    cl_exit_if_err(err, "Failed to create OpenCL context with OpenGL sharing");
 
      // Create OpenCL command queue
     state->queue = new cl::CommandQueue(*state->context, *state->selectedDevice, 0, &err);
-    if (err != CL_SUCCESS) {
-        std::cerr << "Failed to create OpenCL command queue: " << getCLErrorString(err) << std::endl;
-        return nullptr;
-    }
+    cl_exit_if_err(err, "Failed to create OpenCL command queue");
 
     std::cout << "OpenCL-OpenGL interop context created successfully." << std::endl;
 
@@ -101,7 +102,7 @@ cl::Program build_kernel(CLState* clState, std::string kernelPath) {
     return program;
 }
 
-const char* getCLErrorString(cl_int err) {
+const char* get_cl_err_string(cl_int err) {
     switch (err) {
         // run-time and JIT compiler errors
         case 0: return "CL_SUCCESS";

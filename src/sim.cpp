@@ -119,10 +119,8 @@ int main(int argc, char* argv[]) {
     cl::Buffer particleVelBufCL = cl::BufferGL(*clState->context, CL_MEM_READ_WRITE, scene.vel.vbo, &velErr);
     cl::Buffer eFieldVecBufCL   = cl::BufferGL(*clState->context, CL_MEM_READ_WRITE, scene.e_field.instanceVecBuf, &eFieldVecErr);
     cl::Buffer bFieldVecBufCL   = cl::BufferGL(*clState->context, CL_MEM_READ_WRITE, scene.b_field.instanceVecBuf, &bFieldVecErr);
-    if (posErr != CL_SUCCESS || velErr != CL_SUCCESS || eFieldVecErr != CL_SUCCESS || bFieldVecErr != CL_SUCCESS) {
-        std::cerr << "Failed to create OpenCL buffer from OpenGL buffer: " << posErr << std::endl;
-        return -1;
-    }
+    cl_exit_if_err(posErr, "Failed to create OpenCL buffer from OpenGL buffer");
+    
     std::vector<cl::Memory> particlesKernelGLBuffers = {particlePosBufCL, particleVelBufCL};
     std::vector<cl::Memory> fieldsKernelGLBuffers = {particlePosBufCL, particleVelBufCL, eFieldVecBufCL, bFieldVecBufCL};
     std::vector<cl::Memory> defragKernelGLBuffers = {particlePosBufCL, particleVelBufCL};
@@ -219,10 +217,7 @@ int main(int argc, char* argv[]) {
             // Acquire the GL buffer for OpenCL to read and write
             clState->queue->enqueueAcquireGLObjects(&fieldsKernelGLBuffers);
             cl_int fieldsKernelErr = clState->queue->enqueueNDRangeKernel(fieldsKernel, cl::NullRange, cl::NDRange(cells.size()));
-            if (fieldsKernelErr != CL_SUCCESS) {
-                std::cerr << "Failed to enqueue kernel: " << getCLErrorString(fieldsKernelErr) << std::endl;
-                return 1;
-            }
+            cl_exit_if_err(fieldsKernelErr, "Failed to enqueue kernel");
             // Release the buffer back to OpenGL
             clState->queue->enqueueReleaseGLObjects(&fieldsKernelGLBuffers);
             clState->queue->finish();
@@ -231,10 +226,7 @@ int main(int argc, char* argv[]) {
             // Acquire the GL buffer for OpenCL to read and write
             clState->queue->enqueueAcquireGLObjects(&particlesKernelGLBuffers);
             cl_int particlesKernelErr = clState->queue->enqueueNDRangeKernel(particlesKernel, cl::NullRange, cl::NDRange(nParticles));
-            if (particlesKernelErr != CL_SUCCESS) {
-                std::cerr << "Failed to enqueue kernel: " << getCLErrorString(particlesKernelErr) << std::endl;
-                return 1;
-            }
+            cl_exit_if_err(particlesKernelErr, "Failed to enqueue kernel");
             if (simulationStep % 100 == 0) {
                 std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << ") [" << nParticles << " particles]" << std::endl;
             }
@@ -246,10 +238,7 @@ int main(int argc, char* argv[]) {
             // Acquire the GL buffer for OpenCL to read and write
             clState->queue->enqueueAcquireGLObjects(&defragKernelGLBuffers);
             cl_int defragKernelErr = clState->queue->enqueueNDRangeKernel(defragKernel, cl::NullRange, cl::NDRange(1));
-            if (defragKernelErr != CL_SUCCESS) {
-                std::cerr << "Failed to enqueue kernel: " << getCLErrorString(defragKernelErr) << std::endl;
-                return 1;
-            }
+            cl_exit_if_err(defragKernelErr, "Failed to enqueue kernel");
             clState->queue->enqueueReadBuffer(state.nParticlesCL, CL_TRUE, 0, sizeof(cl_uint), &nParticles);
             // Release the buffer back to OpenGL
             clState->queue->enqueueReleaseGLObjects(&defragKernelGLBuffers);
