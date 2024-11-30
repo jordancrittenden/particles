@@ -14,6 +14,7 @@ TokamakScene::TokamakScene(SimulationState& state, TorusParameters& params) : Sc
 void TokamakScene::initialize() {
     Scene::initialize();
     this->torusBuf = create_torus_buffers(parameters);
+    this->cameraDistance = 5.0f;
 }
 
 TokamakScene::~TokamakScene() {

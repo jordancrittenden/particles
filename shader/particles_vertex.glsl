@@ -16,7 +16,7 @@ void main() {
     float distance = length(viewPos.xyz);
 
     // Set point size based on the distance (closer points are larger)
-    gl_PointSize = 15.0 / (distance + 1.0); // Adjust constants as needed
+    gl_PointSize = 10.0 / (distance + 1.0); // Adjust constants as needed
 
     // Final position of the vertex in clip space
     gl_Position = projection * view * model * vec4(aPos, 1.0);

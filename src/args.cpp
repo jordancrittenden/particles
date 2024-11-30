@@ -36,13 +36,14 @@ std::unordered_map<std::string, std::string> parse_args(int argc, char* argv[]) 
 
 void extract_state_vars(std::unordered_map<std::string, std::string> args, SimulationState* state, int* windowWidth, int* windowHeight, int* targetFPS) {
      for (const auto& [key, value] : args) {
-             if (key == "initialParticles") state->initialParticles           = stoi(value);
-        else if (key == "maxParticles")     state->maxParticles               = stoi(value);
-        else if (key == "fps")              *targetFPS                        = stoi(value);
-        else if (key == "width")            *windowWidth                      = stoi(value);
-        else if (key == "height")           *windowHeight                     = stoi(value);
-        else if (key == "cellSpacing")      state->cellSpacing                = stof(value);
-        else if (key == "interparticle")    state->enableInterparticlePhysics = (value == "true");
+             if (key == "initialParticles")   state->initialParticles           = stoi(value);
+        else if (key == "initialTemperature") state->initialTemperature         = stoi(value);
+        else if (key == "maxParticles")       state->maxParticles               = stoi(value);
+        else if (key == "fps")                *targetFPS                        = stoi(value);
+        else if (key == "width")              *windowWidth                      = stoi(value);
+        else if (key == "height")             *windowHeight                     = stoi(value);
+        else if (key == "cellSpacing")        state->cellSpacing                = stof(value);
+        else if (key == "interparticle")      state->enableInterparticlePhysics = (value == "true");
         else throw std::invalid_argument("Invalid argument '" + key + "'");
      }
 }

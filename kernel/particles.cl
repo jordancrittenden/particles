@@ -21,6 +21,8 @@
 #define Q_OVER_M_DEUTERON     ( 4.79179449646e7f)                 /* A s / kg */
 #define Q_OVER_M_TRITON       ( 3.19964547001e7f)                 /* A s / kg */
 
+#define CONSTRAIN_TO          0.1                                /* m */
+
 float particle_mass(float species) {
     if      (species == 1.0) return M_NEUTRON;
     else if (species == 2.0) return M_ELECTRON;
@@ -102,7 +104,7 @@ __kernel void computeMotion(
             float r_mag = length(r);
 
             // Check for collisions
-            if (r_mag < 0.001f) {
+            if (r_mag < 0.00001f) {
                 collider_id = j;
                 collider_mass = particle_mass(otherSpecies);
                 collider_pos = otherPos;
@@ -174,10 +176,10 @@ __kernel void computeMotion(
     debug[id] = (float4)(0.5 * mass * v_mag * v_mag, species, 0.0, 0.0);
 
     // Keep the particles in their box
-    if (particlePos[id][0] >  2.0) particleVel[id][0] = -particleVel[id][0];
-    if (particlePos[id][0] < -2.0) particleVel[id][0] = -particleVel[id][0];
-    if (particlePos[id][1] >  2.0) particleVel[id][1] = -particleVel[id][1];
-    if (particlePos[id][1] < -2.0) particleVel[id][1] = -particleVel[id][1];
-    if (particlePos[id][2] >  2.0) particleVel[id][2] = -particleVel[id][2];
-    if (particlePos[id][2] < -2.0) particleVel[id][2] = -particleVel[id][2];
+    if (particlePos[id][0] >  CONSTRAIN_TO) particleVel[id][0] = -particleVel[id][0];
+    if (particlePos[id][0] < -CONSTRAIN_TO) particleVel[id][0] = -particleVel[id][0];
+    if (particlePos[id][1] >  CONSTRAIN_TO) particleVel[id][1] = -particleVel[id][1];
+    if (particlePos[id][1] < -CONSTRAIN_TO) particleVel[id][1] = -particleVel[id][1];
+    if (particlePos[id][2] >  CONSTRAIN_TO) particleVel[id][2] = -particleVel[id][2];
+    if (particlePos[id][2] < -CONSTRAIN_TO) particleVel[id][2] = -particleVel[id][2];
 }

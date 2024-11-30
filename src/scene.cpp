@@ -43,6 +43,8 @@ void Scene::initialize() {
 
     this->e_field = create_vectors_buffers(eFieldLoc, eFieldVec, 0.03f);
     this->b_field = create_vectors_buffers(bFieldLoc, bFieldVec, 0.03f);
+
+    this->cameraDistance = 0.5f;
 }
 
 Scene::~Scene() {
@@ -74,14 +76,14 @@ void Scene::render(float aspectRatio) {
 }
 
 std::vector<Cell> Scene::get_grid_cells(float spacing) {
-    float s = 0.01f;
+    float s = 0.1f;
     glm::vec3 minCoord { -s, -s, -s };
     glm::vec3 maxCoord { s, s, s };
-    return get_free_space_grid_cells(minCoord, maxCoord, 0.0001f);
+    return get_free_space_grid_cells(minCoord, maxCoord, 0.01f);
 }
 
 cl_float4 Scene::rand_particle_position() {
-    float s = 0.01f;
+    float s = 0.1f;
     glm::vec3 minCoord { -s, -s, -s };
     glm::vec3 maxCoord { s, s, s };
     return free_space_rand_particle_position(minCoord, maxCoord);

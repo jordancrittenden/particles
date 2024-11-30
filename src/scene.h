@@ -42,6 +42,11 @@ public:
 
 protected:
     SimulationState* state;
+
+    // Camera settings
+    float cameraDistance = 5.0f;
+    float cameraTheta = 5.0f/6.0f * M_PI_2;
+    float cameraPhi = 1.0f/6.0f * M_PI_2;
     glm::mat4 view;
     glm::mat4 projection;
 
@@ -63,11 +68,6 @@ private:
     // Field vectors
     FieldGLBuffers e_field;
     FieldGLBuffers b_field;
-
-    // Camera settings
-    float cameraDistance = 5.0f;
-    float cameraTheta = 5.0f/6.0f * M_PI_2;
-    float cameraPhi = 1.0f/6.0f * M_PI_2;
 
     // Show/hide booleans
     bool showAxes = true;
