@@ -1,7 +1,6 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <OpenGL/OpenGL.h>
 #include <iostream>
@@ -17,9 +16,7 @@
 #include "args.h"
 #include "state.h"
 #include "scene.h"
-#include "torus.h"
-#include "particles.h"
-#include "field_vector.h"
+#include "tokamak.h"
 #include "current_segment.h"
 
 // OpenGL window

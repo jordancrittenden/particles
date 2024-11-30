@@ -1,5 +1,6 @@
 #include <vector>
 #include <cmath>
+#include <iostream>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -11,33 +12,8 @@
 #include "state.h"
 #include "torus.h"
 
-#define MU_0 (1.25663706144e-6f) /* kg m / A^2 s^2 */
-
 inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
-}
-
-TokamakScene::TokamakScene(SimulationState& state) : Scene(state) {
-    torusShaderProgram = create_shader_program("shader/torus_vertex.glsl", "shader/torus_fragment.glsl"); 
-    this->torusBuf = create_torus_buffers();
-}
-
-TokamakScene::~TokamakScene() {
-    glDeleteVertexArrays(1, &this->torusBuf.vao);
-}
-
-void TokamakScene::render(float aspectRatio) {
-    Scene::render(aspectRatio);
-    if (this->showTorus) render_torus(view, projection);
-}
-
-cl_float4 TokamakScene::rand_particle_position() {
-    float r = rand_range(parameters.r1 - (parameters.r2 / 2.0f), parameters.r1 + (parameters.r2 / 2.0f));
-    float theta = rand_range(0.0f, 2 * M_PI);
-    float y = rand_range(-parameters.r2 / 2.0f, parameters.r2 / 2.0f);
-
-    // [x, y, z, unused]
-    return cl_float4 { r * sin(theta), y, r * cos(theta), 0.0f };
 }
 
 // Set up transformation matrix for each circle
@@ -48,40 +24,7 @@ glm::mat4 get_coil_model_matrix(float angle, float r1) {
     return model;
 }
 
-std::vector<Cell> TokamakScene::get_grid_cells(float dx) {
-    std::vector<Cell> cells;
-
-    glm::vec3 minCoord(-(parameters.r1 + parameters.r2), -parameters.r2, -(parameters.r1 + parameters.r2));
-    glm::vec3 maxCoord(parameters.r1 + parameters.r2, parameters.r2, parameters.r1 + parameters.r2);
-
-    glm::vec4 torusCenterPos = glm::vec4(0.0, 0.0f, parameters.r1, 1.0f);
-    for (float x = minCoord.x; x <= maxCoord.x; x += dx) {
-        for (float z = minCoord.z; z <= maxCoord.z; z += dx) {
-            // Find azimuthal angle
-            float torusTheta = atan2(x, z);
-
-            // Find closest torus centerpoint
-            glm::mat4 xform = glm::mat4(1.0f);
-            xform = glm::rotate(xform, torusTheta, glm::vec3(0.0f, 1.0f, 0.0f));
-            glm::vec4 nearestTorusCenter = xform * torusCenterPos;
-
-            for (float y = minCoord.y; y <= maxCoord.y; y += dx) {
-                float xDiff = x - nearestTorusCenter.x;
-                float yDiff = y - nearestTorusCenter.y;
-                float zDiff = z - nearestTorusCenter.z;
-
-                bool isActive = xDiff*xDiff + yDiff*yDiff + zDiff*zDiff > parameters.r2*parameters.r2;
-
-                Cell cell;
-                cell.pos = cl_float4 { x, y, z, isActive ? 1.0f : 0.0f };
-                cells.push_back(cell);
-            }
-        }
-    }
-    return cells;
-}
-
-void TokamakScene::generate_ring_vertices(std::vector<float>& vertices, std::vector<unsigned int>& indices) {
+void generate_ring_vertices(TorusParameters& parameters, std::vector<float>& vertices, std::vector<unsigned int>& indices) {
     int radialSegments = 64;
     int depthSegments = 1;
     float t = 0.05;
@@ -132,12 +75,12 @@ void TokamakScene::generate_ring_vertices(std::vector<float>& vertices, std::vec
     }
 }
 
-GLBuffers TokamakScene::create_torus_buffers() {
+GLBuffers create_torus_buffers(TorusParameters& parameters) {
     GLBuffers buf;
 
     // Generate ring vertices and indices
     std::vector<float> vertices;
-    generate_ring_vertices(vertices, buf.indices);
+    generate_ring_vertices(parameters, vertices, buf.indices);
 
     glGenVertexArrays(1, &buf.vao);
     glGenBuffers(1, &buf.vbo);
@@ -164,12 +107,12 @@ GLBuffers TokamakScene::create_torus_buffers() {
     return buf;
 }
 
-void TokamakScene::render_torus(glm::mat4 view, glm::mat4 projection) {
-    glUseProgram(torusShaderProgram);
+void render_torus(GLuint shader, const GLBuffers& torusBuf, TorusParameters& parameters, glm::mat4 view, glm::mat4 projection) {
+    glUseProgram(shader);
 
     // Set view and projection uniforms
-    GLint viewLoc = glGetUniformLocation(torusShaderProgram, "view");
-    GLint projLoc = glGetUniformLocation(torusShaderProgram, "projection");
+    GLint viewLoc = glGetUniformLocation(shader, "view");
+    GLint projLoc = glGetUniformLocation(shader, "projection");
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -180,44 +123,10 @@ void TokamakScene::render_torus(glm::mat4 view, glm::mat4 projection) {
         float angle = (2.0f * M_PI * i) / parameters.toroidalCoils;
         glm::mat4 model = get_coil_model_matrix(angle, parameters.r1);
 
-        GLint modelLoc = glGetUniformLocation(torusShaderProgram, "model");
+        GLint modelLoc = glGetUniformLocation(shader, "model");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
         glBindVertexArray(torusBuf.vao);
         glDrawElements(GL_TRIANGLES, torusBuf.indices.size(), GL_UNSIGNED_INT, 0);
     }
-}
-
-std::vector<CurrentVector> TokamakScene::get_currents() {
-    std::vector<CurrentVector> currents;
-
-    std::vector<glm::vec4> circleVertices;
-    float thetaStep = 2.0f * M_PI / parameters.coilLoopSegments;
-    for (int i = 0; i < parameters.coilLoopSegments; i++) {
-        float theta = i * thetaStep;
-        circleVertices.push_back(glm::vec4 { parameters.r2 * cos(theta), parameters.r2 * sin(theta), 0.0f, 1.0f });
-    }
-
-    int idx = 0;
-    int coilStartIdx = 0;
-    for (int i = 0; i < parameters.toroidalCoils; ++i) {
-        coilStartIdx = idx;
-
-        float angle = (2.0f * M_PI * i) / parameters.toroidalCoils;
-        glm::mat4 model = get_coil_model_matrix(angle, parameters.r1);
-
-        for (int j = 0; j < parameters.coilLoopSegments; ++j) {
-            CurrentVector current;
-            current.x = model * circleVertices[j];
-            current.i = parameters.toroidalI;
-
-            if (j > 0) currents[idx-1].dx = current.x - currents[idx-1].x;
-
-            currents.push_back(current);
-            idx++;
-        }
-        currents[idx-1].dx = currents[coilStartIdx].x - currents[idx-1].x;
-    }
-
-    return currents;
 }

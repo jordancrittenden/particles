@@ -10,7 +10,7 @@ class Scene {
 public:
     Scene(SimulationState& state);
     ~Scene();
-    void initialize();
+    virtual void initialize();
 
     // Rendering
     virtual void render(float aspectRatio);

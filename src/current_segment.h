@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include "cl_util.h"
 
 typedef struct CurrentVector {
     glm::vec4 x;  // position of the current in space

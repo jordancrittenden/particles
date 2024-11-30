@@ -18,6 +18,7 @@ clang++ \
     src/state.cpp \
     src/scene.cpp \
     src/args.cpp \
+    src/tokamak.cpp \
     src/sim.cpp \
     /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib \
     /opt/homebrew/Cellar/glew/2.2.0_1/lib/libGLEW.2.2.0.dylib \

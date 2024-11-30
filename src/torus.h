@@ -1,12 +1,6 @@
 #pragma once
 
-#include <vector>
-#include <glm/glm.hpp>
 #include "gl_util.h"
-#include "cl_util.h"
-#include "state.h"
-#include "scene.h"
-#include "current_segment.h"
 
 typedef struct TorusParameters {
     float r1 = 1.0f;            // Radius of torus, m
@@ -20,26 +14,6 @@ typedef struct TorusParameters {
     float solenoidFlux = 0.3f;  // Central solenoid magnetic flux, V*s
 } TorusParameters;
 
-class TokamakScene : public Scene {
-public:
-    TokamakScene(SimulationState& state);
-    ~TokamakScene();
-
-    // Rendering
-    void render(float aspectRatio);
-
-    // Scene-dependent functions
-    std::vector<Cell> get_grid_cells(float spacing);
-    cl_float4 rand_particle_position();
-    std::vector<CurrentVector> get_currents();
-
-private:
-    void render_torus(glm::mat4 view, glm::mat4 projection);
-    GLBuffers create_torus_buffers();
-    void generate_ring_vertices(std::vector<float>& vertices, std::vector<unsigned int>& indices);
-
-    TorusParameters parameters;
-    GLBuffers torusBuf;
-    GLuint torusShaderProgram;
-    bool showTorus = true;
-};
+glm::mat4 get_coil_model_matrix(float angle, float r1);
+GLBuffers create_torus_buffers(TorusParameters& parameters);
+void render_torus(GLuint shader, const GLBuffers& torusBuf, TorusParameters& parameters, glm::mat4 view, glm::mat4 projection);
