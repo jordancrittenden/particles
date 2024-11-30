@@ -7,7 +7,7 @@ inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
 }
 
-TokamakScene::TokamakScene(SimulationState& state) : Scene(state) {
+TokamakScene::TokamakScene(SimulationState& state, TorusParameters& params) : Scene(state), parameters(params) {
     torusShaderProgram = create_shader_program("shader/torus_vertex.glsl", "shader/torus_fragment.glsl"); 
 }
 

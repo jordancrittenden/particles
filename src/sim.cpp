@@ -29,6 +29,7 @@ int targetFPS = 60;
 
 // Main function
 int main(int argc, char* argv[]) {
+    TorusParameters torus;
     SimulationState state;
 
     // Parse CLI arguments into state variables
@@ -47,7 +48,7 @@ int main(int argc, char* argv[]) {
     CLState* clState = init_opencl();
 
     // Initialize the Scene
-    Scene* scene = new TokamakScene(state);
+    Scene* scene = new TokamakScene(state, torus);
     scene->initialize();
 
     std::vector<CurrentVector> currents = scene->get_currents();

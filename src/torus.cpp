@@ -24,7 +24,7 @@ glm::mat4 get_coil_model_matrix(float angle, float r1) {
     return model;
 }
 
-void generate_ring_vertices(TorusParameters& parameters, std::vector<float>& vertices, std::vector<unsigned int>& indices) {
+void generate_ring_vertices(const TorusParameters& parameters, std::vector<float>& vertices, std::vector<unsigned int>& indices) {
     int radialSegments = 64;
     int depthSegments = 1;
     float t = 0.05;
@@ -75,7 +75,7 @@ void generate_ring_vertices(TorusParameters& parameters, std::vector<float>& ver
     }
 }
 
-GLBuffers create_torus_buffers(TorusParameters& parameters) {
+GLBuffers create_torus_buffers(const TorusParameters& parameters) {
     GLBuffers buf;
 
     // Generate ring vertices and indices
@@ -107,7 +107,7 @@ GLBuffers create_torus_buffers(TorusParameters& parameters) {
     return buf;
 }
 
-void render_torus(GLuint shader, const GLBuffers& torusBuf, TorusParameters& parameters, glm::mat4 view, glm::mat4 projection) {
+void render_torus(GLuint shader, const GLBuffers& torusBuf, const TorusParameters& parameters, glm::mat4 view, glm::mat4 projection) {
     glUseProgram(shader);
 
     // Set view and projection uniforms

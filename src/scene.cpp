@@ -65,7 +65,7 @@ glm::mat4 Scene::get_orbit_view_matrix() {
 
 void Scene::render(float aspectRatio) {
     this->view = get_orbit_view_matrix();
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
+    this->projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
 
     if (this->showAxes)      render_axes(axesShaderProgram, this->axes, view, projection);
     if (this->showParticles) render_particles(particlesShaderProgram, this->pos, /*nParticles*/ state->maxParticles, view, projection);

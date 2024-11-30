@@ -7,7 +7,7 @@
 
 class TokamakScene : public Scene {
 public:
-    TokamakScene(SimulationState& state);
+    TokamakScene(SimulationState& state, TorusParameters& params);
     ~TokamakScene();
     void initialize();
 
@@ -20,7 +20,7 @@ public:
     std::vector<CurrentVector> get_currents();
 
 private:
-    TorusParameters parameters;
+    const TorusParameters parameters;
     GLBuffers torusBuf;
     GLuint torusShaderProgram;
     bool showTorus = true;
