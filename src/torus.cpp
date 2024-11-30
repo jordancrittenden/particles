@@ -17,10 +17,24 @@ inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
 }
 
-cl_float4 torus_rand_particle_position(const TorusProperties& torus) {
-    float r = rand_range(torus.r1 - (torus.r2 / 2.0f), torus.r1 + (torus.r2 / 2.0f));
+TokamakScene::TokamakScene(SimulationState& state) : Scene(state) {
+    torusShaderProgram = create_shader_program("shader/torus_vertex.glsl", "shader/torus_fragment.glsl"); 
+    this->torusBuf = create_torus_buffers();
+}
+
+TokamakScene::~TokamakScene() {
+    glDeleteVertexArrays(1, &this->torusBuf.vao);
+}
+
+void TokamakScene::render(float aspectRatio) {
+    Scene::render(aspectRatio);
+    if (this->showTorus) render_torus(view, projection);
+}
+
+cl_float4 TokamakScene::rand_particle_position() {
+    float r = rand_range(parameters.r1 - (parameters.r2 / 2.0f), parameters.r1 + (parameters.r2 / 2.0f));
     float theta = rand_range(0.0f, 2 * M_PI);
-    float y = rand_range(-torus.r2 / 2.0f, torus.r2 / 2.0f);
+    float y = rand_range(-parameters.r2 / 2.0f, parameters.r2 / 2.0f);
 
     // [x, y, z, unused]
     return cl_float4 { r * sin(theta), y, r * cos(theta), 0.0f };
@@ -34,13 +48,13 @@ glm::mat4 get_coil_model_matrix(float angle, float r1) {
     return model;
 }
 
-std::vector<Cell> get_torus_grid_cells(const TorusProperties& torus, float dx) {
+std::vector<Cell> TokamakScene::get_grid_cells(float dx) {
     std::vector<Cell> cells;
 
-    glm::vec3 minCoord(-(torus.r1 + torus.r2), -torus.r2, -(torus.r1 + torus.r2));
-    glm::vec3 maxCoord(torus.r1 + torus.r2, torus.r2, torus.r1 + torus.r2);
+    glm::vec3 minCoord(-(parameters.r1 + parameters.r2), -parameters.r2, -(parameters.r1 + parameters.r2));
+    glm::vec3 maxCoord(parameters.r1 + parameters.r2, parameters.r2, parameters.r1 + parameters.r2);
 
-    glm::vec4 torusCenterPos = glm::vec4(0.0, 0.0f, torus.r1, 1.0f);
+    glm::vec4 torusCenterPos = glm::vec4(0.0, 0.0f, parameters.r1, 1.0f);
     for (float x = minCoord.x; x <= maxCoord.x; x += dx) {
         for (float z = minCoord.z; z <= maxCoord.z; z += dx) {
             // Find azimuthal angle
@@ -56,7 +70,7 @@ std::vector<Cell> get_torus_grid_cells(const TorusProperties& torus, float dx) {
                 float yDiff = y - nearestTorusCenter.y;
                 float zDiff = z - nearestTorusCenter.z;
 
-                bool isActive = xDiff*xDiff + yDiff*yDiff + zDiff*zDiff > torus.r2*torus.r2;
+                bool isActive = xDiff*xDiff + yDiff*yDiff + zDiff*zDiff > parameters.r2*parameters.r2;
 
                 Cell cell;
                 cell.pos = cl_float4 { x, y, z, isActive ? 1.0f : 0.0f };
@@ -67,12 +81,12 @@ std::vector<Cell> get_torus_grid_cells(const TorusProperties& torus, float dx) {
     return cells;
 }
 
-void generate_ring_vertices(const TorusProperties& torus, std::vector<float>& vertices, std::vector<unsigned int>& indices) {
+void TokamakScene::generate_ring_vertices(std::vector<float>& vertices, std::vector<unsigned int>& indices) {
     int radialSegments = 64;
     int depthSegments = 1;
     float t = 0.05;
     float d = 0.1;
-    float outerRadius = torus.r2 + t;
+    float outerRadius = parameters.r2 + t;
 
     // Generate vertices for inner and outer circles at both front and back faces
     for (int j = 0; j <= depthSegments; ++j) {
@@ -80,8 +94,8 @@ void generate_ring_vertices(const TorusProperties& torus, std::vector<float>& ve
 
         for (int i = 0; i <= radialSegments; ++i) {
             float angle = i * 2.0f * glm::pi<float>() / radialSegments;
-            float xInner = torus.r2 * cos(angle);
-            float yInner = torus.r2 * sin(angle);
+            float xInner = parameters.r2 * cos(angle);
+            float yInner = parameters.r2 * sin(angle);
             float xOuter = outerRadius * cos(angle);
             float yOuter = outerRadius * sin(angle);
 
@@ -118,12 +132,12 @@ void generate_ring_vertices(const TorusProperties& torus, std::vector<float>& ve
     }
 }
 
-GLBuffers create_torus_buffers(const TorusProperties& torus) {
+GLBuffers TokamakScene::create_torus_buffers() {
     GLBuffers buf;
 
     // Generate ring vertices and indices
     std::vector<float> vertices;
-    generate_ring_vertices(torus, vertices, buf.indices);
+    generate_ring_vertices(vertices, buf.indices);
 
     glGenVertexArrays(1, &buf.vao);
     glGenBuffers(1, &buf.vbo);
@@ -150,23 +164,23 @@ GLBuffers create_torus_buffers(const TorusProperties& torus) {
     return buf;
 }
 
-void render_torus(GLuint shader, const TorusProperties& torus, const GLBuffers& torusBuf, glm::mat4 view, glm::mat4 projection) {
-    glUseProgram(shader);
+void TokamakScene::render_torus(glm::mat4 view, glm::mat4 projection) {
+    glUseProgram(torusShaderProgram);
 
     // Set view and projection uniforms
-    GLint viewLoc = glGetUniformLocation(shader, "view");
-    GLint projLoc = glGetUniformLocation(shader, "projection");
+    GLint viewLoc = glGetUniformLocation(torusShaderProgram, "view");
+    GLint projLoc = glGetUniformLocation(torusShaderProgram, "projection");
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
     glBindVertexArray(torusBuf.vao);
 
     // Draw each circle in the torus
-    for (int i = 0; i < torus.toroidalCoils; ++i) {
-        float angle = (2.0f * M_PI * i) / torus.toroidalCoils;
-        glm::mat4 model = get_coil_model_matrix(angle, torus.r1);
+    for (int i = 0; i < parameters.toroidalCoils; ++i) {
+        float angle = (2.0f * M_PI * i) / parameters.toroidalCoils;
+        glm::mat4 model = get_coil_model_matrix(angle, parameters.r1);
 
-        GLint modelLoc = glGetUniformLocation(shader, "model");
+        GLint modelLoc = glGetUniformLocation(torusShaderProgram, "model");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
         glBindVertexArray(torusBuf.vao);
@@ -174,28 +188,28 @@ void render_torus(GLuint shader, const TorusProperties& torus, const GLBuffers& 
     }
 }
 
-std::vector<CurrentVector> get_toroidal_currents(const TorusProperties& torus) {
+std::vector<CurrentVector> TokamakScene::get_currents() {
     std::vector<CurrentVector> currents;
 
     std::vector<glm::vec4> circleVertices;
-    float thetaStep = 2.0f * M_PI / torus.coilLoopSegments;
-    for (int i = 0; i < torus.coilLoopSegments; i++) {
+    float thetaStep = 2.0f * M_PI / parameters.coilLoopSegments;
+    for (int i = 0; i < parameters.coilLoopSegments; i++) {
         float theta = i * thetaStep;
-        circleVertices.push_back(glm::vec4 { torus.r2 * cos(theta), torus.r2 * sin(theta), 0.0f, 1.0f });
+        circleVertices.push_back(glm::vec4 { parameters.r2 * cos(theta), parameters.r2 * sin(theta), 0.0f, 1.0f });
     }
 
     int idx = 0;
     int coilStartIdx = 0;
-    for (int i = 0; i < torus.toroidalCoils; ++i) {
+    for (int i = 0; i < parameters.toroidalCoils; ++i) {
         coilStartIdx = idx;
 
-        float angle = (2.0f * M_PI * i) / torus.toroidalCoils;
-        glm::mat4 model = get_coil_model_matrix(angle, torus.r1);
+        float angle = (2.0f * M_PI * i) / parameters.toroidalCoils;
+        glm::mat4 model = get_coil_model_matrix(angle, parameters.r1);
 
-        for (int j = 0; j < torus.coilLoopSegments; ++j) {
+        for (int j = 0; j < parameters.coilLoopSegments; ++j) {
             CurrentVector current;
             current.x = model * circleVertices[j];
-            current.i = torus.toroidalI;
+            current.i = parameters.toroidalI;
 
             if (j > 0) currents[idx-1].dx = current.x - currents[idx-1].x;
 

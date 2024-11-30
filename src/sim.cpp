@@ -19,114 +19,57 @@
 #include "scene.h"
 #include "torus.h"
 #include "particles.h"
-#include "axes.h"
 #include "field_vector.h"
 #include "current_segment.h"
 
-CLState* clState = nullptr;
-TorusProperties torus;
-SimulationState state;
-Scene scene;
+// OpenGL window
+int windowWidth = 1600;
+int windowHeight = 1200;
+GLFWwindow* window = nullptr;
 
-void printDbgBufFloat4(const cl::Buffer& dbgBufCL, int n) {
-    std::vector<cl_float4> dbgBuf(n);
-
-    // Retrieve buffer values
-    clState->queue->enqueueReadBuffer(dbgBufCL, CL_TRUE, 0, sizeof(cl_float4) * n, dbgBuf.data());
-
-    float eTot = 0.0f, pTot = 0.0;
-    for (int i = 0; i < n; i++) {
-        if (dbgBuf[i].s[1] == 1.0)
-            pTot += dbgBuf[i].s[0];
-        else if (dbgBuf[i].s[1] == -1.0)
-            eTot += dbgBuf[i].s[0];
-    }
-    float pAvg = pTot / n;
-    float eAvg = eTot / n;
-    std::cout << "eTemp: " << (eAvg / 1.06e-19) << " eV, pTemp: " <<  (pAvg / 1.06e-19) << std::endl;
-}
-
-glm::mat4 get_orbit_view_matrix() {
-    float cameraX = scene.cameraDistance * sin(scene.cameraTheta) * sin(scene.cameraPhi);
-    float cameraY = scene.cameraDistance * cos(scene.cameraTheta);
-    float cameraZ = scene.cameraDistance * sin(scene.cameraTheta) * cos(scene.cameraPhi);
-    return glm::lookAt(
-        glm::vec3(cameraX, cameraY, cameraZ), // eye
-        glm::vec3(0.0f, 0.0f, 0.0f),          // target
-        glm::vec3(0.0f, 1.0f, 0.0f)           // up
-    );
-}
+// FPS
+int targetFPS = 60;
 
 // Main function
 int main(int argc, char* argv[]) {
+    SimulationState state;
+
     // Parse CLI arguments into state variables
     try {
         auto args = parse_args(argc, argv);
-        extract_state_vars(args, &state, &scene);
+        extract_state_vars(args, &state, &windowWidth, &windowHeight, &targetFPS);
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
 
-    scene.window = init_opengl(scene.windowWidth, scene.windowHeight);
-    if (scene.window == nullptr) return -1;
-    clState = init_opencl();
+    // Inialize OpenGL and OpenCL
+    float aspectRatio = (float)windowWidth / (float)windowHeight;
+    window = init_opengl(windowWidth, windowHeight);
+    if (window == nullptr) return -1;
+    CLState* clState = init_opencl();
 
-    // Load OpenGL shaders
-    GLuint axesShaderProgram      = create_shader_program("shader/axes_vertex.glsl", "shader/axes_fragment.glsl");
-    GLuint particlesShaderProgram = create_shader_program("shader/particles_vertex.glsl", "shader/particles_fragment.glsl");
-    GLuint torusShaderProgram     = create_shader_program("shader/torus_vertex.glsl", "shader/torus_fragment.glsl");
-    GLuint vectorShaderProgram    = create_shader_program("shader/vector_vertex.glsl", "shader/vector_fragment.glsl");
+    // Initialize the Scene
+    Scene* scene = new TokamakScene(state);
+    scene->initialize();
 
-    // Initialize particles
-    create_particle_buffers(
-        [](){ return torus_rand_particle_position(torus); },
-        [](PARTICLE_SPECIES species){ return maxwell_boltzmann_particle_velocty(state.initialTemperature, particle_mass(species)); },
-        [](){ return rand_particle_species(0.0f, 0.3f, 0.7f, 0.0f, 0.0f, 0.0f, 0.0f); },
-        scene.pos,
-        scene.vel,
-        state.initialParticles,
-        state.maxParticles);
+    std::vector<CurrentVector> currents = scene->get_currents();
 
-    // Create GL buffers for axes and particles
-    scene.axes = create_axes_buffers();
-
-    // Create GL buffers for torus
-    scene.torus = create_torus_buffers(torus);
-
-    std::vector<CurrentVector> currents = get_toroidal_currents(torus);
-
-    std::vector<Cell> cells = get_torus_grid_cells(torus, state.cellSpacing);
-    std::cout << "Simulation cells: " << cells.size() << std::endl;
-    
-    std::vector<glm::vec4> eFieldLoc, eFieldVec;
-    std::vector<glm::vec4> bFieldLoc, bFieldVec;
-    for (auto& cell : cells) {
-        eFieldLoc.push_back(glm::vec4(cell.pos.s[0], cell.pos.s[1], cell.pos.s[2], 0.0f)); // Last element indicates E vs B
-        eFieldVec.push_back(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
-        bFieldLoc.push_back(glm::vec4(cell.pos.s[0], cell.pos.s[1], cell.pos.s[2], 1.0f)); // Last element indicates E vs B
-        bFieldVec.push_back(glm::vec4(-1.0f, 1.0f, 0.0f, 0.0f));
-    }
-
-    scene.e_field = create_vectors_buffers(eFieldLoc, eFieldVec, 0.03f);
-    scene.b_field = create_vectors_buffers(bFieldLoc, bFieldVec, 0.03f);
-
-    // Create shared OpenCL buffers from the OpenGL buffer
+    // Create shared OpenCL buffers from OpenGL buffers
     cl_int posErr, velErr, eFieldVecErr, bFieldVecErr;
-    cl::Buffer particlePosBufCL = cl::BufferGL(*clState->context, CL_MEM_READ_WRITE, scene.pos.vbo, &posErr);
-    cl::Buffer particleVelBufCL = cl::BufferGL(*clState->context, CL_MEM_READ_WRITE, scene.vel.vbo, &velErr);
-    cl::Buffer eFieldVecBufCL   = cl::BufferGL(*clState->context, CL_MEM_READ_WRITE, scene.e_field.instanceVecBuf, &eFieldVecErr);
-    cl::Buffer bFieldVecBufCL   = cl::BufferGL(*clState->context, CL_MEM_READ_WRITE, scene.b_field.instanceVecBuf, &bFieldVecErr);
-    cl_exit_if_err(posErr, "Failed to create OpenCL buffer from OpenGL buffer");
+    state.particlePosBufCL = scene->getParticlePosBufCL(clState->context);
+    state.particleVelBufCL = scene->getParticleVelBufCL(clState->context);
+    state.eFieldVecBufCL   = scene->getEFieldVecBufCL(clState->context);
+    state.bFieldVecBufCL   = scene->getBFieldVecBufCL(clState->context);
     
-    std::vector<cl::Memory> particlesKernelGLBuffers = {particlePosBufCL, particleVelBufCL};
-    std::vector<cl::Memory> fieldsKernelGLBuffers = {particlePosBufCL, particleVelBufCL, eFieldVecBufCL, bFieldVecBufCL};
-    std::vector<cl::Memory> defragKernelGLBuffers = {particlePosBufCL, particleVelBufCL};
+    std::vector<cl::Memory> particlesKernelGLBuffers = {state.particlePosBufCL, state.particleVelBufCL};
+    std::vector<cl::Memory> fieldsKernelGLBuffers = {state.particlePosBufCL, state.particleVelBufCL, state.eFieldVecBufCL, state.bFieldVecBufCL};
+    std::vector<cl::Memory> defragKernelGLBuffers = {state.particlePosBufCL, state.particleVelBufCL};
 
     // Create additional OpenCL buffers
     std::vector<cl_float4> dbgBuf(state.maxParticles);
     std::vector<cl_float4> cellLocations;
-    for (auto& cell : cells) {
+    for (auto& cell : state.cells) {
         cellLocations.push_back(cell.pos);
     }
     state.nParticlesCL = cl::Buffer(*clState->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(int), &state.initialParticles);
@@ -138,8 +81,8 @@ int main(int argc, char* argv[]) {
     cl::Program particlesProgram = build_kernel(clState, "kernel/particles.cl");
     cl::Kernel particlesKernel(particlesProgram, "computeMotion");
     particlesKernel.setArg(0, state.nParticlesCL);
-    particlesKernel.setArg(1, particlePosBufCL);
-    particlesKernel.setArg(2, particleVelBufCL);
+    particlesKernel.setArg(1, state.particlePosBufCL);
+    particlesKernel.setArg(2, state.particleVelBufCL);
     particlesKernel.setArg(3, currentSegmentBufCL);
     particlesKernel.setArg(4, dbgBufCL);
     particlesKernel.setArg(5, state.dt);
@@ -152,13 +95,13 @@ int main(int argc, char* argv[]) {
     cl::Kernel fieldsKernel(fieldsProgram, "computeFields");
     fieldsKernel.setArg(0, state.nParticlesCL);
     fieldsKernel.setArg(1, cellLocationBufCL);
-    fieldsKernel.setArg(2, eFieldVecBufCL);
-    fieldsKernel.setArg(3, bFieldVecBufCL);
-    fieldsKernel.setArg(4, particlePosBufCL);
-    fieldsKernel.setArg(5, particleVelBufCL);
+    fieldsKernel.setArg(2, state.eFieldVecBufCL);
+    fieldsKernel.setArg(3, state.bFieldVecBufCL);
+    fieldsKernel.setArg(4, state.particlePosBufCL);
+    fieldsKernel.setArg(5, state.particleVelBufCL);
     fieldsKernel.setArg(6, currentSegmentBufCL);
     fieldsKernel.setArg(7, dbgBufCL);
-    fieldsKernel.setArg(8, (cl_uint)cells.size());
+    fieldsKernel.setArg(8, (cl_uint)state.cells.size());
     fieldsKernel.setArg(9, (cl_uint)currents.size());
     fieldsKernel.setArg(10, /* solenoidFlux= */ 0.0f);
     fieldsKernel.setArg(11, (cl_uint)state.enableInterparticlePhysics);
@@ -167,8 +110,8 @@ int main(int argc, char* argv[]) {
     cl::Program defragProgram = build_kernel(clState, "kernel/defrag.cl");
     cl::Kernel defragKernel(defragProgram, "defrag");
     defragKernel.setArg(0, state.nParticlesCL);
-    defragKernel.setArg(1, particlePosBufCL);
-    defragKernel.setArg(2, particleVelBufCL);
+    defragKernel.setArg(1, state.particlePosBufCL);
+    defragKernel.setArg(2, state.particleVelBufCL);
     defragKernel.setArg(3, state.maxParticles);
 
     glEnable(GL_DEPTH_TEST);
@@ -178,33 +121,25 @@ int main(int argc, char* argv[]) {
     cl_uint nParticles = state.initialParticles;
     int frameCount = 0;
     int simulationStep = 0;
-    float frameTimeSec = 1.0f / (float)scene.targetFPS;
-    while (!glfwWindowShouldClose(scene.window)) {
+    float frameTimeSec = 1.0f / (float)targetFPS;
+    while (!glfwWindowShouldClose(window)) {
         auto frameStart = std::chrono::high_resolution_clock::now();
 
         // Process keyboard input
-        process_input(scene.window, state, scene);
+        process_input(window, state, scene);
 
         // Draw a white background
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 view = get_orbit_view_matrix();
-        float aspectRatio = (float)scene.windowWidth / (float)scene.windowHeight;
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
+        scene->render(aspectRatio);
 
-        if (scene.showAxes)      render_axes(axesShaderProgram, scene.axes, view, projection);
-        if (scene.showTorus)     render_torus(torusShaderProgram, torus, scene.torus, view, projection);
-        if (scene.showParticles) render_particles(particlesShaderProgram, scene.pos, nParticles, view, projection);
-        if (scene.showEField)    render_fields(vectorShaderProgram, cells.size(), scene.e_field, view, projection);
-        if (scene.showBField)    render_fields(vectorShaderProgram, cells.size(), scene.b_field, view, projection);
-
-        glfwSwapBuffers(scene.window);
+        glfwSwapBuffers(window);
         glfwPollEvents();
 
         std::chrono::duration<double> frameDur;
         do {
             // Update kernel args that could have changed
-            float solenoidFlux = state.enableSolenoidFlux ? torus.solenoidFlux : 0.0f;
+            float solenoidFlux = 0.0; //state.enableSolenoidFlux ? torus.solenoidFlux : 0.0f;
             particlesKernel.setArg(5, state.dt);
             particlesKernel.setArg(7, solenoidFlux);
             particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
@@ -214,7 +149,7 @@ int main(int argc, char* argv[]) {
             // Compute fields
             // Acquire the GL buffer for OpenCL to read and write
             clState->queue->enqueueAcquireGLObjects(&fieldsKernelGLBuffers);
-            cl_int fieldsKernelErr = clState->queue->enqueueNDRangeKernel(fieldsKernel, cl::NullRange, cl::NDRange(cells.size()));
+            cl_int fieldsKernelErr = clState->queue->enqueueNDRangeKernel(fieldsKernel, cl::NullRange, cl::NDRange(state.cells.size()));
             cl_exit_if_err(fieldsKernelErr, "Failed to enqueue kernel");
             // Release the buffer back to OpenGL
             clState->queue->enqueueReleaseGLObjects(&fieldsKernelGLBuffers);
@@ -249,12 +184,6 @@ int main(int argc, char* argv[]) {
         state.t += state.dt;
         frameCount++;
     }
-
-    glDeleteVertexArrays(1, &scene.axes.vao);
-    glDeleteVertexArrays(1, &scene.pos.vao);
-    glDeleteVertexArrays(1, &scene.torus.vao);
-    glDeleteVertexArrays(1, &scene.e_field.arrowBuf.vao);
-    glDeleteVertexArrays(1, &scene.b_field.arrowBuf.vao);
 
     glfwTerminate();
     return 0;

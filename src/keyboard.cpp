@@ -15,27 +15,27 @@ bool debounce_input() {
 }
 
 // GLFW callback for handling keyboard input
-void process_input(GLFWwindow* window, SimulationState& state, Scene& scene) {
+void process_input(GLFWwindow* window, SimulationState& state, Scene* scene) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-        scene.cameraPhi -= 0.01f;
+        scene->rotateLeft();
     }
     if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-        scene.cameraPhi += 0.01f;
+        scene->rotateRight();
     }
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-        scene.cameraTheta += 0.01f;
+        scene->rotateDown();
     }
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-        scene.cameraTheta -= 0.01f;
+        scene->rotateUp();
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS) {
-        scene.cameraDistance *= 1.01f;
+        scene->zoomOut();
     }
     if (glfwGetKey(window, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) {
-        scene.cameraDistance /= 1.01f;
+        scene->zoomIn();
     }
     if (glfwGetKey(window, GLFW_KEY_EQUAL) == GLFW_PRESS && debounce_input()) {
         state.dt *= 1.2f;
@@ -46,19 +46,19 @@ void process_input(GLFWwindow* window, SimulationState& state, Scene& scene) {
         std::cout << "dt: " << state.dt << std::endl;
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && debounce_input()) {
-        scene.showAxes = !scene.showAxes;
+        scene->toggleShowAxes();
     }
-    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS && debounce_input()) {
-        scene.showTorus = !scene.showTorus;
-    }
+    // if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS && debounce_input()) {
+    //     scene->showTorus = !scene->showTorus;
+    // }
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && debounce_input()) {
-        scene.showEField = !scene.showEField;
+        scene->toggleShowEField();
     }
     if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && debounce_input()) {
-        scene.showBField = !scene.showBField;
+        scene->toggleShowBField();
     }
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS && debounce_input()) {
-        scene.showParticles = !scene.showParticles;
+        scene->toggleShowParticles();
     }
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS && debounce_input()) {
         state.enableInterparticlePhysics = !state.enableInterparticlePhysics;
