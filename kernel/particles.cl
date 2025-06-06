@@ -1,3 +1,4 @@
+#define CONSTRAIN     false
 #define CONSTRAIN_TO  (0.1f)  /* m */
 
 __kernel void computeMotion(
@@ -119,11 +120,13 @@ __kernel void computeMotion(
     float v_mag = length(vel_new);
     debug[id] = (float4)(0.5 * mass * v_mag * v_mag, species, 0.0, 0.0);
 
-    // Keep the particles in their box
-    if (particlePos[id][0] >  CONSTRAIN_TO) particleVel[id][0] = -particleVel[id][0];
-    if (particlePos[id][0] < -CONSTRAIN_TO) particleVel[id][0] = -particleVel[id][0];
-    if (particlePos[id][1] >  CONSTRAIN_TO) particleVel[id][1] = -particleVel[id][1];
-    if (particlePos[id][1] < -CONSTRAIN_TO) particleVel[id][1] = -particleVel[id][1];
-    if (particlePos[id][2] >  CONSTRAIN_TO) particleVel[id][2] = -particleVel[id][2];
-    if (particlePos[id][2] < -CONSTRAIN_TO) particleVel[id][2] = -particleVel[id][2];
+    if (CONSTRAIN) {
+        // Keep the particles in their box
+        if (particlePos[id][0] >  CONSTRAIN_TO) particleVel[id][0] = -particleVel[id][0];
+        if (particlePos[id][0] < -CONSTRAIN_TO) particleVel[id][0] = -particleVel[id][0];
+        if (particlePos[id][1] >  CONSTRAIN_TO) particleVel[id][1] = -particleVel[id][1];
+        if (particlePos[id][1] < -CONSTRAIN_TO) particleVel[id][1] = -particleVel[id][1];
+        if (particlePos[id][2] >  CONSTRAIN_TO) particleVel[id][2] = -particleVel[id][2];
+        if (particlePos[id][2] < -CONSTRAIN_TO) particleVel[id][2] = -particleVel[id][2];
+    }
 }

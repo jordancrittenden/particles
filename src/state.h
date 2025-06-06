@@ -26,7 +26,7 @@ typedef struct SimulationState {
     cl::Buffer nParticlesCL;           // Current number of particles
     cl_float t = 0.0f;                 // Simulation time, s
     cl_float dt = 1e-8f;               // Simulation dt, s
-    cl_float cellSpacing = 0.05f;      // Distance between simulation grid cells, m
+    cl_float cellSpacing = 0.08f;      // Distance between simulation grid cells, m
 
     // Physics booleans
     bool enableInterparticlePhysics = false;

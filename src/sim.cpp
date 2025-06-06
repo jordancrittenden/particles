@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
     CLState* clState = init_opencl();
 
     // Initialize the Scene
-    Scene* scene = new Scene(state);
+    Scene* scene = new TokamakScene(state, torus);
     scene->initialize();
 
     std::vector<CurrentVector> currents = scene->get_currents();
@@ -137,7 +137,7 @@ int main(int argc, char* argv[]) {
         std::chrono::duration<double> frameDur;
         do {
             // Update kernel args that could have changed
-            float solenoidFlux = 0.0; //state.enableSolenoidFlux ? torus.solenoidFlux : 0.0f;
+            float solenoidFlux = state.enableSolenoidFlux ? torus.solenoidFlux : 0.0f;
             particlesKernel.setArg(5, state.dt);
             particlesKernel.setArg(7, solenoidFlux);
             particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
