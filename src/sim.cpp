@@ -165,15 +165,15 @@ int main(int argc, char* argv[]) {
             clState->queue->enqueueReleaseGLObjects(&particlesKernelGLBuffers);
             clState->queue->finish();
 
-            // Defrag particle buffers
-            // Acquire the GL buffer for OpenCL to read and write
-            clState->queue->enqueueAcquireGLObjects(&defragKernelGLBuffers);
-            cl_int defragKernelErr = clState->queue->enqueueNDRangeKernel(defragKernel, cl::NullRange, cl::NDRange(1));
-            cl_exit_if_err(defragKernelErr, "Failed to enqueue kernel");
-            clState->queue->enqueueReadBuffer(state.nParticlesCL, CL_TRUE, 0, sizeof(cl_uint), &nParticles);
-            // Release the buffer back to OpenGL
-            clState->queue->enqueueReleaseGLObjects(&defragKernelGLBuffers);
-            clState->queue->finish();
+            // // Defrag particle buffers
+            // // Acquire the GL buffer for OpenCL to read and write
+            // clState->queue->enqueueAcquireGLObjects(&defragKernelGLBuffers);
+            // cl_int defragKernelErr = clState->queue->enqueueNDRangeKernel(defragKernel, cl::NullRange, cl::NDRange(1));
+            // cl_exit_if_err(defragKernelErr, "Failed to enqueue kernel");
+            // clState->queue->enqueueReadBuffer(state.nParticlesCL, CL_TRUE, 0, sizeof(cl_uint), &nParticles);
+            // // Release the buffer back to OpenGL
+            // clState->queue->enqueueReleaseGLObjects(&defragKernelGLBuffers);
+            // clState->queue->finish();
 
             frameDur = std::chrono::high_resolution_clock::now() - frameStart;
             simulationStep++;
