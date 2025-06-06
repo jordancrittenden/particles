@@ -84,10 +84,21 @@ CLState* init_opencl() {
     return state;
 }
 
-cl::Program build_kernel(CLState* clState, std::string kernelPath) {
+cl::Program build_kernel(CLState* clState, std::string kernelPath, std::string headerPath) {
+    // OpenCL does caching on kernel code - using #include prevents the cache from being updated in
+    // a way that is extremely hard to reason about. To avoid this, we manually support including a
+    // single header file, which forces to cache to update.
+
     // Load kernel source
     std::ifstream kernelFile(kernelPath);
-    std::string src(std::istreambuf_iterator<char>(kernelFile), (std::istreambuf_iterator<char>()));
+    std::string kernelSrc(std::istreambuf_iterator<char>(kernelFile), (std::istreambuf_iterator<char>()));
+
+    // Load header source
+    std::ifstream headerFile(headerPath);
+    std::string headerSrc(std::istreambuf_iterator<char>(headerFile), (std::istreambuf_iterator<char>()));
+
+    std::string src = headerSrc + "\n" + kernelSrc;
+
     cl::Program program(*clState->context, src);
     cl_int buildErr = program.build(clState->devices);
     

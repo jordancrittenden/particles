@@ -18,19 +18,6 @@ inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
 }
 
-float particle_mass(PARTICLE_SPECIES species) {
-    switch (species) {
-        case NEUTRON: return M_NEUTRON;
-        case ELECTRON: return M_ELECTRON;
-        case PROTON: return M_PROTON;
-        case DEUTERIUM: return M_DEUTERIUM;
-        case TRITIUM: return M_TRITIUM;
-        case HELIUM_4_NUC: return M_HELIUM_4_NUC;
-        case DEUTERON: return M_DEUTERON;
-        case TRITON: return M_TRITON;
-    }
-}
-
 cl_float4 maxwell_boltzmann_particle_velocty(float T, float mass) {
     // Define parameters for the Maxwell-Boltzmann distribution
     float sigma = std::sqrt(k_B * T / mass); // Standard deviation for the velocity distribution

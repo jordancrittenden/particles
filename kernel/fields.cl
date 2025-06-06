@@ -1,16 +1,3 @@
-#define PI                (3.14159265953f)
-#define M_ELECTRON        (9.10938188e-31f)                   /* kg */
-#define M_PROTON          (1.67262158e-27f)                   /* kg */
-#define M_NEUTRON         (1.67492716e-27f)                   /* kg */
-#define EPSILON_0         (8.854187817e-12f)                  /* A^2 s^4 / kg m^3 */
-#define MU_0              (1.25663706144e-6f)                 /* kg m / A^2 s^2 */
-#define Q                 (1.602176487e-19f)                  /* A s */
-#define K                 (1.0f / (4.0f * PI * EPSILON_0))    /* kg m^3 / A^2 s^4 */
-#define MU_0_OVER_4_PI    (MU_0 / (4.0f * PI))                /* kg m / A^2 s^2 */
-
-#define Q_OVER_M_ELECTRON (-1.75882020109e11f)                /* A s / kg */
-#define Q_OVER_M_PROTON   ( 9.57883424534e7f)                 /* A s / kg */
-
 __kernel void computeFields(
     __global uint* nParticles,
     __global float4* cellLocation,

@@ -1,0 +1,78 @@
+// Header to be included in C++ and kernels
+#ifndef _PHYSICAL_CONSTANTS_H_
+#define _PHYSICAL_CONSTANTS_H_
+
+#define PI                    (3.14159265953f)
+
+#define M_ELECTRON            (9.10938188e-31f)                   /* kg */
+#define M_PROTON              (1.67262158e-27f)                   /* kg */
+#define M_NEUTRON             (1.67492716e-27f)                   /* kg */
+#define M_DEUTERIUM           (3.34449439e-27f)                   /* kg */
+#define M_TRITIUM             (5.00826721e-27f)                   /* kg */
+#define M_HELIUM_4_NUC        (6.64647309e-27f)                   /* kg */
+#define M_DEUTERON            (3.34358347e-27f)                   /* kg */
+#define M_TRITON              (5.00735629e-27f)                   /* kg */
+
+#define EPSILON_0             (8.854187817e-12f)                  /* A^2 s^4 / kg m^3 */
+#define MU_0                  (1.25663706144e-6f)                 /* kg m / A^2 s^2 */
+#define Q                     (1.602176487e-19f)                  /* A s */
+#define K                     (1.0f / (4.0f * PI * EPSILON_0))    /* kg m^3 / A^2 s^4 */
+#define MU_0_OVER_4_PI        (MU_0 / (4.0f * PI))                /* kg m / A^2 s^2 */
+
+#define Q_OVER_M_ELECTRON     (-1.75882020109e11f)                /* A s / kg */
+#define Q_OVER_M_PROTON       ( 9.57883424534e7f)                 /* A s / kg */
+#define Q_OVER_M_HELIUM_4_NUC ( 2.41056642418e7f)                 /* A s / kg */
+#define Q_OVER_M_DEUTERON     ( 4.79179449646e7f)                 /* A s / kg */
+#define Q_OVER_M_TRITON       ( 3.19964547001e7f)                 /* A s / kg */
+
+enum PARTICLE_SPECIES {
+    NEUTRON = 1,
+    ELECTRON = 2,
+    PROTON = 3,
+    DEUTERIUM = 4,
+    TRITIUM = 5,
+    HELIUM_4_NUC = 6,
+    DEUTERON = 7,
+    TRITON = 8
+};
+
+inline float particle_mass(float species) {
+    if      (species == 1.0) return M_NEUTRON;
+    else if (species == 2.0) return M_ELECTRON;
+    else if (species == 3.0) return M_PROTON;
+    else if (species == 4.0) return M_DEUTERIUM;
+    else if (species == 5.0) return M_TRITIUM;
+    else if (species == 6.0) return M_HELIUM_4_NUC;
+    else if (species == 7.0) return M_DEUTERON;
+    else if (species == 8.0) return M_TRITON;
+
+    return 0.0; // error case, should never happen
+}
+
+inline float particle_charge(float species) {
+    if      (species == 1.0) return 0;       // neutron
+    else if (species == 2.0) return -Q;      // electron
+    else if (species == 3.0) return Q;       // proton
+    else if (species == 4.0) return 0;       // deuterium
+    else if (species == 5.0) return 0;       // tritium
+    else if (species == 6.0) return 2.0 * Q; // helium4
+    else if (species == 7.0) return Q;       // ion_deuterium
+    else if (species == 8.0) return Q;       // ion_tritium
+
+    return 0.0; // error case, should never happen
+}
+
+inline float charge_to_mass_ratio(float species) {
+    if      (species == 1.0) return 0.0;
+    else if (species == 2.0) return Q_OVER_M_ELECTRON;
+    else if (species == 3.0) return Q_OVER_M_PROTON;
+    else if (species == 4.0) return 0;
+    else if (species == 5.0) return 0;
+    else if (species == 6.0) return Q_OVER_M_HELIUM_4_NUC;
+    else if (species == 7.0) return Q_OVER_M_DEUTERON;
+    else if (species == 8.0) return Q_OVER_M_TRITON;
+
+    return 0.0; // error case, should never happen
+}
+
+#endif
