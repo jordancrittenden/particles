@@ -42,7 +42,6 @@ void generate_ring_vertices(const Ring& ring, std::vector<float>& vertices, std:
     // Generate vertices for front face
     z = ring.d / 2.0f;
     unsigned int frontFaceStartIdx = vertices.size() / 6;
-    std::cout << "frontFaceStartIdx: " << frontFaceStartIdx << std::endl;
     for (int i = 0; i < radialSegments; ++i) {
         float angle = i * 2.0f * glm::pi<float>() / radialSegments;
         float xInner = ring.r * cos(angle);

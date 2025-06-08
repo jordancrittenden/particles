@@ -12,4 +12,4 @@ typedef struct TorusParameters {
 } TorusParameters;
 
 glm::mat4 get_coil_model_matrix(float angle, float r1);
-void render_torus(GLuint shader, const GLBuffers& ringBuf, const TorusParameters& parameters, glm::mat4 view, glm::mat4 projection);
+void render_torus(GLuint shader, const GLBuffers& ringBuf, const TorusParameters& parameters, float current, glm::mat4 view, glm::mat4 projection);

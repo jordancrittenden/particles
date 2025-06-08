@@ -21,14 +21,16 @@ glm::mat4 get_coil_model_matrix(float angle, float r1) {
     return model;
 }
 
-void render_torus(GLuint shader, const GLBuffers& torusBuf, const TorusParameters& parameters, glm::mat4 view, glm::mat4 projection) {
+void render_torus(GLuint shader, const GLBuffers& torusBuf, const TorusParameters& parameters, float current, glm::mat4 view, glm::mat4 projection) {
     glUseProgram(shader);
 
     // Set view and projection uniforms
     GLint viewLoc = glGetUniformLocation(shader, "view");
     GLint projLoc = glGetUniformLocation(shader, "projection");
+    GLint currentLoc = glGetUniformLocation(shader, "current");
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+    glUniform1f(currentLoc, current);
 
     // Draw each circle in the torus
     for (int i = 0; i < parameters.toroidalCoils; ++i) {

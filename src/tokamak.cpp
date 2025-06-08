@@ -39,8 +39,8 @@ TokamakScene::~TokamakScene() {
 
 void TokamakScene::render(float aspectRatio) {
     Scene::render(aspectRatio);
-    if (this->showTorus) render_torus(torusShaderProgram, torusRingBuf, torusParameters, view, projection);
-    if (this->showSolenoid) render_solenoid(solenoidShaderProgram, solenoidRingBuf, solenoidParameters, view, projection);
+    if (this->showTorus) render_torus(torusShaderProgram, torusRingBuf, torusParameters, state->toroidalI, view, projection);
+    if (this->showSolenoid) render_solenoid(solenoidShaderProgram, solenoidRingBuf, state->solenoidFlux, view, projection);
 }
 
 std::vector<Cell> TokamakScene::get_grid_cells(float dx) {

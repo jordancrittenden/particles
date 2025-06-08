@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
     particlesKernel.setArg(4, dbgBufCL);
     particlesKernel.setArg(5, state.dt);
     particlesKernel.setArg(6, (cl_uint)currents.size());
-    particlesKernel.setArg(7, /* solenoidFlux= */ 0.0f);
+    particlesKernel.setArg(7, state.solenoidFlux);
     particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
 
     // Set up field kernel parameters
@@ -104,7 +104,7 @@ int main(int argc, char* argv[]) {
     fieldsKernel.setArg(7, dbgBufCL);
     fieldsKernel.setArg(8, (cl_uint)state.cells.size());
     fieldsKernel.setArg(9, (cl_uint)currents.size());
-    fieldsKernel.setArg(10, /* solenoidFlux= */ 0.0f);
+    fieldsKernel.setArg(10, state.solenoidFlux);
     fieldsKernel.setArg(11, (cl_uint)state.enableInterparticlePhysics);
 
     // Set up defrag kernel parameters
@@ -140,11 +140,12 @@ int main(int argc, char* argv[]) {
         std::chrono::duration<double> frameDur;
         do {
             // Update kernel args that could have changed
-            float solenoidFlux = state.enableSolenoidFlux ? solenoid.flux : 0.0f;
+            state.toroidalI = state.enableToroidalRings ? torus.toroidalI : 0.0f;
+            state.solenoidFlux = state.enableSolenoidFlux ? solenoid.flux : 0.0f;
             particlesKernel.setArg(5, state.dt);
-            particlesKernel.setArg(7, solenoidFlux);
+            particlesKernel.setArg(7, state.solenoidFlux);
             particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
-            fieldsKernel.setArg(10, solenoidFlux);
+            fieldsKernel.setArg(10, state.solenoidFlux);
             fieldsKernel.setArg(11, (cl_uint)state.enableInterparticlePhysics);
 
             // Compute fields
