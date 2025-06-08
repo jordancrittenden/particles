@@ -8,10 +8,12 @@ clang++ \
     -Iinclude \
     -Ikernel \
     src/glad.c \
+    src/geometry/ring.cpp \
     src/cl_util.cpp \
     src/gl_util.cpp \
     src/keyboard.cpp \
     src/torus.cpp \
+    src/solenoid.cpp \
     src/axes.cpp \
     src/particles.cpp \
     src/field_vector.cpp \

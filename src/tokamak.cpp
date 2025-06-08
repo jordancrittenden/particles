@@ -2,6 +2,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "tokamak.h"
 #include "torus.h"
+#include "geometry/ring.h"
 
 inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
@@ -13,17 +14,21 @@ TokamakScene::TokamakScene(SimulationState& state, TorusParameters& params) : Sc
 
 void TokamakScene::initialize() {
     Scene::initialize();
-    this->torusBuf = create_torus_buffers(parameters);
+    Ring ring;
+    ring.r = parameters.r2;
+    ring.t = 0.05f;
+    ring.d = 0.1f;
+    this->torusRingBuf = create_ring_buffers(ring);
     this->cameraDistance = 5.0f;
 }
 
 TokamakScene::~TokamakScene() {
-    glDeleteVertexArrays(1, &this->torusBuf.vao);
+    glDeleteVertexArrays(1, &this->torusRingBuf.vao);
 }
 
 void TokamakScene::render(float aspectRatio) {
     Scene::render(aspectRatio);
-    if (this->showTorus) render_torus(torusShaderProgram, torusBuf, parameters, view, projection);
+    if (this->showTorus) render_torus(torusShaderProgram, torusRingBuf, parameters, view, projection);
 }
 
 std::vector<Cell> TokamakScene::get_grid_cells(float dx) {

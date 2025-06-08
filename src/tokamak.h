@@ -4,6 +4,7 @@
 #include "current_segment.h"
 #include "scene.h"
 #include "torus.h"
+#include "geometry/ring.h"
 
 class TokamakScene : public Scene {
 public:
@@ -21,7 +22,7 @@ public:
 
 private:
     const TorusParameters parameters;
-    GLBuffers torusBuf;
+    GLBuffers torusRingBuf;
     GLuint torusShaderProgram;
     bool showTorus = true;
 };

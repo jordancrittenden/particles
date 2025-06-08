@@ -17,6 +17,8 @@
 #include "state.h"
 #include "scene.h"
 #include "tokamak.h"
+#include "torus.h"
+#include "solenoid.h"
 #include "current_segment.h"
 
 // OpenGL window
@@ -30,6 +32,7 @@ int targetFPS = 60;
 // Main function
 int main(int argc, char* argv[]) {
     TorusParameters torus;
+    SolenoidParameters solenoid;
     SimulationState state;
 
     // Parse CLI arguments into state variables
@@ -137,7 +140,7 @@ int main(int argc, char* argv[]) {
         std::chrono::duration<double> frameDur;
         do {
             // Update kernel args that could have changed
-            float solenoidFlux = state.enableSolenoidFlux ? torus.solenoidFlux : 0.0f;
+            float solenoidFlux = state.enableSolenoidFlux ? solenoid.flux : 0.0f;
             particlesKernel.setArg(5, state.dt);
             particlesKernel.setArg(7, solenoidFlux);
             particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
