@@ -2,28 +2,33 @@
 #ifndef _PHYSICAL_CONSTANTS_H_
 #define _PHYSICAL_CONSTANTS_H_
 
+#define _KG                   (1.0f) // kilogram
+#define _M                    (1.0f) // meter
+#define _S                    (1.0f) // second
+#define _A                    (1.0f) // ampere
+
 #define PI                    (3.14159265953f)
 
-#define M_ELECTRON            (9.10938188e-31f)                   /* kg */
-#define M_PROTON              (1.67262158e-27f)                   /* kg */
-#define M_NEUTRON             (1.67492716e-27f)                   /* kg */
-#define M_DEUTERIUM           (3.34449439e-27f)                   /* kg */
-#define M_TRITIUM             (5.00826721e-27f)                   /* kg */
-#define M_HELIUM_4_NUC        (6.64647309e-27f)                   /* kg */
-#define M_DEUTERON            (3.34358347e-27f)                   /* kg */
-#define M_TRITON              (5.00735629e-27f)                   /* kg */
+#define M_ELECTRON            (9.10938188e-31f * _KG)    /* kg */
+#define M_PROTON              (1.67262158e-27f * _KG)    /* kg */
+#define M_NEUTRON             (1.67492716e-27f * _KG)    /* kg */
+#define M_DEUTERIUM           (3.34449439e-27f * _KG)    /* kg */
+#define M_TRITIUM             (5.00826721e-27f * _KG)    /* kg */
+#define M_HELIUM_4_NUC        (6.64647309e-27f * _KG)    /* kg */
+#define M_DEUTERON            (3.34358347e-27f * _KG)    /* kg */
+#define M_TRITON              (5.00735629e-27f * _KG)    /* kg */
 
-#define EPSILON_0             (8.854187817e-12f)                  /* A^2 s^4 / kg m^3 */
-#define MU_0                  (1.25663706144e-6f)                 /* kg m / A^2 s^2 */
-#define Q                     (1.602176487e-19f)                  /* A s */
-#define K                     (1.0f / (4.0f * PI * EPSILON_0))    /* kg m^3 / A^2 s^4 */
-#define MU_0_OVER_4_PI        (MU_0 / (4.0f * PI))                /* kg m / A^2 s^2 */
+#define EPSILON_0             (8.854187817e-12f               * (_A * _S * _S / (_KG * _M * _M * _M)))  /* A^2 s^4 / kg m^3 */
+#define MU_0                  (1.25663706144e-6f              * (_KG * _M / (_A * _A * _S * _S)))       /* kg m / A^2 s^2 */
+#define Q                     (1.602176487e-19f               * (_A * _S))                              /* A s */
+#define K                     (1.0f / (4.0f * PI * EPSILON_0) * (_KG * _M / (_A * _A * _S * _S)))       /* kg m^3 / A^2 s^4 */
+#define MU_0_OVER_4_PI        (MU_0 / (4.0f * PI)             * (_KG * _M / (_A * _A * _S * _S)))       /* kg m / A^2 s^2 */
 
-#define Q_OVER_M_ELECTRON     (-1.75882020109e11f)                /* A s / kg */
-#define Q_OVER_M_PROTON       ( 9.57883424534e7f)                 /* A s / kg */
-#define Q_OVER_M_HELIUM_4_NUC ( 2.41056642418e7f)                 /* A s / kg */
-#define Q_OVER_M_DEUTERON     ( 4.79179449646e7f)                 /* A s / kg */
-#define Q_OVER_M_TRITON       ( 3.19964547001e7f)                 /* A s / kg */
+#define Q_OVER_M_ELECTRON     (-1.75882020109e11f * (_A * _S / _KG))    /* A s / kg */
+#define Q_OVER_M_PROTON       ( 9.57883424534e7f  * (_A * _S / _KG))    /* A s / kg */
+#define Q_OVER_M_HELIUM_4_NUC ( 2.41056642418e7f  * (_A * _S / _KG))    /* A s / kg */
+#define Q_OVER_M_DEUTERON     ( 4.79179449646e7f  * (_A * _S / _KG))    /* A s / kg */
+#define Q_OVER_M_TRITON       ( 3.19964547001e7f  * (_A * _S / _KG))    /* A s / kg */
 
 enum PARTICLE_SPECIES {
     NEUTRON = 1,
