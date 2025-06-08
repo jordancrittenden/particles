@@ -27,51 +27,106 @@ glm::mat4 get_coil_model_matrix(float angle, float r1) {
 void generate_ring_vertices(const TorusParameters& parameters, std::vector<float>& vertices, std::vector<unsigned int>& indices) {
     int radialSegments = 64;
     int depthSegments = 1;
-    float t = 0.05;
-    float d = 0.1;
+    float t = 0.05; // ring thickness
+    float d = 0.1; // ring depth
     float outerRadius = parameters.r2 + t;
 
-    // Generate vertices for inner and outer circles at both front and back faces
-    for (int j = 0; j <= depthSegments; ++j) {
-        float z = (j == 0) ? -d / 2.0f : d / 2.0f;
-
-        for (int i = 0; i <= radialSegments; ++i) {
-            float angle = i * 2.0f * glm::pi<float>() / radialSegments;
-            float xInner = parameters.r2 * cos(angle);
-            float yInner = parameters.r2 * sin(angle);
-            float xOuter = outerRadius * cos(angle);
-            float yOuter = outerRadius * sin(angle);
-
-            // Inner vertex
-            vertices.insert(vertices.end(), { xInner, yInner, z, 0.0f, 0.0f, (j == 0) ? -1.0f : 1.0f });
-            // Outer vertex
-            vertices.insert(vertices.end(), { xOuter, yOuter, z, 0.0f, 0.0f, (j == 0) ? -1.0f : 1.0f });
-        }
-    }
-
-    // Generate indices for front and back faces of the ring
-    for (int j = 0; j <= depthSegments; ++j) {
-        for (int i = 0; i < radialSegments; ++i) {
-            unsigned int idx = (radialSegments + 1) * 2 * j + i * 2;
-
-            // Front and back faces
-            indices.insert(indices.end(), { idx, idx + 1, idx + 3 });
-            indices.insert(indices.end(), { idx, idx + 3, idx + 2 });
-        }
-    }
-
-    // Generate indices for radial sides (connecting inner and outer radii around the ring)
+    // Generate vertices for back face
+    float z = -d / 2.0f;
     for (int i = 0; i < radialSegments; ++i) {
-        unsigned int innerStart = i * 2;
-        unsigned int outerStart = innerStart + (radialSegments + 1) * 2;
+        float angle = i * 2.0f * glm::pi<float>() / radialSegments;
+        float xInner = parameters.r2 * cos(angle);
+        float yInner = parameters.r2 * sin(angle);
+        float xOuter = outerRadius * cos(angle);
+        float yOuter = outerRadius * sin(angle);
+
+        // Inner vertex
+        vertices.insert(vertices.end(), { xInner, yInner, z, 0.0f, 0.0f, -1.0f });
+        // Outer vertex
+        vertices.insert(vertices.end(), { xOuter, yOuter, z, 0.0f, 0.0f, -1.0f });
+    }
+
+    // Generate indices for back face of the ring
+    for (int i = 0; i < radialSegments; ++i) {
+        unsigned int idx = i * 2;
+        unsigned int nextIdx = (i < radialSegments - 1) ? idx + 2 : 0;
+
+        // Front and back faces
+        indices.insert(indices.end(), { idx, idx + 1, nextIdx + 1 });
+        indices.insert(indices.end(), { idx, nextIdx + 1, nextIdx });
+    }
+
+    // Generate vertices for front face
+    z = d / 2.0f;
+    unsigned int frontFaceStartIdx = vertices.size() / 6;
+    std::cout << "frontFaceStartIdx: " << frontFaceStartIdx << std::endl;
+    for (int i = 0; i < radialSegments; ++i) {
+        float angle = i * 2.0f * glm::pi<float>() / radialSegments;
+        float xInner = parameters.r2 * cos(angle);
+        float yInner = parameters.r2 * sin(angle);
+        float xOuter = outerRadius * cos(angle);
+        float yOuter = outerRadius * sin(angle);
+
+        // Inner vertex
+        vertices.insert(vertices.end(), { xInner, yInner, z, 0.0f, 0.0f, 1.0f });
+        // Outer vertex
+        vertices.insert(vertices.end(), { xOuter, yOuter, z, 0.0f, 0.0f, 1.0f });
+    }
+
+    // Generate indices for front face of the ring
+    for (int i = 0; i < radialSegments; ++i) {
+        unsigned int idx = frontFaceStartIdx + i * 2;
+        unsigned int nextIdx = (i < radialSegments - 1) ? idx + 2 : frontFaceStartIdx;
+
+        // Front and back faces
+        indices.insert(indices.end(), { idx, idx + 1, nextIdx + 1 });
+        indices.insert(indices.end(), { idx, nextIdx + 1, nextIdx });
+    }
+
+    // Generate vertices for inner rim of the ring
+    unsigned int innerRimStartIdx = vertices.size() / 6;
+    for (int i = 0; i < radialSegments; ++i) {
+        float angle = i * 2.0f * glm::pi<float>() / radialSegments;
+        float xInner = parameters.r2 * cos(angle);
+        float yInner = parameters.r2 * sin(angle);
+
+        // Back vertex
+        vertices.insert(vertices.end(), { xInner, yInner, -d/2.0f, -cos(angle), -sin(angle), 0.0f });
+        // Front vertex
+        vertices.insert(vertices.end(), { xInner, yInner, d/2.0f, -cos(angle), -sin(angle), 0.0f });
+    }
+
+    // Generate inner rim indices
+    for (int i = 0; i < radialSegments; ++i) {
+        unsigned int idx = innerRimStartIdx + i * 2;
+        unsigned int nextIdx = (i < radialSegments - 1) ? idx + 2 : innerRimStartIdx;
 
         // Connecting outer radius vertices on front and back faces
-        indices.insert(indices.end(), { innerStart, outerStart, outerStart + 2 });
-        indices.insert(indices.end(), { innerStart, outerStart + 2, innerStart + 2 });
+        indices.insert(indices.end(), { idx, idx + 1, nextIdx + 1 });
+        indices.insert(indices.end(), { idx, nextIdx + 1, nextIdx });
+    }
 
-        // Connecting inner radius vertices on front and back faces
-        indices.insert(indices.end(), { innerStart + 1, outerStart + 1, outerStart + 3 });
-        indices.insert(indices.end(), { innerStart + 1, outerStart + 3, innerStart + 3 });
+    // Generate vertices for outer rim of the ring
+    unsigned int outerRimStartIdx = vertices.size() / 6;
+    for (int i = 0; i < radialSegments; ++i) {
+        float angle = i * 2.0f * glm::pi<float>() / radialSegments;
+        float xOuter = outerRadius * cos(angle);
+        float yOuter = outerRadius * sin(angle);
+
+        // Back vertex
+        vertices.insert(vertices.end(), { xOuter, yOuter, -d/2.0f, cos(angle), sin(angle), 0.0f });
+        // Front vertex
+        vertices.insert(vertices.end(), { xOuter, yOuter, d/2.0f, cos(angle), sin(angle), 0.0f });
+    }
+
+    // Generate outer rim indices
+    for (int i = 0; i < radialSegments; ++i) {
+        unsigned int idx = outerRimStartIdx + i * 2;
+        unsigned int nextIdx = (i < radialSegments - 1) ? idx + 2 : outerRimStartIdx;
+
+        // Connecting outer radius vertices on front and back faces
+        indices.insert(indices.end(), { idx, idx + 1, nextIdx + 1 });
+        indices.insert(indices.end(), { idx, nextIdx + 1, nextIdx });
     }
 }
 
