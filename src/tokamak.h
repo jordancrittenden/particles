@@ -4,11 +4,12 @@
 #include "current_segment.h"
 #include "scene.h"
 #include "torus.h"
+#include "solenoid.h"
 #include "geometry/ring.h"
 
 class TokamakScene : public Scene {
 public:
-    TokamakScene(SimulationState& state, TorusParameters& params);
+    TokamakScene(SimulationState& state, TorusParameters& params, SolenoidParameters& solenoidParams);
     ~TokamakScene();
     void initialize();
 
@@ -21,8 +22,12 @@ public:
     std::vector<CurrentVector> get_currents();
 
 private:
-    const TorusParameters parameters;
+    const TorusParameters& torusParameters;
+    const SolenoidParameters& solenoidParameters;
     GLBuffers torusRingBuf;
+    GLBuffers solenoidRingBuf;
     GLuint torusShaderProgram;
+    GLuint solenoidShaderProgram;
     bool showTorus = true;
+    bool showSolenoid = true;
 };

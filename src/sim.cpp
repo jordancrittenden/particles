@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
     CLState* clState = init_opencl();
 
     // Initialize the Scene
-    Scene* scene = new TokamakScene(state, torus);
+    Scene* scene = new TokamakScene(state, torus, solenoid);
     scene->initialize();
 
     std::vector<CurrentVector> currents = scene->get_currents();
