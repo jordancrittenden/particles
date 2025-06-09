@@ -44,7 +44,7 @@ protected:
     SimulationState* state;
 
     // Camera settings
-    float cameraDistance = 5.0f;
+    float cameraDistance = 5.0f * _M;
     float cameraTheta = 5.0f/6.0f * M_PI_2;
     float cameraPhi = 1.0f/6.0f * M_PI_2;
     glm::mat4 view;

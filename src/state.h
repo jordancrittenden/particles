@@ -11,7 +11,7 @@ typedef struct Cell {
 
 typedef struct SimulationState {
     // Particle initialization parameters
-    cl_float initialTemperature = 300;      // Initial plasma temperature, K
+    cl_float initialTemperature = 300 * _K; // Initial plasma temperature, K
     cl_uint initialParticles = 10000;       // Number of initial particles
     cl_uint maxParticles = 40000;           // Maximum number of particles
     cl_float pctFreeElectrons = 0.01f;      // Percent of initial particles that are free electrons

@@ -19,17 +19,17 @@ void TokamakScene::initialize() {
 
     Ring toroidalRing;
     toroidalRing.r = torusParameters.r2;
-    toroidalRing.t = 0.05f;
-    toroidalRing.d = 0.1f;
+    toroidalRing.t = 0.05f * _M;
+    toroidalRing.d = 0.1f * _M;
     this->torusRingBuf = create_ring_buffers(toroidalRing);
 
     Ring solenoidRing;
     solenoidRing.r = solenoidParameters.r;
-    solenoidRing.t = 0.05f;
+    solenoidRing.t = 0.05f * _M;
     solenoidRing.d = torusParameters.r2 * 2.0f;
     this->solenoidRingBuf = create_ring_buffers(solenoidRing);
 
-    this->cameraDistance = 5.0f;
+    this->cameraDistance = 5.0f * _M;
 }
 
 TokamakScene::~TokamakScene() {

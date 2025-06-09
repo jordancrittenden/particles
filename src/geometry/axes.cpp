@@ -3,19 +3,20 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "../gl_util.h"
+#include "physical_constants.h"
 
 // Create buffers for axes (X, Y, Z)
 GLBuffers create_axes_buffers() {
     float axisVertices[] = {
         // X-axis
-        -10.0, 0.0f, 0.0f,   0.0f, 0.0f, 0.0f,
-         10.0, 0.0f, 0.0f,   0.0f, 0.0f, 0.0f,
+        -10.0f * _M, 0.0f, 0.0f,   0.0f, 0.0f, 0.0f,
+         10.0f * _M, 0.0f, 0.0f,   0.0f, 0.0f, 0.0f,
         // Y-axis
-        0.0f, -10.0, 0.0f,   0.0f, 0.0f, 0.0f,
-        0.0f,  10.0, 0.0f,   0.0f, 0.0f, 0.0f,
+        0.0f, -10.0f * _M, 0.0f,   0.0f, 0.0f, 0.0f,
+        0.0f,  10.0f * _M, 0.0f,   0.0f, 0.0f, 0.0f,
         // Z-axis
-        0.0f, 0.0f, -10.0,   0.0f, 0.0f, 0.0f,
-        0.0f, 0.0f,  10.0,   0.0f, 0.0f, 0.0f
+        0.0f, 0.0f, -10.0f * _M,   0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f,  10.0f * _M,   0.0f, 0.0f, 0.0f
     };
 
     GLBuffers buf;
