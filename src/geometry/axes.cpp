@@ -2,7 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "gl_util.h"
+#include "../gl_util.h"
 
 // Create buffers for axes (X, Y, Z)
 GLBuffers create_axes_buffers() {

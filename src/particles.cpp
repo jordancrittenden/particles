@@ -12,7 +12,7 @@
 #include "cl_util.h"
 #include "particles.h"
 
-const double k_B = 1.380649e-23; // Boltzmann constant (J/K)
+const double k_B = 1.380649e-23 * _J / _K; // Boltzmann constant (J/K)
 
 inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;

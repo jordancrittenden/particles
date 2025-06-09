@@ -77,9 +77,9 @@ std::vector<Cell> TokamakScene::get_grid_cells(float dx) {
 }
 
 cl_float4 TokamakScene::rand_particle_position() {
-    float r = rand_range(torusParameters.r1 - (torusParameters.r2 / 2.0f), torusParameters.r1 + (torusParameters.r2 / 2.0f));
+    float r = rand_range(torusParameters.r1 - (torusParameters.r2 / 4.0f), torusParameters.r1 + (torusParameters.r2 / 4.0f));
     float theta = rand_range(0.0f, 2 * M_PI);
-    float y = rand_range(-torusParameters.r2 / 2.0f, torusParameters.r2 / 2.0f);
+    float y = rand_range(-torusParameters.r2 / 4.0f, torusParameters.r2 / 4.0f);
 
     // [x, y, z, unused]
     return cl_float4 { r * sin(theta), y, r * cos(theta), 0.0f };

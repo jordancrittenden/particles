@@ -3,7 +3,7 @@
 #include "state.h"
 #include "gl_util.h"
 #include "cl_util.h"
-#include "field_vector.h"
+#include "geometry/field_vector.h"
 #include "current_segment.h"
 
 class Scene {

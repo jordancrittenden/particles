@@ -8,10 +8,6 @@
 
 #define ARROW_TIP_SEGMENTS 10
 
-inline float rand_range(float min, float max) {
-    return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
-}
-
 // Vector arrow geometry - points along the z-axis
 std::vector<float> create_vector_geometry(float length) {
     std::vector<float> vertices;

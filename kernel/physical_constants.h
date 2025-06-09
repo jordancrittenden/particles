@@ -6,6 +6,9 @@
 #define _M                    (1.0f) // meter
 #define _S                    (1.0f) // second
 #define _A                    (1.0f) // ampere
+#define _K                    (1.0f) // kelvin
+#define _V                    (_KG * _M * _M / (_A * _S * _S * _S)) // volt
+#define _J                    (_KG * _M * _M / (_S * _S)) // joule
 
 #define PI                    (3.14159265953f)
 

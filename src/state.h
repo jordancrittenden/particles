@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <glm/glm.hpp>
+#include "physical_constants.h"
 #include "cl_util.h"
 
 typedef struct Cell {
@@ -10,25 +11,25 @@ typedef struct Cell {
 
 typedef struct SimulationState {
     // Particle initialization parameters
-    cl_float initialTemperature = 300; // Initial plasma temperature, K
-    cl_uint initialParticles = 10000;  // Number of initial particles
-    cl_uint maxParticles = 40000;      // Maximum number of particles
-    cl_float pctFreeElectrons = 0.01f; // Percent of initial particles that are free electrons
-    cl_float pctDeuterium = 0.495f;    // Percent of initial particles that are deuterium
-    cl_float pctTritium = 0.495f;      // Percent of initial particles that are tritium
+    cl_float initialTemperature = 300;      // Initial plasma temperature, K
+    cl_uint initialParticles = 10000;       // Number of initial particles
+    cl_uint maxParticles = 40000;           // Maximum number of particles
+    cl_float pctFreeElectrons = 0.01f;      // Percent of initial particles that are free electrons
+    cl_float pctDeuterium = 0.495f;         // Percent of initial particles that are deuterium
+    cl_float pctTritium = 0.495f;           // Percent of initial particles that are tritium
 
     // State variables
-    std::vector<Cell> cells;           // Simulation cells
-    cl::Buffer particlePosBufCL;       // Particle positions
-    cl::Buffer particleVelBufCL;       // Particle velocities
-    cl::Buffer eFieldVecBufCL;         // The E field at each cell center
-    cl::Buffer bFieldVecBufCL;         // The B field at each cell center
-    cl::Buffer nParticlesCL;           // Current number of particles
-    cl_float t = 0.0f;                 // Simulation time, s
-    cl_float dt = 1e-8f;               // Simulation dt, s
-    cl_float cellSpacing = 0.08f;      // Distance between simulation grid cells, m
-    cl_float solenoidFlux = 0.0f;      // Flux through the solenoid, V s
-    cl_float toroidalI = 0.0f;         // Current through the toroidal coils, A
+    std::vector<Cell> cells;                // Simulation cells
+    cl::Buffer particlePosBufCL;            // Particle positions
+    cl::Buffer particleVelBufCL;            // Particle velocities
+    cl::Buffer eFieldVecBufCL;              // The E field at each cell center
+    cl::Buffer bFieldVecBufCL;              // The B field at each cell center
+    cl::Buffer nParticlesCL;                // Current number of particles
+    cl_float t = 0.0f * _S;                 // Simulation time, s
+    cl_float dt = 1e-8f * _S;               // Simulation dt, s
+    cl_float cellSpacing = 0.08f * _M;      // Distance between simulation grid cells, m
+    cl_float solenoidFlux = 0.0f * _V * _S; // Flux through the solenoid, V s
+    cl_float toroidalI = 0.0f * _A;         // Current through the toroidal coils, A
 
     // Physics booleans
     bool enableInterparticlePhysics = false;

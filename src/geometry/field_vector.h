@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <glm/glm.hpp>
-#include "gl_util.h"
+#include "../gl_util.h"
 
 typedef struct FieldGLBuffers {
     GLBuffers arrowBuf;

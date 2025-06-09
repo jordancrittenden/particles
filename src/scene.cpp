@@ -5,7 +5,7 @@
 #include "cl_util.h"
 #include "scene.h"
 #include "state.h"
-#include "axes.h"
+#include "geometry/axes.h"
 #include "particles.h"
 #include "current_segment.h"
 
@@ -41,10 +41,10 @@ void Scene::initialize() {
         bFieldVec.push_back(glm::vec4(-1.0f, 1.0f, 0.0f, 0.0f)); // initial (meaningless) value
     }
 
-    this->e_field = create_vectors_buffers(eFieldLoc, eFieldVec, 0.03f);
-    this->b_field = create_vectors_buffers(bFieldLoc, bFieldVec, 0.03f);
+    this->e_field = create_vectors_buffers(eFieldLoc, eFieldVec, 0.03f * _M);
+    this->b_field = create_vectors_buffers(bFieldLoc, bFieldVec, 0.03f * _M);
 
-    this->cameraDistance = 0.5f;
+    this->cameraDistance = 0.5f * _M;
 }
 
 Scene::~Scene() {
@@ -76,14 +76,14 @@ void Scene::render(float aspectRatio) {
 }
 
 std::vector<Cell> Scene::get_grid_cells(float spacing) {
-    float s = 0.1f;
+    float s = 0.1f * _M;
     glm::vec3 minCoord { -s, -s, -s };
     glm::vec3 maxCoord { s, s, s };
-    return get_free_space_grid_cells(minCoord, maxCoord, 0.01f);
+    return get_free_space_grid_cells(minCoord, maxCoord, 0.01f * _M);
 }
 
 cl_float4 Scene::rand_particle_position() {
-    float s = 0.1f;
+    float s = 0.1f * _M;
     glm::vec3 minCoord { -s, -s, -s };
     glm::vec3 maxCoord { s, s, s };
     return free_space_rand_particle_position(minCoord, maxCoord);
