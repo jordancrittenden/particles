@@ -11,6 +11,7 @@ clang++ \
     src/geometry/axes.cpp \
     src/geometry/field_vector.cpp \
     src/geometry/ring.cpp \
+    src/geometry/tracer.cpp \
     src/cl_util.cpp \
     src/gl_util.cpp \
     src/keyboard.cpp \

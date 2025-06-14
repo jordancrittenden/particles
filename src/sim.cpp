@@ -62,9 +62,11 @@ int main(int argc, char* argv[]) {
     state.particleVelBufCL = scene->getParticleVelBufCL(clState->context);
     state.eFieldVecBufCL   = scene->getEFieldVecBufCL(clState->context);
     state.bFieldVecBufCL   = scene->getBFieldVecBufCL(clState->context);
-    
+    state.tracerBufCL      = scene->getTracerBufCL(clState->context);
+
     std::vector<cl::Memory> particlesKernelGLBuffers = {state.particlePosBufCL, state.particleVelBufCL};
     std::vector<cl::Memory> fieldsKernelGLBuffers = {state.particlePosBufCL, state.particleVelBufCL, state.eFieldVecBufCL, state.bFieldVecBufCL};
+    std::vector<cl::Memory> tracerKernelGLBuffers = {state.tracerBufCL, state.particlePosBufCL};
     std::vector<cl::Memory> defragKernelGLBuffers = {state.particlePosBufCL, state.particleVelBufCL};
 
     // Create additional OpenCL buffers
@@ -115,6 +117,22 @@ int main(int argc, char* argv[]) {
     defragKernel.setArg(2, state.particleVelBufCL);
     defragKernel.setArg(3, state.maxParticles);
 
+    // Set up tracer kernel parameters
+    cl::Program tracerProgram = build_kernel(clState, "kernel/tracer.cl", "kernel/physical_constants.h");
+    cl::Kernel tracerKernel(tracerProgram, "updateTrails");
+    tracerKernel.setArg(0, state.nParticlesCL);
+    tracerKernel.setArg(1, state.tracerBufCL);
+    tracerKernel.setArg(2, state.eFieldVecBufCL);
+    tracerKernel.setArg(3, state.bFieldVecBufCL);
+    tracerKernel.setArg(4, state.particlePosBufCL);
+    tracerKernel.setArg(5, state.particleVelBufCL);
+    tracerKernel.setArg(6, currentSegmentBufCL);
+    tracerKernel.setArg(7, (cl_uint)currents.size());
+    tracerKernel.setArg(8, state.solenoidFlux);
+    tracerKernel.setArg(9, (cl_uint)state.enableInterparticlePhysics);
+    tracerKernel.setArg(10, (cl_uint)scene->getNumTracers());
+    tracerKernel.setArg(11, (cl_uint)scene->getTracerPoints());
+
     glEnable(GL_DEPTH_TEST);
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -153,8 +171,14 @@ int main(int argc, char* argv[]) {
             clState->queue->enqueueAcquireGLObjects(&fieldsKernelGLBuffers);
             cl_int fieldsKernelErr = clState->queue->enqueueNDRangeKernel(fieldsKernel, cl::NullRange, cl::NDRange(state.cells.size()));
             cl_exit_if_err(fieldsKernelErr, "Failed to enqueue kernel");
-            // Release the buffer back to OpenGL
             clState->queue->enqueueReleaseGLObjects(&fieldsKernelGLBuffers);
+            clState->queue->finish();
+
+            // Update tracers
+            // Acquire the GL buffer for OpenCL to read and write
+            clState->queue->enqueueAcquireGLObjects(&tracerKernelGLBuffers);
+            clState->queue->enqueueNDRangeKernel(tracerKernel, cl::NullRange, cl::NDRange(scene->getNumTracers()));
+            clState->queue->enqueueReleaseGLObjects(&tracerKernelGLBuffers);
             clState->queue->finish();
 
             // Do particle physics
@@ -165,7 +189,6 @@ int main(int argc, char* argv[]) {
             if (simulationStep % 100 == 0) {
                 std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << ") [" << nParticles << " particles]" << std::endl;
             }
-            // Release the buffer back to OpenGL
             clState->queue->enqueueReleaseGLObjects(&particlesKernelGLBuffers);
             clState->queue->finish();
 
@@ -175,7 +198,6 @@ int main(int argc, char* argv[]) {
             // cl_int defragKernelErr = clState->queue->enqueueNDRangeKernel(defragKernel, cl::NullRange, cl::NDRange(1));
             // cl_exit_if_err(defragKernelErr, "Failed to enqueue kernel");
             // clState->queue->enqueueReadBuffer(state.nParticlesCL, CL_TRUE, 0, sizeof(cl_uint), &nParticles);
-            // // Release the buffer back to OpenGL
             // clState->queue->enqueueReleaseGLObjects(&defragKernelGLBuffers);
             // clState->queue->finish();
 

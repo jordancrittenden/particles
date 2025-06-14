@@ -20,10 +20,11 @@ typedef struct SimulationState {
 
     // State variables
     std::vector<Cell> cells;                // Simulation cells
-    cl::Buffer particlePosBufCL;            // Particle positions
-    cl::Buffer particleVelBufCL;            // Particle velocities
-    cl::Buffer eFieldVecBufCL;              // The E field at each cell center
-    cl::Buffer bFieldVecBufCL;              // The B field at each cell center
+    cl::BufferGL particlePosBufCL;          // Particle positions
+    cl::BufferGL particleVelBufCL;          // Particle velocities
+    cl::BufferGL eFieldVecBufCL;            // The E field at each cell center
+    cl::BufferGL bFieldVecBufCL;            // The B field at each cell center
+    cl::BufferGL tracerBufCL;               // Tracer trails
     cl::Buffer nParticlesCL;                // Current number of particles
     cl_float t = 0.0f * _S;                 // Simulation time, s
     cl_float dt = 1e-8f * _S;               // Simulation dt, s

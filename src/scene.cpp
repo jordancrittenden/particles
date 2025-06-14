@@ -6,8 +6,13 @@
 #include "scene.h"
 #include "state.h"
 #include "geometry/axes.h"
+#include "geometry/tracer.h"
 #include "particles.h"
 #include "current_segment.h"
+
+inline float rand_range(float min, float max) {
+    return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
+}
 
 Scene::Scene(SimulationState& state) {
     this->state = &state;
@@ -15,6 +20,7 @@ Scene::Scene(SimulationState& state) {
     axesShaderProgram      = create_shader_program("shader/axes_vertex.glsl", "shader/axes_fragment.glsl");
     particlesShaderProgram = create_shader_program("shader/particles_vertex.glsl", "shader/particles_fragment.glsl");
     vectorShaderProgram    = create_shader_program("shader/vector_vertex.glsl", "shader/vector_fragment.glsl");
+    tracerShaderProgram    = create_shader_program("shader/tracer_vertex.glsl", "shader/tracer_fragment.glsl");
 }
 
 void Scene::initialize() {
@@ -44,6 +50,16 @@ void Scene::initialize() {
     this->e_field = create_vectors_buffers(eFieldLoc, eFieldVec, 0.03f * _M);
     this->b_field = create_vectors_buffers(bFieldLoc, bFieldVec, 0.03f * _M);
 
+    std::vector<glm::vec4> tracerLoc;
+    // Randomly select 1% of cells to use as initial tracer locations
+    for (auto& cell : state->cells) {
+        if (rand_range(0.0f, 1.0f) < 0.01f) {
+            tracerLoc.push_back(glm::vec4(cell.pos.s[0], cell.pos.s[1], cell.pos.s[2], 0.0f));
+        }
+    }
+    this->tracers = create_tracer_buffer(tracerLoc, this->tracerPoints);
+    this->nTracers = tracerLoc.size();
+
     this->cameraDistance = 0.5f * _M;
 }
 
@@ -52,6 +68,7 @@ Scene::~Scene() {
     glDeleteVertexArrays(1, &this->pos.vao);
     glDeleteVertexArrays(1, &this->e_field.arrowBuf.vao);
     glDeleteVertexArrays(1, &this->b_field.arrowBuf.vao);
+    glDeleteVertexArrays(1, &this->tracers.vao);
 }
 
 glm::mat4 Scene::get_orbit_view_matrix() {
@@ -73,6 +90,7 @@ void Scene::render(float aspectRatio) {
     if (this->showParticles) render_particles(particlesShaderProgram, this->pos, /*nParticles*/ state->maxParticles, view, projection);
     if (this->showEField)    render_fields(vectorShaderProgram, state->cells.size(), this->e_field, view, projection);
     if (this->showBField)    render_fields(vectorShaderProgram, state->cells.size(), this->b_field, view, projection);
+    if (this->showTracers)   render_tracers(tracerShaderProgram, this->tracers, this->nTracers, this->tracerPoints, view, projection);
 }
 
 std::vector<Cell> Scene::get_grid_cells(float spacing) {
@@ -122,6 +140,13 @@ cl::BufferGL Scene::getBFieldVecBufCL(cl::Context* context) {
     return buf;
 }
 
+cl::BufferGL Scene::getTracerBufCL(cl::Context* context) {
+    cl_int err;
+    cl::BufferGL buf = cl::BufferGL(*context, CL_MEM_READ_WRITE, this->tracers.vbo, &err);
+    cl_exit_if_err(err, "Failed to create OpenCL buffer from OpenGL buffer");
+    return buf;
+}
+
 void Scene::toggleShowAxes() {
     this->showAxes = !this->showAxes;
 }
@@ -136,6 +161,10 @@ void Scene::toggleShowEField() {
 
 void Scene::toggleShowBField() {
     this->showBField = !this->showBField;
+}
+
+void Scene::toggleShowTracers() {
+    this->showTracers = !this->showTracers;
 }
 
 void Scene::zoomIn() {
@@ -160,4 +189,12 @@ void Scene::rotateUp() {
 
 void Scene::rotateDown() {
     this->cameraTheta += 0.01f;
+}
+
+int Scene::getNumTracers() {
+    return this->nTracers;
+}
+
+int Scene::getTracerPoints() {
+    return this->tracerPoints;
 }
