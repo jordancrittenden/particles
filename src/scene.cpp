@@ -5,8 +5,8 @@
 #include "util/cl_util.h"
 #include "scene.h"
 #include "state.h"
-#include "geometry/axes.h"
-#include "geometry/tracer.h"
+#include "render/axes.h"
+#include "render/tracer.h"
 #include "particles.h"
 #include "current_segment.h"
 

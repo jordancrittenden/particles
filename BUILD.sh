@@ -10,10 +10,10 @@ clang++ \
     src/util/glad.c \
     src/util/cl_util.cpp \
     src/util/gl_util.cpp \
-    src/geometry/axes.cpp \
-    src/geometry/field_vector.cpp \
-    src/geometry/ring.cpp \
-    src/geometry/tracer.cpp \
+    src/render/axes.cpp \
+    src/render/field_vector.cpp \
+    src/render/ring.cpp \
+    src/render/tracer.cpp \
     src/keyboard.cpp \
     src/torus.cpp \
     src/solenoid.cpp \

@@ -3,7 +3,7 @@
 #include "tokamak.h"
 #include "torus.h"
 #include "solenoid.h"
-#include "geometry/ring.h"
+#include "render/ring.h"
 
 inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;

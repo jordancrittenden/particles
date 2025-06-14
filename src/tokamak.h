@@ -5,7 +5,7 @@
 #include "scene.h"
 #include "torus.h"
 #include "solenoid.h"
-#include "geometry/ring.h"
+#include "render/ring.h"
 
 class TokamakScene : public Scene {
 public:
