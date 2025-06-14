@@ -118,3 +118,23 @@ std::vector<CurrentVector> TokamakScene::get_currents() {
 
     return currents;
 }
+
+bool TokamakScene::process_input(GLFWwindow* window, bool (*debounce_input)()) {
+    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS && debounce_input()) {
+        toggleShowTorus();
+        return true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && debounce_input()) {
+        toggleShowSolenoid();
+        return true;
+    }
+    return Scene::process_input(window, debounce_input);
+}
+
+void TokamakScene::toggleShowTorus() {
+    this->showTorus = !this->showTorus;
+}
+
+void TokamakScene::toggleShowSolenoid() {
+    this->showSolenoid = !this->showSolenoid;
+}

@@ -31,6 +31,11 @@ public:
     std::vector<Cell> get_grid_cells(float spacing);
     cl_float4 rand_particle_position();
     std::vector<CurrentVector> get_currents();
+    bool process_input(GLFWwindow* window, bool (*debounce_input)());
+
+    // Toggles
+    void toggleShowTorus();
+    void toggleShowSolenoid();
 
 private:
     const TorusParameters& torusParameters;

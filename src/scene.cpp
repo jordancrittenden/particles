@@ -148,6 +148,54 @@ cl::BufferGL Scene::getTracerBufCL(cl::Context* context) {
     return buf;
 }
 
+bool Scene::process_input(GLFWwindow* window, bool (*debounce_input)()) {
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+        rotateLeft();
+        return true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+        rotateRight();
+        return true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        rotateDown();
+        return true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+        rotateUp();
+        return true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS) {
+        zoomOut();
+        return true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) {
+        zoomIn();
+        return true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && debounce_input()) {
+        toggleShowAxes();
+        return true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && debounce_input()) {
+        toggleShowEField();
+        return true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && debounce_input()) {
+        toggleShowBField();
+        return true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS && debounce_input()) {
+        toggleShowTracers();
+        return true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS && debounce_input()) {
+        toggleShowParticles();
+        return true;
+    }
+    return false;
+}
+
 void Scene::toggleShowAxes() {
     this->showAxes = !this->showAxes;
 }

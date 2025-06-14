@@ -19,6 +19,7 @@ public:
     virtual std::vector<Cell> get_grid_cells(float spacing);
     virtual cl_float4 rand_particle_position();
     virtual std::vector<CurrentVector> get_currents();
+    virtual bool process_input(GLFWwindow* window, bool (*debounce_input)());
 
     // OpenCL buffer accessors
     cl::BufferGL getParticlePosBufCL(cl::Context* context);
