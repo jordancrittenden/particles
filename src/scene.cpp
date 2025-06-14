@@ -3,11 +3,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "util/gl_util.h"
 #include "util/cl_util.h"
-#include "scene.h"
-#include "state.h"
 #include "render/axes.h"
 #include "render/tracer.h"
-#include "particles.h"
+#include "render/particles.h"
+#include "scene.h"
+#include "state.h"
+#include "plasma.h"
 #include "current_segment.h"
 
 inline float rand_range(float min, float max) {

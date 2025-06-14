@@ -1,11 +1,15 @@
 #pragma once
 
+#include <functional>
 #include <glm/glm.hpp>
+#include "util/cl_util.h"
 #include "util/gl_util.h"
 #include "physical_constants.h"
 
 cl_float4 maxwell_boltzmann_particle_velocty(float T, float mass);
+
 PARTICLE_SPECIES rand_particle_species(float partsNeutron, float partsElectron, float partsProton, float partsDeuterium, float partsTritium, float partsIonDeuterium, float partsIonTritium);
+
 void create_particle_buffers(
     std::function<cl_float4()> posF,
     std::function<cl_float4(PARTICLE_SPECIES)> velF,
@@ -14,4 +18,3 @@ void create_particle_buffers(
     GLBuffers& velBuf,
     int initialParticles,
     int maxParticles);
-void render_particles(GLuint shader, GLBuffers& posBuf, int nParticles, glm::mat4 view, glm::mat4 projection);
