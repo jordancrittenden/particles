@@ -17,8 +17,6 @@
 #include "state.h"
 #include "scene.h"
 #include "tokamak.h"
-#include "torus.h"
-#include "solenoid.h"
 #include "current_segment.h"
 
 // OpenGL window

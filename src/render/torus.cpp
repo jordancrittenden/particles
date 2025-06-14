@@ -6,10 +6,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-#include "util/gl_util.h"
-#include "state.h"
-#include "torus.h"
+#include "../util/gl_util.h"
 
 // Set up transformation matrix for each circle
 glm::mat4 get_coil_model_matrix(float angle, float r1) {
@@ -19,7 +16,7 @@ glm::mat4 get_coil_model_matrix(float angle, float r1) {
     return model;
 }
 
-void render_torus(GLuint shader, const GLBuffers& torusBuf, const TorusParameters& parameters, float current, glm::mat4 view, glm::mat4 projection) {
+void render_torus_rings(GLuint shader, const GLBuffers& torusRingBug, int nCoils, float primaryRadius, float current, glm::mat4 view, glm::mat4 projection) {
     glUseProgram(shader);
 
     // Set view and projection uniforms
@@ -32,13 +29,13 @@ void render_torus(GLuint shader, const GLBuffers& torusBuf, const TorusParameter
     glUniform1f(currentLoc, current);
 
     // Draw each circle in the torus
-    for (int i = 0; i < parameters.toroidalCoils; ++i) {
-        float angle = (2.0f * M_PI * i) / parameters.toroidalCoils;
-        glm::mat4 model = get_coil_model_matrix(angle, parameters.r1);
+    for (int i = 0; i < nCoils; ++i) {
+        float angle = (2.0f * M_PI * i) / nCoils;
+        glm::mat4 model = get_coil_model_matrix(angle, primaryRadius);
 
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
-        glBindVertexArray(torusBuf.vao);
-        glDrawElements(GL_TRIANGLES, torusBuf.indices.size(), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(torusRingBug.vao);
+        glDrawElements(GL_TRIANGLES, torusRingBug.indices.size(), GL_UNSIGNED_INT, 0);
     }
 }

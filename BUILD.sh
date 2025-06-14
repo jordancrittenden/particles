@@ -13,10 +13,10 @@ clang++ \
     src/render/axes.cpp \
     src/render/field_vector.cpp \
     src/render/ring.cpp \
+    src/render/solenoid.cpp \
+    src/render/torus.cpp \
     src/render/tracer.cpp \
     src/keyboard.cpp \
-    src/torus.cpp \
-    src/solenoid.cpp \
     src/particles.cpp \
     src/current_segment.cpp \
     src/state.cpp \

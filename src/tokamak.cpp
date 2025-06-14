@@ -1,8 +1,8 @@
 #include <GL/glew.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include "tokamak.h"
-#include "torus.h"
-#include "solenoid.h"
+#include "render/torus.h"
+#include "render/solenoid.h"
 #include "render/ring.h"
 
 inline float rand_range(float min, float max) {
@@ -39,7 +39,7 @@ TokamakScene::~TokamakScene() {
 
 void TokamakScene::render(float aspectRatio) {
     Scene::render(aspectRatio);
-    if (this->showTorus) render_torus(torusShaderProgram, torusRingBuf, torusParameters, state->toroidalI, view, projection);
+    if (this->showTorus) render_torus_rings(torusShaderProgram, torusRingBuf, torusParameters.toroidalCoils, torusParameters.r1, state->toroidalI, view, projection);
     if (this->showSolenoid) render_solenoid(solenoidShaderProgram, solenoidRingBuf, state->solenoidFlux, view, projection);
 }
 
