@@ -32,3 +32,21 @@ void compute_particle_field_contributions(
         }
     }
 }
+
+void compute_current_field_contributions(
+    __global float4* currentSegments,
+    const uint nCurrentSegments,
+    float3 loc,
+    float3* B)
+{
+    for (int j = 0; j < nCurrentSegments; j++) {
+        float3 current_x = (float3)(currentSegments[j*3][0], currentSegments[j*3][1], currentSegments[j*3][2]);
+        float3 current_dx = (float3)(currentSegments[j*3 + 1][0], currentSegments[j*3 + 1][1], currentSegments[j*3 + 1][2]);
+        float current_i = currentSegments[j*3 + 2][0];
+
+        float3 r = loc - current_x;
+        float r_mag = length(r);
+
+        *B += MU_0_OVER_4_PI * current_i * cross(current_dx, r) / (r_mag * r_mag * r_mag);
+    }
+}

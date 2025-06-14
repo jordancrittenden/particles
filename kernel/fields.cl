@@ -27,16 +27,7 @@ __kernel void computeFields(
         compute_particle_field_contributions(nParticles, particlePos, particleVel, loc, -1, &E, &B, &unused);
     }
 
-    for (int j = 0; j < nCurrentSegments; j++) {
-        float3 current_x = (float3)(currentSegments[j*3][0], currentSegments[j*3][1], currentSegments[j*3][2]);
-        float3 current_dx = (float3)(currentSegments[j*3 + 1][0], currentSegments[j*3 + 1][1], currentSegments[j*3 + 1][2]);
-        float current_i = currentSegments[j*3 + 2][0];
-
-        float3 r = loc - current_x;
-        float r_mag = length(r);
-
-        B += MU_0_OVER_4_PI * current_i * cross(current_dx, r) / (r_mag * r_mag * r_mag);
-    }
+    compute_current_field_contributions(currentSegments, nCurrentSegments, loc, &B);
 
     // Calculate the contribution of the central solenoid
     float3 solenoid_axis = (float3)(0.0, 1.0, 0.0);
