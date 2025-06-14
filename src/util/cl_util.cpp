@@ -84,7 +84,7 @@ CLState* init_opencl() {
     return state;
 }
 
-cl::Program build_kernel(CLState* clState, std::string kernelPath, std::string headerPath) {
+cl::Program build_kernel(CLState* clState, std::string kernelPath, std::vector<std::string> headerPaths) {
     // OpenCL does caching on kernel code - using #include prevents the cache from being updated in
     // a way that is extremely hard to reason about. To avoid this, we manually support including a
     // single header file, which forces to cache to update.
@@ -93,9 +93,13 @@ cl::Program build_kernel(CLState* clState, std::string kernelPath, std::string h
     std::ifstream kernelFile(kernelPath);
     std::string kernelSrc(std::istreambuf_iterator<char>(kernelFile), (std::istreambuf_iterator<char>()));
 
-    // Load header source
-    std::ifstream headerFile(headerPath);
-    std::string headerSrc(std::istreambuf_iterator<char>(headerFile), (std::istreambuf_iterator<char>()));
+    // Load header sources
+    std::string headerSrc;
+    for (const auto& headerPath : headerPaths) {
+        std::ifstream headerFile(headerPath);
+        headerSrc += std::string(std::istreambuf_iterator<char>(headerFile), (std::istreambuf_iterator<char>()));
+        headerSrc += "\n";
+    }
 
     std::string src = headerSrc + "\n" + kernelSrc;
 

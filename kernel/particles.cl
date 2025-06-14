@@ -30,38 +30,15 @@ __kernel void computeMotion(
 
     if (enableParticleFieldContributions) {
         int collider_id = -1;
-        float collider_mass;
-        float3 collider_pos;
-        float3 collider_vel;
-        float3 collision_r_norm;
-        for (int j = 0; j < *nParticles; j++) {
-            if (j == id) continue;
-
-            float otherSpecies = particlePos[j][3];
-            if (otherSpecies == 0.0) continue;
-
-            float3 otherPos = (float3)(particlePos[j][0], particlePos[j][1], particlePos[j][2]);
-            float3 otherVel = (float3)(particleVel[j][0], particleVel[j][1], particleVel[j][2]);
-            float otherCharge = particle_charge(otherSpecies);
-
-            float3 r = pos - otherPos;
-            float3 r_norm = normalize(r);
-            float r_mag = length(r);
-
-            // Check for collisions
-            if (r_mag < 0.00001f) {
-                collider_id = j;
-                collider_mass = particle_mass(otherSpecies);
-                collider_pos = otherPos;
-                collider_vel = otherVel;
-                collision_r_norm = r_norm;
-            } else {
-                E += ((K * otherCharge) / (r_mag * r_mag)) * r_norm;
-                B += ((MU_0_OVER_4_PI * otherCharge) / (r_mag * r_mag)) * cross(otherVel, r_norm);
-            }
-        }
+        compute_particle_field_contributions(nParticles, particlePos, particleVel, pos, id, &E, &B, &collider_id);
+        
         // to avoid both work items spawning a new particle, check id < collider_id, which will only be true for one of them
         if (collider_id >= 0 && id < collider_id) {
+            float3 collider_pos = (float3)(particlePos[collider_id][0], particlePos[collider_id][1], particlePos[collider_id][2]);
+            float3 collider_vel = (float3)(particleVel[collider_id][0], particleVel[collider_id][1], particleVel[collider_id][2]);
+            float collider_mass = particle_mass(particlePos[collider_id][3]);
+            float3 collision_r_norm = normalize(pos - collider_pos);
+
             // Relative velocity
             float3 v = collider_vel - vel;
 

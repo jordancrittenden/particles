@@ -15,7 +15,7 @@ __kernel void computeFields(
     int id = get_global_id(0);
     if (id >= nCells) return;
 
-    // Extract position and charge-to-mass ratio for this particle
+    // Extract position for this cell
     float3 loc = (float3)(cellLocation[id][0], cellLocation[id][1], cellLocation[id][2]);
 
     // Calculate the E and B field at location
@@ -23,29 +23,8 @@ __kernel void computeFields(
     float3 B = (float3)(0.0f, 0.0f, 0.0f);
 
     if (enableParticleFieldContributions) {
-        for (int j = 0; j < *nParticles; j++) {
-            if (j == id) continue;
-
-            float species = particlePos[j][3];
-            if (species == 0.0) continue; // inactive particle
-
-            float3 pos = (float3)(particlePos[j][0], particlePos[j][1], particlePos[j][2]);
-            float3 vel = (float3)(particleVel[j][0], particleVel[j][1], particleVel[j][2]);
-            float charge = particle_charge(species);
-
-            float3 r = loc - pos;
-            float3 r_norm = normalize(r);
-            float r_mag = length(r);
-
-            // Avoid division by zero
-            if (r_mag < 0.00001f) continue;
-
-            float3 e = ((K * charge) / (r_mag * r_mag)) * r_norm;
-            float3 b = ((MU_0_OVER_4_PI * charge) / (r_mag * r_mag)) * cross(vel, r_norm);
-
-            E += ((K * charge) / (r_mag * r_mag)) * r_norm;
-            B += ((MU_0_OVER_4_PI * charge) / (r_mag * r_mag)) * cross(vel, r_norm);
-        }
+        int unused = -1;
+        compute_particle_field_contributions(nParticles, particlePos, particleVel, loc, -1, &E, &B, &unused);
     }
 
     for (int j = 0; j < nCurrentSegments; j++) {
