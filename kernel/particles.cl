@@ -10,7 +10,7 @@ __kernel void computeMotion(
     const float dt,
     const uint nCurrentSegments,
     const float solenoidFlux,
-    const uint enableInterparticlePhysics)
+    const uint enableParticleFieldContributions)
 {
     int id = get_global_id(0);
     if (id >= *nParticles) return;
@@ -28,7 +28,7 @@ __kernel void computeMotion(
     float3 E = (float3)(0.0f, 0.0f, 0.0f);
     float3 B = (float3)(0.0f, 0.0f, 0.0f);
 
-    if (enableInterparticlePhysics) {
+    if (enableParticleFieldContributions) {
         int collider_id = -1;
         float collider_mass;
         float3 collider_pos;

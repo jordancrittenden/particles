@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
     particlesKernel.setArg(5, state.dt);
     particlesKernel.setArg(6, (cl_uint)currents.size());
     particlesKernel.setArg(7, state.solenoidFlux);
-    particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
+    particlesKernel.setArg(8, (cl_uint)state.enableParticleFieldContributions);
 
     // Set up field kernel parameters
     cl::Program fieldsProgram = build_kernel(clState, "kernel/fields.cl", "kernel/physical_constants.h");
@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) {
     fieldsKernel.setArg(8, (cl_uint)state.cells.size());
     fieldsKernel.setArg(9, (cl_uint)currents.size());
     fieldsKernel.setArg(10, state.solenoidFlux);
-    fieldsKernel.setArg(11, (cl_uint)state.enableInterparticlePhysics);
+    fieldsKernel.setArg(11, (cl_uint)state.enableParticleFieldContributions);
 
     // Set up defrag kernel parameters
     cl::Program defragProgram = build_kernel(clState, "kernel/defrag.cl", "kernel/physical_constants.h");
@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
     tracerKernel.setArg(6, currentSegmentBufCL);
     tracerKernel.setArg(7, (cl_uint)currents.size());
     tracerKernel.setArg(8, state.solenoidFlux);
-    tracerKernel.setArg(9, (cl_uint)state.enableInterparticlePhysics);
+    tracerKernel.setArg(9, (cl_uint)state.enableParticleFieldContributions);
     tracerKernel.setArg(10, (cl_uint)scene->getNumTracers());
     tracerKernel.setArg(11, (cl_uint)scene->getTracerPoints());
 
@@ -162,9 +162,10 @@ int main(int argc, char* argv[]) {
             state.solenoidFlux = state.enableSolenoidFlux ? solenoid.flux : 0.0f;
             particlesKernel.setArg(5, state.dt);
             particlesKernel.setArg(7, state.solenoidFlux);
-            particlesKernel.setArg(8, (cl_uint)state.enableInterparticlePhysics);
+            particlesKernel.setArg(8, (cl_uint)state.enableParticleFieldContributions);
             fieldsKernel.setArg(10, state.solenoidFlux);
-            fieldsKernel.setArg(11, (cl_uint)state.enableInterparticlePhysics);
+            fieldsKernel.setArg(11, (cl_uint)state.enableParticleFieldContributions);
+            tracerKernel.setArg(9, (cl_uint)state.enableParticleFieldContributions);
 
             // Compute fields
             // Acquire the GL buffer for OpenCL to read and write

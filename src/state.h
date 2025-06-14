@@ -33,7 +33,7 @@ typedef struct SimulationState {
     cl_float toroidalI = 0.0f * _A;         // Current through the toroidal coils, A
 
     // Physics booleans
-    bool enableInterparticlePhysics = false;
+    bool enableParticleFieldContributions = false;
     bool enableToroidalRings = true;
     bool enableSolenoidFlux = false;
 } SimulationState;

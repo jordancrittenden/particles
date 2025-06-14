@@ -8,7 +8,7 @@ __kernel void updateTrails(
     __global float4* currentSegments,
     const uint nCurrentSegments,
     const float solenoidFlux,
-    const uint enableInterparticlePhysics,
+    const uint enableParticleFieldContributions,
     int nTracers,
     int tracerLength)
 {
@@ -23,7 +23,7 @@ __kernel void updateTrails(
         float3 E = (float3)(0.0f, 0.0f, 0.0f);
         float3 B = (float3)(0.0f, 0.0f, 0.0f);
 
-        if (enableInterparticlePhysics) {
+        if (enableParticleFieldContributions) {
             for (int j = 0; j < *nParticles; j++) {
                 if (j == id) continue;
 

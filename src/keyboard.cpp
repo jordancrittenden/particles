@@ -61,8 +61,8 @@ void process_input(GLFWwindow* window, SimulationState& state, Scene* scene) {
         scene->toggleShowParticles();
     }
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS && debounce_input()) {
-        state.enableInterparticlePhysics = !state.enableInterparticlePhysics;
-        std::cout << "interparticle physics: " << (state.enableInterparticlePhysics ? "ENABLED" : "DISABLED") << std::endl;
+        state.enableParticleFieldContributions = !state.enableParticleFieldContributions;
+        std::cout << "particle field contributions: " << (state.enableParticleFieldContributions ? "ENABLED" : "DISABLED") << std::endl;
     }
     if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && debounce_input()) {
         state.enableToroidalRings = !state.enableToroidalRings;
