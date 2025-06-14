@@ -7,11 +7,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "cl_util.h"
-#include "gl_util.h"
+#include "util/gl_util.h"
 #include "state.h"
 #include "torus.h"
-#include "geometry/ring.h"
 
 // Set up transformation matrix for each circle
 glm::mat4 get_coil_model_matrix(float angle, float r1) {
@@ -25,6 +23,7 @@ void render_torus(GLuint shader, const GLBuffers& torusBuf, const TorusParameter
     glUseProgram(shader);
 
     // Set view and projection uniforms
+    GLint modelLoc = glGetUniformLocation(shader, "model");
     GLint viewLoc = glGetUniformLocation(shader, "view");
     GLint projLoc = glGetUniformLocation(shader, "projection");
     GLint currentLoc = glGetUniformLocation(shader, "current");
@@ -37,7 +36,6 @@ void render_torus(GLuint shader, const GLBuffers& torusBuf, const TorusParameter
         float angle = (2.0f * M_PI * i) / parameters.toroidalCoils;
         glm::mat4 model = get_coil_model_matrix(angle, parameters.r1);
 
-        GLint modelLoc = glGetUniformLocation(shader, "model");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
         glBindVertexArray(torusBuf.vao);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gl_util.h"
+#include "util/gl_util.h"
 #include "current_segment.h"
 #include "scene.h"
 #include "torus.h"

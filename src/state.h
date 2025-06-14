@@ -3,7 +3,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "physical_constants.h"
-#include "cl_util.h"
+#include "util/cl_util.h"
 
 typedef struct Cell {
     cl_float4 pos; // [centerX, centerY, centerZ, isActive]

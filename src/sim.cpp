@@ -10,8 +10,8 @@
 #include <cmath>
 #include <cstdlib>
 
-#include "cl_util.h"
-#include "gl_util.h"
+#include "util/cl_util.h"
+#include "util/gl_util.h"
 #include "keyboard.h"
 #include "args.h"
 #include "state.h"

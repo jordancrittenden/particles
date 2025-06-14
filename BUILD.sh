@@ -7,13 +7,13 @@ clang++ \
     -I/opt/homebrew/Cellar/glm/1.0.1//include \
     -Iinclude \
     -Ikernel \
-    src/glad.c \
+    src/util/glad.c \
+    src/util/cl_util.cpp \
+    src/util/gl_util.cpp \
     src/geometry/axes.cpp \
     src/geometry/field_vector.cpp \
     src/geometry/ring.cpp \
     src/geometry/tracer.cpp \
-    src/cl_util.cpp \
-    src/gl_util.cpp \
     src/keyboard.cpp \
     src/torus.cpp \
     src/solenoid.cpp \

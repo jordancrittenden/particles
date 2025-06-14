@@ -1,7 +1,7 @@
 #pragma once
 
 #include "physical_constants.h"
-#include "gl_util.h"
+#include "util/gl_util.h"
 
 typedef struct SolenoidParameters {
     float r = 0.15f * _M;         // Radius of the central solenoid, m

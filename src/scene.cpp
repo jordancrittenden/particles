@@ -1,8 +1,8 @@
 #include <iostream>
 #include <GL/glew.h>
 #include <glm/gtc/matrix_transform.hpp>
-#include "gl_util.h"
-#include "cl_util.h"
+#include "util/gl_util.h"
+#include "util/cl_util.h"
 #include "scene.h"
 #include "state.h"
 #include "geometry/axes.h"

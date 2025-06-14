@@ -2,7 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "../gl_util.h"
+#include "../util/gl_util.h"
 #include "physical_constants.h"
 
 // Create buffers for axes (X, Y, Z)

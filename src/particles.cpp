@@ -8,8 +8,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "gl_util.h"
-#include "cl_util.h"
+#include "util/gl_util.h"
+#include "util/cl_util.h"
 #include "particles.h"
 
 const double k_B = 1.380649e-23 * _J / _K; // Boltzmann constant (J/K)

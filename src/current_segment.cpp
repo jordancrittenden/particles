@@ -1,4 +1,4 @@
-#include "cl_util.h"
+#include "util/cl_util.h"
 #include "current_segment.h"
 
 cl::Buffer get_current_segment_buffer(cl::Context* context, const std::vector<CurrentVector>& currents) {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "physical_constants.h"
-#include "gl_util.h"
+#include "util/gl_util.h"
 
 typedef struct TorusParameters {
     float r1 = 1.0f * _M;            // Radius of torus, m

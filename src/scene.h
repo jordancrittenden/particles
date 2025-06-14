@@ -1,8 +1,8 @@
 #pragma once
 
 #include "state.h"
-#include "gl_util.h"
-#include "cl_util.h"
+#include "util/gl_util.h"
+#include "util/cl_util.h"
 #include "geometry/field_vector.h"
 #include "current_segment.h"
 

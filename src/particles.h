@@ -1,7 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include "gl_util.h"
+#include "util/gl_util.h"
 #include "physical_constants.h"
 
 cl_float4 maxwell_boltzmann_particle_velocty(float T, float mass);

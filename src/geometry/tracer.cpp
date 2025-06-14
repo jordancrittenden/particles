@@ -5,6 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "../../kernel/physical_constants.h"
+#include "../util/cl_util.h"
 #include "tracer.h"
 
 GLBuffers create_tracer_buffer(std::vector<glm::vec4>& loc, int tracerPoints) {

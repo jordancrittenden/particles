@@ -1,7 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include "../gl_util.h"
+#include "../util/gl_util.h"
 
 GLBuffers create_axes_buffers();
 void render_axes(GLuint shader, const GLBuffers& axesBuf, glm::mat4 view, glm::mat4 projection);
