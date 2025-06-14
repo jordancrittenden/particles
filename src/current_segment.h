@@ -10,3 +10,5 @@ typedef struct CurrentVector {
 } CurrentVector;
 
 cl::Buffer get_current_segment_buffer(cl::Context* context, const std::vector<CurrentVector>& currents);
+
+void update_currents_buffer(cl::CommandQueue* queue, cl::Buffer& currentSegmentBufCL, const std::vector<CurrentVector>& currents);

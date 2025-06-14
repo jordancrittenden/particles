@@ -30,7 +30,7 @@ typedef struct SimulationState {
     cl_float dt = 1e-8f * _S;               // Simulation dt, s
     cl_float cellSpacing = 0.08f * _M;      // Distance between simulation grid cells, m
     cl_float solenoidFlux = 0.0f * _V * _S; // Flux through the solenoid, V s
-    cl_float toroidalI = 0.0f * _A;         // Current through the toroidal coils, A
+    cl_float toroidalI = 50000.0f * _A;     // Current through the toroidal coils, A
 
     // Physics booleans
     bool enableParticleFieldContributions = false;

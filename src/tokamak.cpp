@@ -106,7 +106,7 @@ std::vector<CurrentVector> TokamakScene::get_currents() {
         for (int j = 0; j < torusParameters.coilLoopSegments; ++j) {
             CurrentVector current;
             current.x = model * circleVertices[j];
-            current.i = torusParameters.toroidalI;
+            current.i = state->toroidalI;
 
             if (j > 0) currents[idx-1].dx = current.x - currents[idx-1].x;
 

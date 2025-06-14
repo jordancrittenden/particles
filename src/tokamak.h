@@ -5,17 +5,17 @@
 #include "scene.h"
 
 typedef struct TorusParameters {
-    float r1 = 1.0f * _M;            // Radius of torus, m
-    float r2 = 0.4f * _M;            // Radius of torus cross section, m
+    float r1 = 1.0f * _M;                   // Radius of torus, m
+    float r2 = 0.4f * _M;                   // Radius of torus cross section, m
 
-    int toroidalCoils = 12;          // Number of toroidal coils
-    int coilLoopSegments = 20;       // Number of current segments per circle for approximation
-    float toroidalI = 50000.0f * _A; // Toroidal current, A
+    int toroidalCoils = 12;                 // Number of toroidal coils
+    int coilLoopSegments = 20;              // Number of current segments per circle for approximation
+    float maxToroidalI = 50000.0f * _A;     // Maximum current through the toroidal coils, A
 } TorusParameters;
 
 typedef struct SolenoidParameters {
-    float r = 0.15f * _M;         // Radius of the central solenoid, m
-    float flux = 0.3f * _V * _S;  // Central solenoid magnetic flux, V s
+    float r = 0.15f * _M;                   // Radius of the central solenoid, m
+    float maxSolenoidFlux = 0.3f * _V * _S; // Maximum central solenoid magnetic flux, V s
 } SolenoidParameters;
 
 class TokamakScene : public Scene {

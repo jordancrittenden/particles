@@ -139,6 +139,7 @@ int main(int argc, char* argv[]) {
     int frameCount = 0;
     int simulationStep = 0;
     float frameTimeSec = 1.0f / (float)targetFPS;
+    bool pEnableToroidalRings = state.enableToroidalRings;
     while (!glfwWindowShouldClose(window)) {
         auto frameStart = std::chrono::high_resolution_clock::now();
 
@@ -156,14 +157,21 @@ int main(int argc, char* argv[]) {
         std::chrono::duration<double> frameDur;
         do {
             // Update kernel args that could have changed
-            state.toroidalI = state.enableToroidalRings ? torus.toroidalI : 0.0f;
-            state.solenoidFlux = state.enableSolenoidFlux ? solenoid.flux : 0.0f;
+            state.toroidalI = state.enableToroidalRings ? torus.maxToroidalI : 0.0f;
+            state.solenoidFlux = state.enableSolenoidFlux ? solenoid.maxSolenoidFlux : 0.0f;
             particlesKernel.setArg(5, state.dt);
             particlesKernel.setArg(7, state.solenoidFlux);
             particlesKernel.setArg(8, (cl_uint)state.enableParticleFieldContributions);
             fieldsKernel.setArg(10, state.solenoidFlux);
             fieldsKernel.setArg(11, (cl_uint)state.enableParticleFieldContributions);
             tracerKernel.setArg(9, (cl_uint)state.enableParticleFieldContributions);
+
+            // Update current segment buffer if toroidal rings have been toggled
+            if (pEnableToroidalRings != state.enableToroidalRings) {
+                currents = scene->get_currents();
+                update_currents_buffer(clState->queue, currentSegmentBufCL, currents);
+                pEnableToroidalRings = state.enableToroidalRings;
+            }
 
             // Compute fields
             // Acquire the GL buffer for OpenCL to read and write

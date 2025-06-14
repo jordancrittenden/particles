@@ -57,6 +57,9 @@ void process_input(GLFWwindow* window, SimulationState& state, Scene* scene) {
     if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && debounce_input()) {
         scene->toggleShowBField();
     }
+    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS && debounce_input()) {
+        scene->toggleShowTracers();
+    }
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS && debounce_input()) {
         scene->toggleShowParticles();
     }
