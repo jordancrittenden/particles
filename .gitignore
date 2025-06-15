@@ -31,5 +31,10 @@
 *.out
 *.app
 
+include/opencl.hpp
+
+build/
+build-web/
+dawn/
 .vscode/
 .DS_Store
