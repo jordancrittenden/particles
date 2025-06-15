@@ -235,5 +235,8 @@ int main(int argc, char* argv[]) {
     }
 
     glfwTerminate();
+
+    delete scene;
+    
     return 0;
 }

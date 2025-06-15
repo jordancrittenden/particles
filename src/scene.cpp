@@ -236,11 +236,11 @@ void Scene::toggleShowBTracers() {
 }
 
 void Scene::zoomIn() {
-    this->cameraDistance /= 1.01f;
+    this->cameraDistance = std::max(0.0f, this->cameraDistance / 1.01f);
 }
 
 void Scene::zoomOut() {
-    this->cameraDistance *= 1.01f;
+    this->cameraDistance = std::min(10.0f * _M, this->cameraDistance * 1.01f);
 }
 
 void Scene::rotateLeft() {
@@ -252,11 +252,11 @@ void Scene::rotateRight() {
 }
 
 void Scene::rotateUp() {
-    this->cameraTheta -= 0.01f;
+    this->cameraTheta = std::max(0.001f, this->cameraTheta - 0.01f);
 }
 
 void Scene::rotateDown() {
-    this->cameraTheta += 0.01f;
+    this->cameraTheta = std::min((float)M_PI, this->cameraTheta + 0.01f);
 }
 
 int Scene::getNumTracers() {
