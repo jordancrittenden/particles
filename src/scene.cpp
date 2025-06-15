@@ -52,13 +52,15 @@ void Scene::initialize() {
     this->b_field = create_vectors_buffers(bFieldLoc, bFieldVec, 0.03f * _M);
 
     std::vector<glm::vec4> tracerLoc;
-    // Randomly select 1% of cells to use as initial tracer locations
+    int i = 0;
     for (auto& cell : state->cells) {
-        if (rand_range(0.0f, 1.0f) < 0.01f) {
+        if (i % 10 == 0) {
             tracerLoc.push_back(glm::vec4(cell.pos.s[0], cell.pos.s[1], cell.pos.s[2], 0.0f));
         }
+        i++;
     }
-    this->tracers = create_tracer_buffer(tracerLoc, this->tracerPoints);
+    this->e_tracers = create_tracer_buffer(tracerLoc, this->tracerPoints);
+    this->b_tracers = create_tracer_buffer(tracerLoc, this->tracerPoints);
     this->nTracers = tracerLoc.size();
 
     this->cameraDistance = 0.5f * _M;
@@ -69,7 +71,8 @@ Scene::~Scene() {
     glDeleteVertexArrays(1, &this->pos.vao);
     glDeleteVertexArrays(1, &this->e_field.arrowBuf.vao);
     glDeleteVertexArrays(1, &this->b_field.arrowBuf.vao);
-    glDeleteVertexArrays(1, &this->tracers.vao);
+    glDeleteVertexArrays(1, &this->e_tracers.vao);
+    glDeleteVertexArrays(1, &this->b_tracers.vao);
 }
 
 glm::mat4 Scene::get_orbit_view_matrix() {
@@ -91,7 +94,8 @@ void Scene::render(float aspectRatio) {
     if (this->showParticles) render_particles(particlesShaderProgram, this->pos, /*nParticles*/ state->maxParticles, view, projection);
     if (this->showEField)    render_fields(vectorShaderProgram, state->cells.size(), this->e_field, view, projection);
     if (this->showBField)    render_fields(vectorShaderProgram, state->cells.size(), this->b_field, view, projection);
-    if (this->showTracers)   render_tracers(tracerShaderProgram, this->tracers, this->nTracers, this->tracerPoints, view, projection);
+    if (this->showETracers)  render_tracers(tracerShaderProgram, this->e_tracers, this->nTracers, this->tracerPoints, cl_float3{1.0f, 0.0f, 0.0f}, view, projection);
+    if (this->showBTracers)  render_tracers(tracerShaderProgram, this->b_tracers, this->nTracers, this->tracerPoints, cl_float3{0.0f, 0.0f, 1.0f}, view, projection);
 }
 
 std::vector<Cell> Scene::get_grid_cells(float spacing) {
@@ -141,9 +145,16 @@ cl::BufferGL Scene::getBFieldVecBufCL(cl::Context* context) {
     return buf;
 }
 
-cl::BufferGL Scene::getTracerBufCL(cl::Context* context) {
+cl::BufferGL Scene::getETracerBufCL(cl::Context* context) {
     cl_int err;
-    cl::BufferGL buf = cl::BufferGL(*context, CL_MEM_READ_WRITE, this->tracers.vbo, &err);
+    cl::BufferGL buf = cl::BufferGL(*context, CL_MEM_READ_WRITE, this->e_tracers.vbo, &err);
+    cl_exit_if_err(err, "Failed to create OpenCL buffer from OpenGL buffer");
+    return buf;
+}
+
+cl::BufferGL Scene::getBTracerBufCL(cl::Context* context) {
+    cl_int err;
+    cl::BufferGL buf = cl::BufferGL(*context, CL_MEM_READ_WRITE, this->b_tracers.vbo, &err);
     cl_exit_if_err(err, "Failed to create OpenCL buffer from OpenGL buffer");
     return buf;
 }
@@ -185,8 +196,12 @@ bool Scene::process_input(GLFWwindow* window, bool (*debounce_input)()) {
         toggleShowBField();
         return true;
     }
-    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS && debounce_input()) {
-        toggleShowTracers();
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS && debounce_input()) {
+        toggleShowETracers();
+        return true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && debounce_input()) {
+        toggleShowBTracers();
         return true;
     }
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS && debounce_input()) {
@@ -212,8 +227,12 @@ void Scene::toggleShowBField() {
     this->showBField = !this->showBField;
 }
 
-void Scene::toggleShowTracers() {
-    this->showTracers = !this->showTracers;
+void Scene::toggleShowETracers() {
+    this->showETracers = !this->showETracers;
+}
+
+void Scene::toggleShowBTracers() {
+    this->showBTracers = !this->showBTracers;
 }
 
 void Scene::zoomIn() {

@@ -24,7 +24,8 @@ typedef struct SimulationState {
     cl::BufferGL particleVelBufCL;          // Particle velocities
     cl::BufferGL eFieldVecBufCL;            // The E field at each cell center
     cl::BufferGL bFieldVecBufCL;            // The B field at each cell center
-    cl::BufferGL tracerBufCL;               // Tracer trails
+    cl::BufferGL eTracerBufCL;              // E field tracer trails
+    cl::BufferGL bTracerBufCL;              // B field tracer trails
     cl::Buffer nParticlesCL;                // Current number of particles
     cl_float t = 0.0f * _S;                 // Simulation time, s
     cl_float dt = 1e-8f * _S;               // Simulation dt, s

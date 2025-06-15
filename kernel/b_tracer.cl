@@ -1,13 +1,10 @@
 __kernel void updateTrails(
     __global uint* nParticles,
-    __global float3* tracerTrails, 
-    __global float4* eField,
-    __global float4* bField,
+    __global float3* bTracerTrails, 
     __global float4* particlePos,
     __global float4* particleVel,
     __global float4* currentSegments,
     const uint nCurrentSegments,
-    const float solenoidFlux,
     const uint enableParticleFieldContributions,
     int nTracers,
     int tracerLength)
@@ -16,10 +13,10 @@ __kernel void updateTrails(
     if (id >= nTracers) return;
 
     int traceStart = id * tracerLength;
-    float3 loc = tracerTrails[traceStart];
+    float3 loc = bTracerTrails[traceStart];
 
     for (int i = 1; i < tracerLength; i++) {
-        // Calculate the E and B field at location
+        // Calculate the B field at location
         float3 E = (float3)(0.0f, 0.0f, 0.0f);
         float3 B = (float3)(0.0f, 0.0f, 0.0f);
 
@@ -30,13 +27,7 @@ __kernel void updateTrails(
 
         compute_current_field_contributions(currentSegments, nCurrentSegments, loc, &B);
 
-        // Calculate the contribution of the central solenoid
-        float3 solenoid_axis = (float3)(0.0, 1.0, 0.0);
-        float3 solenoid_r = (float3)(loc[0], 0.0, loc[2]);
-        float solenoid_e_mag = solenoidFlux / (2.0 * PI * length(solenoid_r));
-        E += solenoid_e_mag * cross(solenoid_axis, normalize(solenoid_r));
-
         loc += normalize(B) * 0.005f * _M;
-        tracerTrails[traceStart + i] = loc;
+        bTracerTrails[traceStart + i] = loc;
     }
 }

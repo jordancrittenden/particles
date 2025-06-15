@@ -26,14 +26,16 @@ public:
     cl::BufferGL getParticleVelBufCL(cl::Context* context);
     cl::BufferGL getEFieldVecBufCL(cl::Context* context);
     cl::BufferGL getBFieldVecBufCL(cl::Context* context);
-    cl::BufferGL getTracerBufCL(cl::Context* context);
+    cl::BufferGL getETracerBufCL(cl::Context* context);
+    cl::BufferGL getBTracerBufCL(cl::Context* context);
 
     // Toggles
     void toggleShowAxes();
     void toggleShowParticles();
     void toggleShowEField();
     void toggleShowBField();
-    void toggleShowTracers();
+    void toggleShowETracers();
+    void toggleShowBTracers();
 
     // Camera
     void zoomIn();
@@ -84,14 +86,16 @@ private:
     //    ...
     //    traceN_x0, traceN_y0, traceN_z0, unused, traceN_x1, traceN_y1, traceN_z1, unused, ..., traceN_xEND, traceN_yEND, traceN_zEND, unused,
     // ]
-    GLBuffers tracers;
+    GLBuffers e_tracers;
+    GLBuffers b_tracers;
 
     // Show/hide booleans
     bool showAxes = true;
     bool showParticles = true;
     bool showEField = false;
     bool showBField = false;
-    bool showTracers = true;
+    bool showETracers = false;
+    bool showBTracers = false;
 
     // Tracer settings
     int tracerPoints = 100;

@@ -60,11 +60,12 @@ int main(int argc, char* argv[]) {
     state.particleVelBufCL = scene->getParticleVelBufCL(clState->context);
     state.eFieldVecBufCL   = scene->getEFieldVecBufCL(clState->context);
     state.bFieldVecBufCL   = scene->getBFieldVecBufCL(clState->context);
-    state.tracerBufCL      = scene->getTracerBufCL(clState->context);
+    state.eTracerBufCL     = scene->getETracerBufCL(clState->context);
+    state.bTracerBufCL     = scene->getBTracerBufCL(clState->context);
 
     std::vector<cl::Memory> particlesKernelGLBuffers = {state.particlePosBufCL, state.particleVelBufCL};
     std::vector<cl::Memory> fieldsKernelGLBuffers = {state.particlePosBufCL, state.particleVelBufCL, state.eFieldVecBufCL, state.bFieldVecBufCL};
-    std::vector<cl::Memory> tracerKernelGLBuffers = {state.tracerBufCL, state.particlePosBufCL};
+    std::vector<cl::Memory> tracerKernelGLBuffers = {state.eTracerBufCL, state.bTracerBufCL, state.particlePosBufCL, state.particleVelBufCL};
     std::vector<cl::Memory> defragKernelGLBuffers = {state.particlePosBufCL, state.particleVelBufCL};
 
     // Create additional OpenCL buffers
@@ -116,20 +117,30 @@ int main(int argc, char* argv[]) {
     defragKernel.setArg(3, state.maxParticles);
 
     // Set up tracer kernel parameters
-    cl::Program tracerProgram = build_kernel(clState, "kernel/tracer.cl", {"kernel/physical_constants.h", "kernel/field_common.cl"});
-    cl::Kernel tracerKernel(tracerProgram, "updateTrails");
-    tracerKernel.setArg(0, state.nParticlesCL);
-    tracerKernel.setArg(1, state.tracerBufCL);
-    tracerKernel.setArg(2, state.eFieldVecBufCL);
-    tracerKernel.setArg(3, state.bFieldVecBufCL);
-    tracerKernel.setArg(4, state.particlePosBufCL);
-    tracerKernel.setArg(5, state.particleVelBufCL);
-    tracerKernel.setArg(6, currentSegmentBufCL);
-    tracerKernel.setArg(7, (cl_uint)currents.size());
-    tracerKernel.setArg(8, state.solenoidFlux);
-    tracerKernel.setArg(9, (cl_uint)state.enableParticleFieldContributions);
-    tracerKernel.setArg(10, (cl_uint)scene->getNumTracers());
-    tracerKernel.setArg(11, (cl_uint)scene->getTracerPoints());
+    cl::Program eTracerProgram = build_kernel(clState, "kernel/e_tracer.cl", {"kernel/physical_constants.h", "kernel/field_common.cl"});
+    cl::Kernel eTracerKernel(eTracerProgram, "updateTrails");
+    eTracerKernel.setArg(0, state.nParticlesCL);
+    eTracerKernel.setArg(1, state.eTracerBufCL);
+    eTracerKernel.setArg(2, state.particlePosBufCL);
+    eTracerKernel.setArg(3, state.particleVelBufCL);
+    eTracerKernel.setArg(4, currentSegmentBufCL);
+    eTracerKernel.setArg(5, (cl_uint)currents.size());
+    eTracerKernel.setArg(6, state.solenoidFlux);
+    eTracerKernel.setArg(7, (cl_uint)state.enableParticleFieldContributions);
+    eTracerKernel.setArg(8, (cl_uint)scene->getNumTracers());
+    eTracerKernel.setArg(9, (cl_uint)scene->getTracerPoints());
+
+    cl::Program bTracerProgram = build_kernel(clState, "kernel/b_tracer.cl", {"kernel/physical_constants.h", "kernel/field_common.cl"});
+    cl::Kernel bTracerKernel(bTracerProgram, "updateTrails");
+    bTracerKernel.setArg(0, state.nParticlesCL);
+    bTracerKernel.setArg(1, state.bTracerBufCL);
+    bTracerKernel.setArg(2, state.particlePosBufCL);
+    bTracerKernel.setArg(3, state.particleVelBufCL);
+    bTracerKernel.setArg(4, currentSegmentBufCL);
+    bTracerKernel.setArg(5, (cl_uint)currents.size());
+    bTracerKernel.setArg(6, (cl_uint)state.enableParticleFieldContributions);
+    bTracerKernel.setArg(7, (cl_uint)scene->getNumTracers());
+    bTracerKernel.setArg(8, (cl_uint)scene->getTracerPoints());
 
     glEnable(GL_DEPTH_TEST);
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -164,7 +175,9 @@ int main(int argc, char* argv[]) {
             particlesKernel.setArg(8, (cl_uint)state.enableParticleFieldContributions);
             fieldsKernel.setArg(10, state.solenoidFlux);
             fieldsKernel.setArg(11, (cl_uint)state.enableParticleFieldContributions);
-            tracerKernel.setArg(9, (cl_uint)state.enableParticleFieldContributions);
+            eTracerKernel.setArg(6, state.solenoidFlux);
+            eTracerKernel.setArg(7, (cl_uint)state.enableParticleFieldContributions);
+            bTracerKernel.setArg(6, (cl_uint)state.enableParticleFieldContributions);
 
             // Update current segment buffer if toroidal rings have been toggled
             if (pEnableToroidalRings != state.enableToroidalRings) {
@@ -184,7 +197,12 @@ int main(int argc, char* argv[]) {
             // Update tracers
             // Acquire the GL buffer for OpenCL to read and write
             clState->queue->enqueueAcquireGLObjects(&tracerKernelGLBuffers);
-            clState->queue->enqueueNDRangeKernel(tracerKernel, cl::NullRange, cl::NDRange(scene->getNumTracers()));
+            clState->queue->enqueueNDRangeKernel(eTracerKernel, cl::NullRange, cl::NDRange(scene->getNumTracers()));
+            clState->queue->enqueueReleaseGLObjects(&tracerKernelGLBuffers);
+            clState->queue->finish();
+            // Acquire the GL buffer for OpenCL to read and write
+            clState->queue->enqueueAcquireGLObjects(&tracerKernelGLBuffers);
+            clState->queue->enqueueNDRangeKernel(bTracerKernel, cl::NullRange, cl::NDRange(scene->getNumTracers()));
             clState->queue->enqueueReleaseGLObjects(&tracerKernelGLBuffers);
             clState->queue->finish();
 

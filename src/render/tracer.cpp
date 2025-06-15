@@ -38,7 +38,7 @@ GLBuffers create_tracer_buffer(std::vector<glm::vec4>& loc, int tracerPoints) {
     return buf;
 }
 
-void render_tracers(GLuint shader, GLBuffers tracersBuf, int nTracers, int tracerLength, glm::mat4 view, glm::mat4 projection) {
+void render_tracers(GLuint shader, GLBuffers tracersBuf, int nTracers, int tracerLength, cl_float3 color, glm::mat4 view, glm::mat4 projection) {
     glUseProgram(shader);
 
     glm::mat4 model = glm::mat4(1.0f);
@@ -46,10 +46,12 @@ void render_tracers(GLuint shader, GLBuffers tracersBuf, int nTracers, int trace
     GLuint modelLoc = glGetUniformLocation(shader, "model");
     GLuint viewLoc = glGetUniformLocation(shader, "view");
     GLuint projLoc = glGetUniformLocation(shader, "projection");
+    GLuint colorLoc = glGetUniformLocation(shader, "in_color");
 
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+    glUniform3f(colorLoc, color.s[0], color.s[1], color.s[2]);
 
     // Draw tracers
     glBindVertexArray(tracersBuf.vao);
