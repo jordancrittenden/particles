@@ -13,7 +13,6 @@ wgpu::Instance instance;
 wgpu::Adapter adapter;
 wgpu::Device device;
 wgpu::RenderPipeline pipeline;
-
 wgpu::Surface surface;
 wgpu::TextureFormat format;
 const uint32_t kWidth = 512;
