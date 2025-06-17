@@ -27,7 +27,7 @@ void compute_particle_field_contributions(
             *colliderId = i;
             continue;
         } else {
-            *E += ((K * charge) / (r_mag * r_mag)) * r_norm;
+            *E += ((K_E * charge) / (r_mag * r_mag)) * r_norm;
             *B += ((MU_0_OVER_4_PI * charge) / (r_mag * r_mag)) * cross(vel, r_norm);
         }
     }

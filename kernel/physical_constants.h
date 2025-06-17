@@ -23,8 +23,8 @@
 
 #define EPSILON_0             (8.854187817e-12f               * (_A * _S * _S / (_KG * _M * _M * _M)))  /* A^2 s^4 / kg m^3 */
 #define MU_0                  (1.25663706144e-6f              * (_KG * _M / (_A * _A * _S * _S)))       /* kg m / A^2 s^2 */
-#define Q                     (1.602176487e-19f               * (_A * _S))                              /* A s */
-#define K                     (1.0f / (4.0f * PI * EPSILON_0) * (_KG * _M / (_A * _A * _S * _S)))       /* kg m^3 / A^2 s^4 */
+#define Q_E                   (1.602176487e-19f               * (_A * _S))                              /* A s */
+#define K_E                   (1.0f / (4.0f * PI * EPSILON_0) * (_KG * _M / (_A * _A * _S * _S)))       /* kg m^3 / A^2 s^4 */
 #define MU_0_OVER_4_PI        (MU_0 / (4.0f * PI)             * (_KG * _M / (_A * _A * _S * _S)))       /* kg m / A^2 s^2 */
 
 #define Q_OVER_M_ELECTRON     (-1.75882020109e11f * (_A * _S / _KG))    /* A s / kg */
@@ -58,14 +58,14 @@ inline float particle_mass(float species) {
 }
 
 inline float particle_charge(float species) {
-    if      (species == 1.0) return 0;       // neutron
-    else if (species == 2.0) return -Q;      // electron
-    else if (species == 3.0) return Q;       // proton
-    else if (species == 4.0) return 0;       // deuterium
-    else if (species == 5.0) return 0;       // tritium
-    else if (species == 6.0) return 2.0 * Q; // helium4
-    else if (species == 7.0) return Q;       // ion_deuterium
-    else if (species == 8.0) return Q;       // ion_tritium
+    if      (species == 1.0) return 0;         // neutron
+    else if (species == 2.0) return -Q_E;      // electron
+    else if (species == 3.0) return Q_E;       // proton
+    else if (species == 4.0) return 0;         // deuterium
+    else if (species == 5.0) return 0;         // tritium
+    else if (species == 6.0) return 2.0 * Q_E; // helium4
+    else if (species == 7.0) return Q_E;       // ion_deuterium
+    else if (species == 8.0) return Q_E;       // ion_tritium
 
     return 0.0; // error case, should never happen
 }
