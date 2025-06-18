@@ -25,7 +25,6 @@
 wgpu::Instance instance;
 wgpu::Adapter adapter;
 wgpu::Device device;
-wgpu::RenderPipeline pipeline;
 wgpu::Surface surface;
 wgpu::TextureFormat format;
 
@@ -111,11 +110,16 @@ void render_frame() {
 	};
 
 	wgpu::RenderPassDescriptor renderpass{
+		.label = "Render Pass",
 		.colorAttachmentCount = 1,
 		.colorAttachments = &attachment
 	};
 
-	wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+	wgpu::CommandEncoderDescriptor encoderDesc{
+		.label = "Command Encoder"
+	};
+
+	wgpu::CommandEncoder encoder = device.CreateCommandEncoder(&encoderDesc);
 	wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderpass);
 
 	scene->render(device, pass, static_cast<float>(windowWidth) / static_cast<float>(windowHeight));

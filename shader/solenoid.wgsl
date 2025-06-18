@@ -30,17 +30,7 @@ fn vertexMain(input: VertexInput) -> VertexOutput {
 @fragment
 fn fragmentMain(input: VertexOutput) -> @location(0) vec4<f32> {
     let lightDir = normalize(vec3<f32>(1.0, 1.0, 1.0));
-    let normal = normalize(input.normal);
-    let diffuse = max(dot(normal, lightDir), 0.0);
-    let ambient = 0.2;
+    let brightness = max(dot(normalize(input.normal), lightDir), 0.1);
     
-    // Add some metallic-like specular highlights
-    let viewDir = normalize(-input.worldPos);
-    let reflectDir = reflect(-lightDir, normal);
-    let spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
-    
-    let baseColor = vec3<f32>(0.7, 0.7, 0.8); // Slightly bluish metallic color
-    let finalColor = baseColor * (ambient + diffuse) + vec3<f32>(0.5) * spec;
-    
-    return vec4<f32>(finalColor, 1.0);
+    return vec4(vec3(0.6, 0.6, 0.6) * brightness, 1.0);
 } 

@@ -22,92 +22,115 @@ AxesBuffers create_axes_buffers(wgpu::Device& device) {
         0.0f, 0.0f,  10.0f * _M,   0.0f, 0.0f, 1.0f
     };
 
-    wgpu::BufferDescriptor vertexBufferDesc = {};
-    vertexBufferDesc.size = sizeof(axisVertices);
-    vertexBufferDesc.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex;
-    vertexBufferDesc.mappedAtCreation = false;
+    wgpu::BufferDescriptor vertexBufferDesc = {
+        .label = "Axes Vertex Buffer",
+        .size = sizeof(axisVertices),
+        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex,
+        .mappedAtCreation = false
+    };
     buf.vertexBuffer = device.CreateBuffer(&vertexBufferDesc);
     device.GetQueue().WriteBuffer(buf.vertexBuffer, 0, axisVertices, sizeof(axisVertices));
-
+    
     // Create uniform buffer
-    wgpu::BufferDescriptor uniformBufferDesc = {};
-    uniformBufferDesc.size = sizeof(glm::mat4) * 3;  // model, view, projection
-    uniformBufferDesc.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform;
-    uniformBufferDesc.mappedAtCreation = false;
+    wgpu::BufferDescriptor uniformBufferDesc = {
+        .label = "Axes Uniform Buffer",
+        .size = sizeof(glm::mat4) * 3,  // model, view, projection
+        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
+        .mappedAtCreation = false
+    };
     buf.uniformBuffer = device.CreateBuffer(&uniformBufferDesc);
 
     // Create bind group layout
-    wgpu::BindGroupLayoutEntry binding = {};
-    binding.binding = 0;
-    binding.visibility = wgpu::ShaderStage::Vertex;
-    binding.buffer.type = wgpu::BufferBindingType::Uniform;
-    binding.buffer.minBindingSize = sizeof(glm::mat4) * 3;
+    wgpu::BindGroupLayoutEntry binding = {
+        .binding = 0,
+        .visibility = wgpu::ShaderStage::Vertex,
+        .buffer = {
+            .type = wgpu::BufferBindingType::Uniform,
+            .minBindingSize = sizeof(glm::mat4) * 3
+        }
+    };
 
-    wgpu::BindGroupLayoutDescriptor bindGroupLayoutDesc = {};
-    bindGroupLayoutDesc.entryCount = 1;
-    bindGroupLayoutDesc.entries = &binding;
+    wgpu::BindGroupLayoutDescriptor bindGroupLayoutDesc = {
+        .entryCount = 1,
+        .entries = &binding
+    };
     buf.bindGroupLayout = device.CreateBindGroupLayout(&bindGroupLayoutDesc);
 
     // Create pipeline layout
-    wgpu::PipelineLayoutDescriptor pipelineLayoutDesc = {};
-    pipelineLayoutDesc.bindGroupLayoutCount = 1;
-    pipelineLayoutDesc.bindGroupLayouts = &buf.bindGroupLayout;
+    wgpu::PipelineLayoutDescriptor pipelineLayoutDesc = {
+        .bindGroupLayoutCount = 1,
+        .bindGroupLayouts = &buf.bindGroupLayout
+    };
     buf.pipelineLayout = device.CreatePipelineLayout(&pipelineLayoutDesc);
 
     // Create vertex state
     std::vector<wgpu::VertexAttribute> attributes = {
+        // Position
         {
             .format = wgpu::VertexFormat::Float32x3,
             .offset = 0,
             .shaderLocation = 0
         },
+        // Color
         {
             .format = wgpu::VertexFormat::Float32x3,
-            .offset = 3 * sizeof(float),
+            .offset = 3 * sizeof(glm::f32),
             .shaderLocation = 1
         }
     };
 
-    wgpu::VertexBufferLayout vertexBufferLayout = {};
-    vertexBufferLayout.arrayStride = 6 * sizeof(float);
-    vertexBufferLayout.attributeCount = attributes.size();
-    vertexBufferLayout.attributes = attributes.data();
+    wgpu::VertexBufferLayout vertexBufferLayout = {
+        .arrayStride = 6 * sizeof(glm::f32),
+        .attributeCount = attributes.size(),
+        .attributes = attributes.data()
+    };
 
     // Create color state
-    wgpu::ColorTargetState colorTarget = {};
-    colorTarget.format = wgpu::TextureFormat::BGRA8Unorm;
-    colorTarget.blend = nullptr;
-    colorTarget.writeMask = wgpu::ColorWriteMask::All;
+    wgpu::ColorTargetState colorTarget = {
+        .format = wgpu::TextureFormat::BGRA8Unorm,
+        .blend = nullptr,
+        .writeMask = wgpu::ColorWriteMask::All
+    };
 
     // Create fragment state
-    wgpu::FragmentState fragmentState = {};
-    fragmentState.module = shaderModule;
-    fragmentState.entryPoint = "fragmentMain";
-    fragmentState.targetCount = 1;
-    fragmentState.targets = &colorTarget;
+    wgpu::FragmentState fragmentState = {
+        .module = shaderModule,
+        .entryPoint = "fragmentMain",
+        .targetCount = 1,
+        .targets = &colorTarget
+    };
 
     // Create render pipeline
-    wgpu::RenderPipelineDescriptor pipelineDesc = {};
-    pipelineDesc.layout = buf.pipelineLayout;
-    pipelineDesc.vertex.module = shaderModule;
-    pipelineDesc.vertex.entryPoint = "vertexMain";
-    pipelineDesc.vertex.bufferCount = 1;
-    pipelineDesc.vertex.buffers = &vertexBufferLayout;
-    pipelineDesc.fragment = &fragmentState;
-    pipelineDesc.primitive.topology = wgpu::PrimitiveTopology::LineList;
+    wgpu::RenderPipelineDescriptor pipelineDesc = {
+        .label = "Axes Render Pipeline",
+        .layout = buf.pipelineLayout,
+        .vertex = {
+            .module = shaderModule,
+            .entryPoint = "vertexMain",
+            .bufferCount = 1,
+            .buffers = &vertexBufferLayout
+        },
+        .fragment = &fragmentState,
+        .primitive = {
+            .topology = wgpu::PrimitiveTopology::LineList
+        }
+    };
     buf.pipeline = device.CreateRenderPipeline(&pipelineDesc);
 
     // Create bind group
-    wgpu::BindGroupEntry bindGroupEntry = {};
-    bindGroupEntry.binding = 0;
-    bindGroupEntry.buffer = buf.uniformBuffer;
-    bindGroupEntry.offset = 0;
-    bindGroupEntry.size = sizeof(glm::mat4) * 3;
+    wgpu::BindGroupEntry bindGroupEntry = {
+        .binding = 0,
+        .buffer = buf.uniformBuffer,
+        .offset = 0,
+        .size = sizeof(glm::mat4) * 3
+    };
 
-    wgpu::BindGroupDescriptor bindGroupDesc = {};
-    bindGroupDesc.layout = buf.bindGroupLayout;
-    bindGroupDesc.entryCount = 1;
-    bindGroupDesc.entries = &bindGroupEntry;
+    wgpu::BindGroupDescriptor bindGroupDesc = {
+        .label = "Axes Bind Group",
+        .layout = buf.bindGroupLayout,
+        .entryCount = 1,
+        .entries = &bindGroupEntry
+    };
     buf.bindGroup = device.CreateBindGroup(&bindGroupDesc);
 
     return buf;
