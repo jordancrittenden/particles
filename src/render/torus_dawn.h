@@ -14,9 +14,9 @@ struct TorusBuffers {
     wgpu::RenderPipeline pipeline;
     wgpu::BindGroup bindGroup;
     std::vector<unsigned int> indices;
-    int numRings;
+    int nCoils;
 };
 
-TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int numRings);
+TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int nCoils);
 
-void render_torus(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const TorusBuffers& torusBuf, int nCoils, float primaryRadius, glm::mat4 view, glm::mat4 projection); 
+void render_torus(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const TorusBuffers& torusBuf, float primaryRadius, glm::mat4 view, glm::mat4 projection); 

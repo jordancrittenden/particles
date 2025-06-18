@@ -12,10 +12,11 @@ glm::mat4 get_coil_model_matrix(float angle, float r1) {
     return model;
 }
 
-TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int numRings) {
+TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int nCoils) {
     wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/torus.wgsl");
 
     TorusBuffers buf = {};
+    buf.nCoils = nCoils;
 
     // Generate solenoid vertices and indices using the ring vertex generation function
     std::vector<glm::f32> vertices;
@@ -41,10 +42,19 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int nu
     buf.indexBuffer = device.CreateBuffer(&indexBufferDesc);
     device.GetQueue().WriteBuffer(buf.indexBuffer, 0, buf.indices.data(), indexBufferDesc.size);
 
-    // Create uniform buffer
+    // Create instance buffer for model matrices
+    wgpu::BufferDescriptor instanceBufferDesc = {
+        .label = "Torus Instance Buffer",
+        .size = sizeof(glm::mat4) * nCoils,
+        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex,
+        .mappedAtCreation = false
+    };
+    buf.instanceBuffer = device.CreateBuffer(&instanceBufferDesc);
+
+    // Create uniform buffer for view and projection matrices
     wgpu::BufferDescriptor uniformBufferDesc = {
         .label = "Torus Uniform Buffer",
-        .size = sizeof(glm::mat4) * 3,  // model, view, projection
+        .size = sizeof(glm::mat4) * 2,  // view, projection
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
         .mappedAtCreation = false
     };
@@ -56,7 +66,7 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int nu
         .visibility = wgpu::ShaderStage::Vertex,
         .buffer = {
             .type = wgpu::BufferBindingType::Uniform,
-            .minBindingSize = sizeof(glm::mat4) * 3
+            .minBindingSize = sizeof(glm::mat4) * 2
         }
     };
 
@@ -73,27 +83,54 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int nu
     };
     buf.pipelineLayout = device.CreatePipelineLayout(&pipelineLayoutDesc);
 
-    // Create vertex state
-    std::vector<wgpu::VertexAttribute> attributes = {
-        // Position
-        {
+    // Create vertex state with two buffer layouts: vertex data and instance data
+    std::vector<wgpu::VertexAttribute> vertexAttributes = {
+        { // Position
             .format = wgpu::VertexFormat::Float32x3,
             .offset = 0,
             .shaderLocation = 0
-        },
-        // Normal
-        {
+        }, { // Normal
             .format = wgpu::VertexFormat::Float32x3,
             .offset = 3 * sizeof(glm::f32),
             .shaderLocation = 1
         }
     };
 
+    // Model matrix (4 vec4s)
+    std::vector<wgpu::VertexAttribute> instanceAttributes = {
+        {
+            .format = wgpu::VertexFormat::Float32x4,
+            .offset = 0,
+            .shaderLocation = 2
+        }, {
+            .format = wgpu::VertexFormat::Float32x4,
+            .offset = 4 * sizeof(glm::f32),
+            .shaderLocation = 3
+        }, {
+            .format = wgpu::VertexFormat::Float32x4,
+            .offset = 8 * sizeof(glm::f32),
+            .shaderLocation = 4
+        }, {
+            .format = wgpu::VertexFormat::Float32x4,
+            .offset = 12 * sizeof(glm::f32),
+            .shaderLocation = 5
+        }
+    };
+
     wgpu::VertexBufferLayout vertexBufferLayout = {
         .arrayStride = 6 * sizeof(glm::f32),
-        .attributeCount = attributes.size(),
-        .attributes = attributes.data()
+        .attributeCount = vertexAttributes.size(),
+        .attributes = vertexAttributes.data()
     };
+
+    wgpu::VertexBufferLayout instanceBufferLayout = {
+        .arrayStride = sizeof(glm::mat4),
+        .attributeCount = instanceAttributes.size(),
+        .attributes = instanceAttributes.data(),
+        .stepMode = wgpu::VertexStepMode::Instance
+    };
+
+    std::vector<wgpu::VertexBufferLayout> bufferLayouts = {vertexBufferLayout, instanceBufferLayout};
 
     // Create color state
     wgpu::ColorTargetState colorTarget = {
@@ -123,8 +160,8 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int nu
         .vertex = {
             .module = shaderModule,
             .entryPoint = "vertexMain",
-            .bufferCount = 1,
-            .buffers = &vertexBufferLayout
+            .bufferCount = bufferLayouts.size(),
+            .buffers = bufferLayouts.data()
         },
         .fragment = &fragmentState,
         .primitive = {
@@ -140,7 +177,7 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int nu
         .binding = 0,
         .buffer = buf.uniformBuffer,
         .offset = 0,
-        .size = sizeof(glm::mat4) * 3
+        .size = sizeof(glm::mat4) * 2
     };
 
     wgpu::BindGroupDescriptor bindGroupDesc = {
@@ -154,23 +191,33 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int nu
     return buf;
 }
 
-void render_torus(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const TorusBuffers& torusBuf, int nCoils, float primaryRadius, glm::mat4 view, glm::mat4 projection) {
-    // Draw each circle in the torus
-    for (int i = 0; i < nCoils; ++i) {
-        float angle = (2.0f * M_PI * i) / nCoils;
+void render_torus(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const TorusBuffers& torusBuf, float primaryRadius, glm::mat4 view, glm::mat4 projection) {
+    // Generate model matrices for each ring
+    std::vector<glm::mat4> modelMatrices;
+    modelMatrices.reserve(torusBuf.nCoils);
+    
+    for (int i = 0; i < torusBuf.nCoils; i++) {
+        float angle = (2.0f * M_PI * i) / torusBuf.nCoils;
         glm::mat4 model = get_coil_model_matrix(angle, primaryRadius);
-        std::vector<glm::mat4> matrices = {model, view, projection};
-        device.GetQueue().WriteBuffer(torusBuf.uniformBuffer, 0, matrices.data(), sizeof(glm::mat4) * 3);
-
-        // Set the pipeline and bind group
-        pass.SetPipeline(torusBuf.pipeline);
-        pass.SetBindGroup(0, torusBuf.bindGroup);
-
-        // Set the vertex and index buffers
-        pass.SetVertexBuffer(0, torusBuf.vertexBuffer, 0, torusBuf.vertexBuffer.GetSize());
-        pass.SetIndexBuffer(torusBuf.indexBuffer, wgpu::IndexFormat::Uint32, 0, torusBuf.indexBuffer.GetSize());
-
-        // Draw the torus
-        pass.DrawIndexed(torusBuf.indices.size(), 1, 0, 0, 0);
+        modelMatrices.push_back(model);
     }
+    
+    // Update instance buffer with model matrices
+    device.GetQueue().WriteBuffer(torusBuf.instanceBuffer, 0, modelMatrices.data(), sizeof(glm::mat4) * torusBuf.nCoils);
+    
+    // Update uniform buffer with view and projection matrices
+    std::vector<glm::mat4> matrices = {view, projection};
+    device.GetQueue().WriteBuffer(torusBuf.uniformBuffer, 0, matrices.data(), sizeof(glm::mat4) * 2);
+
+    // Set the pipeline and bind group
+    pass.SetPipeline(torusBuf.pipeline);
+    pass.SetBindGroup(0, torusBuf.bindGroup);
+
+    // Set the vertex and index buffers
+    pass.SetVertexBuffer(0, torusBuf.vertexBuffer, 0, torusBuf.vertexBuffer.GetSize());
+    pass.SetVertexBuffer(1, torusBuf.instanceBuffer, 0, torusBuf.instanceBuffer.GetSize());
+    pass.SetIndexBuffer(torusBuf.indexBuffer, wgpu::IndexFormat::Uint32, 0, torusBuf.indexBuffer.GetSize());
+
+    // Draw the torus with instancing
+    pass.DrawIndexed(torusBuf.indices.size(), torusBuf.nCoils, 0, 0, 0);
 } 

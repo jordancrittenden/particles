@@ -1,5 +1,4 @@
 struct Uniforms {
-    model: mat4x4<f32>,
     view: mat4x4<f32>,
     projection: mat4x4<f32>,
 }
@@ -9,6 +8,10 @@ struct Uniforms {
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) normal: vec3<f32>,
+    @location(2) modelMatrix0: vec4<f32>,
+    @location(3) modelMatrix1: vec4<f32>,
+    @location(4) modelMatrix2: vec4<f32>,
+    @location(5) modelMatrix3: vec4<f32>,
 }
 
 struct VertexOutput {
@@ -20,9 +23,18 @@ struct VertexOutput {
 @vertex
 fn vertexMain(input: VertexInput) -> VertexOutput {
     var output: VertexOutput;
-    let worldPos = uniforms.model * vec4<f32>(input.position, 1.0);
+    
+    // Reconstruct model matrix from vertex attributes
+    let modelMatrix = mat4x4<f32>(
+        input.modelMatrix0,
+        input.modelMatrix1,
+        input.modelMatrix2,
+        input.modelMatrix3
+    );
+    
+    let worldPos = modelMatrix * vec4<f32>(input.position, 1.0);
     output.position = uniforms.projection * uniforms.view * worldPos;
-    output.normal = (uniforms.model * vec4<f32>(input.normal, 0.0)).xyz;
+    output.normal = (modelMatrix * vec4<f32>(input.normal, 0.0)).xyz;
     output.worldPos = worldPos.xyz;
     return output;
 }
