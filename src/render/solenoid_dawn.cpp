@@ -102,6 +102,12 @@ SolenoidBuffers create_solenoid_buffers(wgpu::Device& device, const Ring& ring) 
         .targets = &colorTarget
     };
 
+    wgpu::DepthStencilState depthStencilState = {
+        .depthWriteEnabled = true,
+        .depthCompare = wgpu::CompareFunction::Less,
+        .format = wgpu::TextureFormat::Depth24Plus
+    };
+
     // Create render pipeline
     wgpu::RenderPipelineDescriptor pipelineDesc = {
         .label = "Solenoid Render Pipeline",
@@ -114,11 +120,10 @@ SolenoidBuffers create_solenoid_buffers(wgpu::Device& device, const Ring& ring) 
         },
         .fragment = &fragmentState,
         .primitive = {
-            .topology = wgpu::PrimitiveTopology::TriangleStrip,
-            .stripIndexFormat = wgpu::IndexFormat::Uint32,
-            .frontFace = wgpu::FrontFace::CW,
-            .cullMode = wgpu::CullMode::None
-        }
+            .topology = wgpu::PrimitiveTopology::TriangleList,
+            .frontFace = wgpu::FrontFace::CCW
+        },
+        .depthStencil = &depthStencilState
     };
     buf.pipeline = device.CreateRenderPipeline(&pipelineDesc);
 

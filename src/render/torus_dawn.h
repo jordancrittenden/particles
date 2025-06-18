@@ -19,4 +19,4 @@ struct TorusBuffers {
 
 TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int numRings);
 
-void render_torus(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const TorusBuffers& torusBuf, glm::mat4 view, glm::mat4 projection); 
+void render_torus(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const TorusBuffers& torusBuf, int nCoils, float primaryRadius, glm::mat4 view, glm::mat4 projection); 

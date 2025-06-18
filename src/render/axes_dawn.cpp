@@ -100,6 +100,12 @@ AxesBuffers create_axes_buffers(wgpu::Device& device) {
         .targets = &colorTarget
     };
 
+    wgpu::DepthStencilState depthStencilState = {
+        .depthWriteEnabled = true,
+        .depthCompare = wgpu::CompareFunction::Less,
+        .format = wgpu::TextureFormat::Depth24Plus
+    };
+
     // Create render pipeline
     wgpu::RenderPipelineDescriptor pipelineDesc = {
         .label = "Axes Render Pipeline",
@@ -113,7 +119,8 @@ AxesBuffers create_axes_buffers(wgpu::Device& device) {
         .fragment = &fragmentState,
         .primitive = {
             .topology = wgpu::PrimitiveTopology::LineList
-        }
+        },
+        .depthStencil = &depthStencilState
     };
     buf.pipeline = device.CreateRenderPipeline(&pipelineDesc);
 

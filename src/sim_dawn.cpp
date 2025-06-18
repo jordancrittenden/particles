@@ -109,10 +109,25 @@ void render_frame() {
 		.clearValue = {1.0f, 1.0f, 1.0f, 1.0f}  // White background
 	};
 
+	wgpu::TextureDescriptor depthTextureDesc {
+		.size = {windowWidth, windowHeight},
+		.format = wgpu::TextureFormat::Depth24Plus,
+		.usage = wgpu::TextureUsage::RenderAttachment
+	};
+	wgpu::Texture depthTexture = device.CreateTexture(&depthTextureDesc);
+
+	wgpu::RenderPassDepthStencilAttachment depthAttachment {
+		.view = depthTexture.CreateView(),
+		.depthClearValue = 1.0,
+		.depthLoadOp = wgpu::LoadOp::Clear,
+		.depthStoreOp = wgpu::StoreOp::Store,
+	};
+
 	wgpu::RenderPassDescriptor renderpass{
 		.label = "Render Pass",
 		.colorAttachmentCount = 1,
-		.colorAttachments = &attachment
+		.colorAttachments = &attachment,
+		.depthStencilAttachment = &depthAttachment
 	};
 
 	wgpu::CommandEncoderDescriptor encoderDesc{
