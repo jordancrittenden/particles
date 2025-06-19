@@ -5,7 +5,7 @@
 #include "ring_dawn.h"
 
 SolenoidBuffers create_solenoid_buffers(wgpu::Device& device, const Ring& ring) {
-    wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/solenoid.wgsl");
+    wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/wgpu/solenoid.wgsl");
 
     SolenoidBuffers buf = {};
 

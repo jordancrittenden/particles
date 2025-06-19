@@ -18,10 +18,10 @@ inline float rand_range(float min, float max) {
 Scene::Scene(SimulationState& state) {
     this->state = &state;
 
-    axesShaderProgram      = create_shader_program("shader/axes_vertex.glsl", "shader/axes_fragment.glsl");
-    particlesShaderProgram = create_shader_program("shader/particles_vertex.glsl", "shader/particles_fragment.glsl");
-    vectorShaderProgram    = create_shader_program("shader/vector_vertex.glsl", "shader/vector_fragment.glsl");
-    tracerShaderProgram    = create_shader_program("shader/tracer_vertex.glsl", "shader/tracer_fragment.glsl");
+    axesShaderProgram      = create_shader_program("shader/opengl/axes_vertex.glsl", "shader/opengl/axes_fragment.glsl");
+    particlesShaderProgram = create_shader_program("shader/opengl/particles_vertex.glsl", "shader/opengl/particles_fragment.glsl");
+    vectorShaderProgram    = create_shader_program("shader/opengl/vector_vertex.glsl", "shader/opengl/vector_fragment.glsl");
+    tracerShaderProgram    = create_shader_program("shader/opengl/tracer_vertex.glsl", "shader/opengl/tracer_fragment.glsl");
 }
 
 void Scene::initialize() {

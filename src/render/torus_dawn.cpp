@@ -13,7 +13,7 @@ glm::mat4 get_coil_model_matrix(float angle, float r1) {
 }
 
 TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int nCoils) {
-    wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/torus.wgsl");
+    wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/wgpu/torus.wgsl");
 
     TorusBuffers buf = {};
     buf.nCoils = nCoils;

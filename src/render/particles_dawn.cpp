@@ -11,7 +11,7 @@ ParticleBuffers create_particle_buffers(
     std::function<PARTICLE_SPECIES()> speciesF,
     int initialParticles,
     int maxParticles) {
-    wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/particles.wgsl");
+    wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/wgpu/particles.wgsl");
 
     ParticleBuffers buf = {};
 

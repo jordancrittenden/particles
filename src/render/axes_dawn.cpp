@@ -5,7 +5,7 @@
 #include "physical_constants.h"
 
 AxesBuffers create_axes_buffers(wgpu::Device& device) {
-    wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/axes.wgsl");
+    wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/wgpu/axes.wgsl");
 
     AxesBuffers buf = {};
 

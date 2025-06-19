@@ -10,8 +10,8 @@ inline float rand_range(float min, float max) {
 }
 
 TokamakScene::TokamakScene(SimulationState& state, TorusParameters& params, SolenoidParameters& solenoidParams) : Scene(state), torusParameters(params), solenoidParameters(solenoidParams) {
-    torusShaderProgram = create_shader_program("shader/torus_vertex.glsl", "shader/torus_fragment.glsl");
-    solenoidShaderProgram = create_shader_program("shader/solenoid_vertex.glsl", "shader/solenoid_fragment.glsl");
+    torusShaderProgram = create_shader_program("shader/opengl/torus_vertex.glsl", "shader/opengl/torus_fragment.glsl");
+    solenoidShaderProgram = create_shader_program("shader/opengl/solenoid_vertex.glsl", "shader/opengl/solenoid_fragment.glsl");
 }
 
 void TokamakScene::initialize() {

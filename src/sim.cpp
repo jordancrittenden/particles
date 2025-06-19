@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
     cl::Buffer currentSegmentBufCL = get_current_segment_buffer(clState->context, currents);
 
     // Set up particle kernel parameters
-    cl::Program particlesProgram = build_kernel(clState, "kernel/particles.cl", {"kernel/physical_constants.h", "kernel/field_common.cl"});
+    cl::Program particlesProgram = build_kernel(clState, "kernel/opencl/particles.cl", {"kernel/physical_constants.h", "kernel/opencl/field_common.cl"});
     cl::Kernel particlesKernel(particlesProgram, "computeMotion");
     particlesKernel.setArg(0, state.nParticlesCL);
     particlesKernel.setArg(1, state.particlePosBufCL);
@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
     particlesKernel.setArg(8, (cl_uint)state.enableParticleFieldContributions);
 
     // Set up field kernel parameters
-    cl::Program fieldsProgram = build_kernel(clState, "kernel/fields.cl", {"kernel/physical_constants.h", "kernel/field_common.cl"});
+    cl::Program fieldsProgram = build_kernel(clState, "kernel/opencl/fields.cl", {"kernel/physical_constants.h", "kernel/opencl/field_common.cl"});
     cl::Kernel fieldsKernel(fieldsProgram, "computeFields");
     fieldsKernel.setArg(0, state.nParticlesCL);
     fieldsKernel.setArg(1, cellLocationBufCL);
@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
     fieldsKernel.setArg(11, (cl_uint)state.enableParticleFieldContributions);
 
     // Set up defrag kernel parameters
-    cl::Program defragProgram = build_kernel(clState, "kernel/defrag.cl", {"kernel/physical_constants.h"});
+    cl::Program defragProgram = build_kernel(clState, "kernel/opencl/defrag.cl", {"kernel/physical_constants.h"});
     cl::Kernel defragKernel(defragProgram, "defrag");
     defragKernel.setArg(0, state.nParticlesCL);
     defragKernel.setArg(1, state.particlePosBufCL);
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
     defragKernel.setArg(3, state.maxParticles);
 
     // Set up tracer kernel parameters
-    cl::Program eTracerProgram = build_kernel(clState, "kernel/e_tracer.cl", {"kernel/physical_constants.h", "kernel/field_common.cl"});
+    cl::Program eTracerProgram = build_kernel(clState, "kernel/opencl/e_tracer.cl", {"kernel/physical_constants.h", "kernel/opencl/field_common.cl"});
     cl::Kernel eTracerKernel(eTracerProgram, "updateTrails");
     eTracerKernel.setArg(0, state.nParticlesCL);
     eTracerKernel.setArg(1, state.eTracerBufCL);
@@ -130,7 +130,7 @@ int main(int argc, char* argv[]) {
     eTracerKernel.setArg(8, (cl_uint)scene->getNumTracers());
     eTracerKernel.setArg(9, (cl_uint)scene->getTracerPoints());
 
-    cl::Program bTracerProgram = build_kernel(clState, "kernel/b_tracer.cl", {"kernel/physical_constants.h", "kernel/field_common.cl"});
+    cl::Program bTracerProgram = build_kernel(clState, "kernel/opencl/b_tracer.cl", {"kernel/physical_constants.h", "kernel/opencl/field_common.cl"});
     cl::Kernel bTracerKernel(bTracerProgram, "updateTrails");
     bTracerKernel.setArg(0, state.nParticlesCL);
     bTracerKernel.setArg(1, state.bTracerBufCL);
