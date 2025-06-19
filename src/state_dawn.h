@@ -25,7 +25,7 @@ typedef struct SimulationState {
     // cl::BufferGL bFieldVecBufCL;            // The B field at each cell center
     // cl::BufferGL eTracerBufCL;              // E field tracer trails
     // cl::BufferGL bTracerBufCL;              // B field tracer trails
-    // cl::Buffer nParticlesCL;                // Current number of particles
+    glm::u32 nParticles = 10000;            // Current number of particles
     glm::f32 t = 0.0f * _S;                 // Simulation time, s
     glm::f32 dt = 1e-8f * _S;               // Simulation dt, s
     glm::f32 cellSpacing = 0.08f * _M;      // Distance between simulation grid cells, m
