@@ -34,13 +34,13 @@ std::vector<float> create_vector_geometry(float length) {
 }
 
 // Update direction buffer data
-void update_vectors_buffer(FieldGLBuffers& fieldBuf, const std::vector<glm::vec4>& vec) {
+void update_vectors_buffer(FieldGLBuffers& fieldBuf, const std::vector<glm::f32vec4>& vec) {
     glBindBuffer(GL_ARRAY_BUFFER, fieldBuf.instanceVecBuf);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec4) * vec.size(), vec.data());
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::f32vec4) * vec.size(), vec.data());
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-FieldGLBuffers create_vectors_buffers(std::vector<glm::vec4>& loc, std::vector<glm::vec4>& vec, float length) {
+FieldGLBuffers create_vectors_buffers(std::vector<glm::f32vec4>& loc, std::vector<glm::f32vec4>& vec, float length) {
     FieldGLBuffers field;
 
     std::vector<float> vertices = create_vector_geometry(length);
@@ -48,12 +48,12 @@ FieldGLBuffers create_vectors_buffers(std::vector<glm::vec4>& loc, std::vector<g
     // Instance buffers
     glGenBuffers(1, &field.instanceLocBuf);
     glBindBuffer(GL_ARRAY_BUFFER, field.instanceLocBuf);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * loc.size(), loc.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::f32vec4) * loc.size(), loc.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     glGenBuffers(1, &field.instanceVecBuf);
     glBindBuffer(GL_ARRAY_BUFFER, field.instanceVecBuf);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * vec.size(), vec.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::f32vec4) * vec.size(), vec.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     // Model buffer
@@ -69,12 +69,12 @@ FieldGLBuffers create_vectors_buffers(std::vector<glm::vec4>& loc, std::vector<g
     
     glBindBuffer(GL_ARRAY_BUFFER, field.instanceLocBuf); // this attribute comes from a different vertex buffer
     glEnableVertexAttribArray(1); 
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (void*)0);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::f32vec4), (void*)0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     glBindBuffer(GL_ARRAY_BUFFER, field.instanceVecBuf); // this attribute comes from a different vertex buffer
     glEnableVertexAttribArray(2); 
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (void*)0);
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::f32vec4), (void*)0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     glVertexAttribDivisor(1, 1);

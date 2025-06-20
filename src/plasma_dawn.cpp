@@ -11,7 +11,7 @@ inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
 }
 
-glm::vec4 maxwell_boltzmann_particle_velocty(float T, float mass) {
+glm::f32vec4 maxwell_boltzmann_particle_velocty(float T, float mass) {
     // Define parameters for the Maxwell-Boltzmann distribution
     float sigma = std::sqrt(k_B * T / mass); // Standard deviation for the velocity distribution
 
@@ -25,7 +25,7 @@ glm::vec4 maxwell_boltzmann_particle_velocty(float T, float mass) {
     float vy = normal(gen);
     float vz = normal(gen);
 
-    return glm::vec4 { vx, vy, vz, 0.0f };
+    return glm::f32vec4 { vx, vy, vz, 0.0f };
 }
 
 PARTICLE_SPECIES rand_particle_species(float partsNeutron, float partsElectron, float partsProton, float partsDeuterium, float partsTritium, float partsIonDeuterium, float partsIonTritium) {

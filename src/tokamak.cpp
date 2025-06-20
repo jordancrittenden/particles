@@ -49,7 +49,7 @@ std::vector<Cell> TokamakScene::get_grid_cells(float dx) {
     glm::vec3 minCoord(-(torusParameters.r1 + torusParameters.r2), -torusParameters.r2, -(torusParameters.r1 + torusParameters.r2));
     glm::vec3 maxCoord(torusParameters.r1 + torusParameters.r2, torusParameters.r2, torusParameters.r1 + torusParameters.r2);
 
-    glm::vec4 torusCenterPos = glm::vec4(0.0, 0.0f, torusParameters.r1, 1.0f);
+    glm::f32vec4 torusCenterPos = glm::f32vec4(0.0, 0.0f, torusParameters.r1, 1.0f);
     for (float x = minCoord.x; x <= maxCoord.x; x += dx) {
         for (float z = minCoord.z; z <= maxCoord.z; z += dx) {
             // Find azimuthal angle
@@ -58,7 +58,7 @@ std::vector<Cell> TokamakScene::get_grid_cells(float dx) {
             // Find closest torus centerpoint
             glm::mat4 xform = glm::mat4(1.0f);
             xform = glm::rotate(xform, torusTheta, glm::vec3(0.0f, 1.0f, 0.0f));
-            glm::vec4 nearestTorusCenter = xform * torusCenterPos;
+            glm::f32vec4 nearestTorusCenter = xform * torusCenterPos;
 
             for (float y = minCoord.y; y <= maxCoord.y; y += dx) {
                 float xDiff = x - nearestTorusCenter.x;
@@ -88,11 +88,11 @@ cl_float4 TokamakScene::rand_particle_position() {
 std::vector<CurrentVector> TokamakScene::get_currents() {
     std::vector<CurrentVector> currents;
 
-    std::vector<glm::vec4> circleVertices;
+    std::vector<glm::f32vec4> circleVertices;
     float thetaStep = 2.0f * M_PI / torusParameters.coilLoopSegments;
     for (int i = 0; i < torusParameters.coilLoopSegments; i++) {
         float theta = i * thetaStep;
-        circleVertices.push_back(glm::vec4 { torusParameters.r2 * cos(theta), torusParameters.r2 * sin(theta), 0.0f, 1.0f });
+        circleVertices.push_back(glm::f32vec4 { torusParameters.r2 * cos(theta), torusParameters.r2 * sin(theta), 0.0f, 1.0f });
     }
 
     int idx = 0;

@@ -8,7 +8,7 @@
 #include "../util/gl_util.h"
 #include "../util/cl_util.h"
 
-GLBuffers create_tracer_buffer(std::vector<glm::vec4>& loc, int tracerPoints) {
+GLBuffers create_tracer_buffer(std::vector<glm::f32vec4>& loc, int tracerPoints) {
     std::vector<cl_float3> tracerTrails;
 
     float sep = 0.001f * _M;

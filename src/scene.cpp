@@ -39,23 +39,23 @@ void Scene::initialize() {
         state->initialParticles,
         state->maxParticles);
     
-    std::vector<glm::vec4> eFieldLoc, eFieldVec;
-    std::vector<glm::vec4> bFieldLoc, bFieldVec;
+    std::vector<glm::f32vec4> eFieldLoc, eFieldVec;
+    std::vector<glm::f32vec4> bFieldLoc, bFieldVec;
     for (auto& cell : state->cells) {
-        eFieldLoc.push_back(glm::vec4(cell.pos.s[0], cell.pos.s[1], cell.pos.s[2], 0.0f)); // Last element indicates E vs B
-        eFieldVec.push_back(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));  // initial (meaningless) value
-        bFieldLoc.push_back(glm::vec4(cell.pos.s[0], cell.pos.s[1], cell.pos.s[2], 1.0f)); // Last element indicates E vs B
-        bFieldVec.push_back(glm::vec4(-1.0f, 1.0f, 0.0f, 0.0f)); // initial (meaningless) value
+        eFieldLoc.push_back(glm::f32vec4(cell.pos.s[0], cell.pos.s[1], cell.pos.s[2], 0.0f)); // Last element indicates E vs B
+        eFieldVec.push_back(glm::f32vec4(1.0f, 0.0f, 0.0f, 0.0f));  // initial (meaningless) value
+        bFieldLoc.push_back(glm::f32vec4(cell.pos.s[0], cell.pos.s[1], cell.pos.s[2], 1.0f)); // Last element indicates E vs B
+        bFieldVec.push_back(glm::f32vec4(-1.0f, 1.0f, 0.0f, 0.0f)); // initial (meaningless) value
     }
 
     this->e_field = create_vectors_buffers(eFieldLoc, eFieldVec, 0.03f * _M);
     this->b_field = create_vectors_buffers(bFieldLoc, bFieldVec, 0.03f * _M);
 
-    std::vector<glm::vec4> tracerLoc;
+    std::vector<glm::f32vec4> tracerLoc;
     int i = 0;
     for (auto& cell : state->cells) {
         if (i % 10 == 0) {
-            tracerLoc.push_back(glm::vec4(cell.pos.s[0], cell.pos.s[1], cell.pos.s[2], 0.0f));
+            tracerLoc.push_back(glm::f32vec4(cell.pos.s[0], cell.pos.s[1], cell.pos.s[2], 0.0f));
         }
         i++;
     }
