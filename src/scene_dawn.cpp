@@ -1,6 +1,7 @@
 #include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
 #include "util/wgpu_util.h"
+#include "shared/particles.h"
 #include "render/axes_dawn.h"
 #include "render/particles_dawn.h"
 #include "scene_dawn.h"
@@ -29,6 +30,8 @@ void Scene::initialize(wgpu::Device& device) {
         state->initialParticles,
         state->maxParticles);
 
+    this->particleRender = create_particle_render(device);
+
     this->cameraDistance = 0.5f * _M;
 }
 
@@ -51,7 +54,7 @@ void Scene::render(wgpu::Device& device, wgpu::RenderPassEncoder& pass, float as
     this->projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
 
     if (this->showAxes)      render_axes(device, pass, axes, view, projection);
-    if (this->showParticles) render_particles(device, pass, particles, state->nParticles, view, projection);
+    if (this->showParticles) render_particles(device, pass, particles, particleRender, state->nParticles, view, projection);
 }
 
 std::vector<Cell> Scene::get_grid_cells(float spacing) {

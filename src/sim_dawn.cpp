@@ -22,6 +22,7 @@
 #include "scene_dawn.h"
 #include "tokamak_dawn.h"
 #include "render/particles_dawn.h"
+#include "compute/particles.h"
 
 wgpu::Instance instance;
 wgpu::Adapter adapter;
@@ -165,6 +166,19 @@ int main(int argc, char* argv[]) {
     scene = new TokamakScene(state, torus, solenoid);
     scene->initialize(device);
 
+	// Create placeholder currentSegments buffer (will be updated with actual data later)
+    std::vector<glm::f32vec4> placeholderCurrentSegments(1024, glm::f32vec4(0.0f));
+    wgpu::BufferDescriptor currentSegmentsBufferDesc = {
+        .label = "Current Segments Buffer",
+        .size = placeholderCurrentSegments.size() * sizeof(glm::f32vec4),
+        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Storage,
+        .mappedAtCreation = false
+    };
+    wgpu::Buffer currentSegmentsBuffer = device.CreateBuffer(&currentSegmentsBufferDesc);
+    device.GetQueue().WriteBuffer(currentSegmentsBuffer, 0, placeholderCurrentSegments.data(), placeholderCurrentSegments.size() * sizeof(glm::f32vec4));
+
+	ParticleCompute compute = create_particle_compute(device, scene->particles, currentSegmentsBuffer, static_cast<glm::u32>(0), state.maxParticles);
+
     // std::vector<CurrentVector> currents = scene->get_currents();
 
     // Create additional OpenCL buffers
@@ -213,7 +227,7 @@ int main(int argc, char* argv[]) {
 			wgpu::ComputePassDescriptor computePassDesc{.label = "Compute Pass"};
 			wgpu::ComputePassEncoder pass = encoder.BeginComputePass(&computePassDesc);
 			
-			run_particle_compute(device, pass, scene->getParticleBuffers(), nParticles, state.dt, state.solenoidFlux, state.enableParticleFieldContributions);
+			run_particle_compute(device, pass, compute, nParticles, state.dt, state.solenoidFlux, state.enableParticleFieldContributions, 0);
 
 			pass.End();
 			wgpu::CommandBuffer commands = encoder.Finish();

@@ -67,11 +67,13 @@ target_link_libraries(sim PRIVATE
 # Simulation project (Dawn)
 add_executable(sim_dawn
 	src/util/wgpu_util.cpp
+	src/compute/particles.cpp
 	src/render/axes_dawn.cpp
 	src/render/particles_dawn.cpp
 	src/render/ring_dawn.cpp
 	src/render/solenoid_dawn.cpp
 	src/render/torus_dawn.cpp
+	src/shared/particles.cpp
 	src/keyboard_dawn.cpp
 	src/state_dawn.cpp
 	src/scene_dawn.cpp

@@ -43,7 +43,7 @@ public:
     int getTracerPoints();
     int getNumTracers();
     
-    const ParticleBuffers& getParticleBuffers() const { return particles; }
+    ParticleBuffers particles;
 
 protected:
     SimulationState* state;
@@ -58,13 +58,7 @@ protected:
 private:
     glm::mat4 get_orbit_view_matrix();
 
-    // Shader programs
-    
-
-    // Particle state buffers
-    ParticleBuffers particles;
-    
-    // X,Y,Z axes buffers
+    ParticleRender particleRender;
     AxesBuffers axes;
 
     // Field vectors
