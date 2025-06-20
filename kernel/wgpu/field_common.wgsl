@@ -1,7 +1,7 @@
 fn compute_particle_field_contributions(
     nParticles: u32,
-    particlePos: array<vec4<f32>>,
-    particleVel: array<vec4<f32>>,
+    particlePos: ptr<storage, array<vec4<f32>>, read_write>,
+    particleVel: ptr<storage, array<vec4<f32>>, read_write>,
     loc: vec3<f32>,
     skipId: i32,
     E: ptr<function, vec3<f32>>,
@@ -13,13 +13,13 @@ fn compute_particle_field_contributions(
             continue;
         }
 
-        let species = particlePos[i].w;
+        let species = (*particlePos)[i].w;
         if (species == 0.0) {
             continue; // inactive particle
         }
 
-        let pos = vec3<f32>(particlePos[i].xyz);
-        let vel = vec3<f32>(particleVel[i].xyz);
+        let pos = vec3<f32>((*particlePos)[i].xyz);
+        let vel = vec3<f32>((*particleVel)[i].xyz);
         let charge = particle_charge(species);
 
         let r = loc - pos;
@@ -38,15 +38,15 @@ fn compute_particle_field_contributions(
 }
 
 fn compute_current_field_contributions(
-    currentSegments: array<vec4<f32>>,
+    currentSegments: ptr<storage, array<vec4<f32>>, read>,
     nCurrentSegments: u32,
     loc: vec3<f32>,
     B: ptr<function, vec3<f32>>
 ) {
     for (var j: u32 = 0u; j < nCurrentSegments; j++) {
-        let current_x = vec3<f32>(currentSegments[j * 3u].xyz);
-        let current_dx = vec3<f32>(currentSegments[j * 3u + 1u].xyz);
-        let current_i = currentSegments[j * 3u + 2u].x;
+        let current_x = vec3<f32>((*currentSegments)[j * 3u].xyz);
+        let current_dx = vec3<f32>((*currentSegments)[j * 3u + 1u].xyz);
+        let current_i = (*currentSegments)[j * 3u + 2u].x;
 
         let r = loc - current_x;
         let r_mag = length(r);

@@ -1,3 +1,7 @@
+// Constants for particle constraints
+const CONSTRAIN: bool = false;
+const CONSTRAIN_TO: f32 = 0.1;  // meters
+
 struct ComputeMotionParams {
     dt: f32,
     nCurrentSegments: u32,
@@ -36,7 +40,7 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     if (params.enableParticleFieldContributions != 0u) {
         var collider_id: i32 = -1;
-        compute_particle_field_contributions(nParticles, particlePos, particleVel, pos, i32(id), &E, &B, &collider_id);
+        compute_particle_field_contributions(nParticles, &particlePos, &particleVel, pos, i32(id), &E, &B, &collider_id);
         
         // to avoid both work items spawning a new particle, check id < collider_id, which will only be true for one of them
         if (collider_id >= 0 && i32(id) < collider_id) {
@@ -73,7 +77,7 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    compute_current_field_contributions(currentSegments, params.nCurrentSegments, pos, &B);
+    compute_current_field_contributions(&currentSegments, params.nCurrentSegments, pos, &B);
 
     // Calculate the contribution of the central solenoid
     let solenoid_axis = vec3<f32>(0.0, 1.0, 0.0);

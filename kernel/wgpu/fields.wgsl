@@ -31,10 +31,10 @@ fn computeFields(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     if (params.enableParticleFieldContributions != 0u) {
         var unused: i32 = -1;
-        compute_particle_field_contributions(nParticles, particlePos, particleVel, loc, -1, &E, &B, &unused);
+        compute_particle_field_contributions(nParticles, &particlePos, &particleVel, loc, -1, &E, &B, &unused);
     }
 
-    compute_current_field_contributions(currentSegments, params.nCurrentSegments, loc, &B);
+    compute_current_field_contributions(&currentSegments, params.nCurrentSegments, loc, &B);
 
     // Calculate the contribution of the central solenoid
     let solenoid_axis = vec3<f32>(0.0, 1.0, 0.0);
