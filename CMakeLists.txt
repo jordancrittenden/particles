@@ -4,26 +4,6 @@ set(CMAKE_CXX_STANDARD 20)           # Enable C++20 standard
 
 
 
-# Dawn demo project
-add_executable(dawn_demo "src/dawn_demo.cpp")
-
-set(DAWN_FETCH_DEPENDENCIES ON)
-add_subdirectory("dawn" EXCLUDE_FROM_ALL)
-
-if(EMSCRIPTEN)
-	set_target_properties(dawn_demo PROPERTIES SUFFIX ".html")
-	target_link_libraries(dawn_demo PRIVATE emdawnwebgpu_cpp)
-	target_link_options(dawn_demo PRIVATE "-sASYNCIFY=1")
-else()
-	target_link_libraries(dawn_demo PRIVATE
-		dawn::webgpu_dawn
-		glfw
-		webgpu_glfw
-	)
-endif()
-
-
-
 # Simulation project
 add_executable(sim
 	src/util/glad.c
