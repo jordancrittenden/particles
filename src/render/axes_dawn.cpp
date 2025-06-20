@@ -1,3 +1,4 @@
+#include <iostream>
 #include <dawn/webgpu_cpp.h>
 #include <glm/gtc/type_ptr.hpp>
 #include "axes_dawn.h"
@@ -6,6 +7,10 @@
 
 AxesBuffers create_axes_buffers(wgpu::Device& device) {
     wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/wgpu/axes.wgsl");
+    if (!shaderModule) {
+        std::cerr << "Failed to create axes shader module" << std::endl;
+        exit(1);
+    }
 
     AxesBuffers buf = {};
 

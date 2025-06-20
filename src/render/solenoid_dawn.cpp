@@ -1,3 +1,4 @@
+#include <iostream>
 #include <vector>
 #include <cmath>
 #include <glm/gtc/type_ptr.hpp>
@@ -6,6 +7,10 @@
 
 SolenoidBuffers create_solenoid_buffers(wgpu::Device& device, const Ring& ring) {
     wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/wgpu/solenoid.wgsl");
+    if (!shaderModule) {
+        std::cerr << "Failed to create solenoid shader module" << std::endl;
+        exit(1);
+    }
 
     SolenoidBuffers buf = {};
 

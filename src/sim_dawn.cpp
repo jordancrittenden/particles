@@ -21,6 +21,7 @@
 #include "state_dawn.h"
 #include "scene_dawn.h"
 #include "tokamak_dawn.h"
+#include "render/particles_dawn.h"
 
 wgpu::Instance instance;
 wgpu::Adapter adapter;
@@ -130,10 +131,7 @@ void render_frame() {
 		.depthStencilAttachment = &depthAttachment
 	};
 
-	wgpu::CommandEncoderDescriptor encoderDesc{
-		.label = "Command Encoder"
-	};
-
+	wgpu::CommandEncoderDescriptor encoderDesc{.label = "Render Command Encoder"};
 	wgpu::CommandEncoder encoder = device.CreateCommandEncoder(&encoderDesc);
 	wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderpass);
 
@@ -197,25 +195,37 @@ int main(int argc, char* argv[]) {
 		surface.Present();
 		instance.ProcessEvents();
 
-        // std::chrono::duration<double> frameDur;
-        // do {
-        //     // Update kernel args that could have changed
-        //     state.toroidalI = state.enableToroidalRings ? torus.maxToroidalI : 0.0f;
-        //     state.solenoidFlux = state.enableSolenoidFlux ? solenoid.maxSolenoidFlux : 0.0f;
+        std::chrono::duration<double> frameDur;
+        do {
+            // Update kernel args that could have changed
+            state.toroidalI = state.enableToroidalRings ? torus.maxToroidalI : 0.0f;
+            state.solenoidFlux = state.enableSolenoidFlux ? solenoid.maxSolenoidFlux : 0.0f;
 
-        //     // Update current segment buffer if toroidal rings have been toggled
-        //     if (pEnableToroidalRings != state.enableToroidalRings) {
-        //         currents = scene->get_currents();
-        //         pEnableToroidalRings = state.enableToroidalRings;
-        //     }
+            // Update current segment buffer if toroidal rings have been toggled
+            if (pEnableToroidalRings != state.enableToroidalRings) {
+                // currents = scene->get_currents();
+                pEnableToroidalRings = state.enableToroidalRings;
+            }
 
-        //     if (simulationStep % 100 == 0) {
-        //         std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << ") [" << nParticles << " particles]" << std::endl;
-        //     }
+			// Run compute pass using persistent bind group
+			wgpu::CommandEncoderDescriptor encoderDesc{.label = "Compute Command Encoder"};
+			wgpu::CommandEncoder encoder = device.CreateCommandEncoder(&encoderDesc);
+			wgpu::ComputePassDescriptor computePassDesc{.label = "Compute Pass"};
+			wgpu::ComputePassEncoder pass = encoder.BeginComputePass(&computePassDesc);
+			
+			run_particle_compute(device, pass, scene->getParticleBuffers(), nParticles, state.dt, state.solenoidFlux, state.enableParticleFieldContributions);
 
-        //     frameDur = std::chrono::high_resolution_clock::now() - frameStart;
-        //     simulationStep++;
-        // } while (frameDur.count() < frameTimeSec);
+			pass.End();
+			wgpu::CommandBuffer commands = encoder.Finish();
+			device.GetQueue().Submit(1, &commands);
+
+            if (simulationStep % 100 == 0) {
+                std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << ") [" << nParticles << " particles]" << std::endl;
+            }
+
+            frameDur = std::chrono::high_resolution_clock::now() - frameStart;
+            simulationStep++;
+        } while (frameDur.count() < frameTimeSec);
 
         state.t += state.dt;
         frameCount++;

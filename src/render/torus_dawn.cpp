@@ -1,3 +1,4 @@
+#include <iostream>
 #include <vector>
 #include <cmath>
 #include <glm/gtc/type_ptr.hpp>
@@ -14,6 +15,10 @@ glm::mat4 get_coil_model_matrix(float angle, float r1) {
 
 TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int nCoils) {
     wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/wgpu/torus.wgsl");
+    if (!shaderModule) {
+        std::cerr << "Failed to create torus shader module" << std::endl;
+        exit(1);
+    }
 
     TorusBuffers buf = {};
     buf.nCoils = nCoils;

@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
+#include <webgpu/webgpu_cpp.h>
 #include "util/wgpu_util.h"
 #include "render/axes_dawn.h"
 #include "render/particles_dawn.h"
@@ -41,6 +42,8 @@ public:
     // Misc
     int getTracerPoints();
     int getNumTracers();
+    
+    const ParticleBuffers& getParticleBuffers() const { return particles; }
 
 protected:
     SimulationState* state;

@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <glm/glm.hpp>
+#include <webgpu/webgpu_cpp.h>
 #include "physical_constants.h"
 
 typedef struct Cell {
@@ -19,8 +20,9 @@ typedef struct SimulationState {
 
     // State variables
     std::vector<Cell> cells;                // Simulation cells
-    // cl::BufferGL particlePosBufCL;          // Particle positions
-    // cl::BufferGL particleVelBufCL;          // Particle velocities
+    wgpu::Buffer particlePosBuf;            // Particle positions (shared between compute and render)
+    wgpu::Buffer particleVelBuf;            // Particle velocities (shared between compute and render)
+    wgpu::Buffer nParticlesBuf;             // Current number of particles
     // cl::BufferGL eFieldVecBufCL;            // The E field at each cell center
     // cl::BufferGL bFieldVecBufCL;            // The B field at each cell center
     // cl::BufferGL eTracerBufCL;              // E field tracer trails
@@ -39,5 +41,7 @@ typedef struct SimulationState {
 } SimulationState;
 
 void print_state(const SimulationState& state);
+
 glm::f32vec4 free_space_rand_particle_position(glm::f32vec3 minCoord, glm::f32vec3 maxCoord);
+
 std::vector<Cell> get_free_space_grid_cells(glm::f32vec3 minCoord, glm::f32vec3 maxCoord, glm::f32 dx);
