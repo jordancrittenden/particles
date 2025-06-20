@@ -3,6 +3,10 @@ project(app)                         # Create project "app"
 set(CMAKE_CXX_STANDARD 20)           # Enable C++20 standard
 
 
+set(DAWN_FETCH_DEPENDENCIES ON)
+add_subdirectory("dawn" EXCLUDE_FROM_ALL)
+
+
 
 # Simulation project
 add_executable(sim
@@ -32,6 +36,7 @@ target_include_directories(sim PRIVATE
 	/opt/homebrew/Cellar/glm/1.0.1/include
 	include
 	kernel
+	src
 )
 
 target_link_libraries(sim PRIVATE
