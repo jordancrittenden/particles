@@ -1,7 +1,7 @@
 #pragma once
 
 #include <dawn/webgpu_cpp.h>
-#include "../util/wgpu_util.h"
+#include "util/wgpu_util.h"
 #include "ring_dawn.h"
 
 typedef struct SolenoidBuffers {
