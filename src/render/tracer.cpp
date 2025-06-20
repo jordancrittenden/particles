@@ -5,8 +5,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "physical_constants.h"
-#include "../util/gl_util.h"
-#include "../util/cl_util.h"
+#include "util/gl_util.h"
+#include "util/cl_util.h"
 
 GLBuffers create_tracer_buffer(std::vector<glm::f32vec4>& loc, int tracerPoints) {
     std::vector<cl_float3> tracerTrails;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include "../util/gl_util.h"
+#include "util/gl_util.h"
 
 glm::mat4 get_coil_model_matrix(float angle, float r1);
 

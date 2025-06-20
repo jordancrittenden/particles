@@ -1,7 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include "../util/gl_util.h"
+#include "util/gl_util.h"
 
 GLBuffers create_axes_buffers();
 

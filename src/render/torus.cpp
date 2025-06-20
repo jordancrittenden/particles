@@ -6,7 +6,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "../util/gl_util.h"
+#include "util/gl_util.h"
 
 // Set up transformation matrix for each circle
 glm::mat4 get_coil_model_matrix(float angle, float r1) {

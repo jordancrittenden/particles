@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../util/gl_util.h"
+#include "util/gl_util.h"
 
 // A ring centered on the z-axis with an inner radius r, radial thickness t, and z-depth d
 typedef struct Ring {

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include "../util/cl_util.h"
-#include "../util/gl_util.h"
+#include "util/cl_util.h"
+#include "util/gl_util.h"
 
 GLBuffers create_tracer_buffer(std::vector<glm::f32vec4>& loc, int tracerLength);
 
