@@ -4,6 +4,14 @@
 #include "util/wgpu_util.h"
 #include "compute/particles.h"
 
+// C++ struct matching the WGSL ComputeMotionParams struct
+struct ComputeMotionParams {
+    glm::f32 dt;
+    glm::u32 nCurrentSegments;
+    glm::f32 solenoidFlux;
+    glm::u32 enableParticleFieldContributions;
+};
+
 ParticleCompute create_particle_compute(
     wgpu::Device& device,
     const ParticleBuffers& particleBuf,
@@ -41,7 +49,7 @@ ParticleCompute create_particle_compute(
     // Create params uniform buffer
     wgpu::BufferDescriptor paramsBufferDesc = {
         .label = "Compute Params Buffer",
-        .size = sizeof(glm::f32vec4),
+        .size = sizeof(ComputeMotionParams),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
         .mappedAtCreation = false
     };
@@ -75,7 +83,7 @@ ParticleCompute create_particle_compute(
             .visibility = wgpu::ShaderStage::Compute,
             .buffer = {
                 .type = wgpu::BufferBindingType::ReadOnlyStorage,
-                .minBindingSize = 1024 * sizeof(glm::f32vec4)
+                .minBindingSize = nCurrentSegments * sizeof(glm::f32vec4) * 3
             }
         }, { // debug
             .binding = 4,
@@ -89,7 +97,7 @@ ParticleCompute create_particle_compute(
             .visibility = wgpu::ShaderStage::Compute,
             .buffer = {
                 .type = wgpu::BufferBindingType::Uniform,
-                .minBindingSize = sizeof(glm::f32vec4)
+                .minBindingSize = sizeof(ComputeMotionParams)
             }
         }
     };
@@ -140,7 +148,7 @@ ParticleCompute create_particle_compute(
             .binding = 3,
             .buffer = currentSegmentsBuffer,
             .offset = 0,
-            .size = 1024 * sizeof(glm::f32vec4)
+            .size = nCurrentSegments * sizeof(glm::f32vec4) * 3
         }, { // debug
             .binding = 4,
             .buffer = compute.debugBuffer,
@@ -150,7 +158,7 @@ ParticleCompute create_particle_compute(
             .binding = 5,
             .buffer = compute.paramsBuffer,
             .offset = 0,
-            .size = sizeof(glm::f32vec4)
+            .size = sizeof(ComputeMotionParams)
         }
     };
 
@@ -179,13 +187,13 @@ void run_particle_compute(
     device.GetQueue().WriteBuffer(compute.nParticlesBuffer, 0, &nParticles, sizeof(uint32_t));
 
     // Update params buffer
-    glm::f32vec4 params = {
-        dt,
-        static_cast<float>(nCurrentSegments),
-        solenoidFlux,
-        static_cast<float>(enableParticleFieldContributions)
+    ComputeMotionParams params = {
+        .dt = dt,
+        .nCurrentSegments = nCurrentSegments,
+        .solenoidFlux = solenoidFlux,
+        .enableParticleFieldContributions = enableParticleFieldContributions
     };
-    device.GetQueue().WriteBuffer(compute.paramsBuffer, 0, &params, sizeof(glm::f32vec4));
+    device.GetQueue().WriteBuffer(compute.paramsBuffer, 0, &params, sizeof(ComputeMotionParams));
 
     computePass.SetPipeline(compute.pipeline);
     computePass.SetBindGroup(0, compute.bindGroup);
