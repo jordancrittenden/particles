@@ -80,6 +80,7 @@ add_executable(sim_dawn
 	src/args_dawn.cpp
 	src/tokamak_dawn.cpp
 	src/plasma_dawn.cpp
+	src/current_segment_dawn.cpp
 	src/sim_dawn.cpp
 )
 

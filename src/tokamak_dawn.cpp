@@ -3,6 +3,7 @@
 #include "render/torus_dawn.h"
 #include "render/solenoid_dawn.h"
 #include "render/ring_dawn.h"
+#include "render/torus_dawn.h"
 
 inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
@@ -81,6 +82,40 @@ glm::f32vec4 TokamakScene::rand_particle_position() {
 
     // [x, y, z, unused]
     return glm::f32vec4 { r * sin(theta), y, r * cos(theta), 0.0f };
+}
+
+std::vector<CurrentVector> TokamakScene::get_currents() {
+    std::vector<CurrentVector> currents;
+
+    std::vector<glm::f32vec4> circleVertices;
+    float thetaStep = 2.0f * M_PI / torusParameters.coilLoopSegments;
+    for (int i = 0; i < torusParameters.coilLoopSegments; i++) {
+        float theta = i * thetaStep;
+        circleVertices.push_back(glm::f32vec4 { torusParameters.r2 * cos(theta), torusParameters.r2 * sin(theta), 0.0f, 1.0f });
+    }
+
+    int idx = 0;
+    int coilStartIdx = 0;
+    for (int i = 0; i < torusParameters.toroidalCoils; ++i) {
+        coilStartIdx = idx;
+
+        float angle = (2.0f * M_PI * i) / torusParameters.toroidalCoils;
+        glm::mat4 model = get_coil_model_matrix(angle, torusParameters.r1);
+
+        for (int j = 0; j < torusParameters.coilLoopSegments; ++j) {
+            CurrentVector current;
+            current.x = model * circleVertices[j];
+            current.i = state->toroidalI;
+
+            if (j > 0) currents[idx-1].dx = current.x - currents[idx-1].x;
+
+            currents.push_back(current);
+            idx++;
+        }
+        currents[idx-1].dx = currents[coilStartIdx].x - currents[idx-1].x;
+    }
+
+    return currents;
 }
 
 bool TokamakScene::process_input(GLFWwindow* window, bool (*debounce_input)()) {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <dawn/webgpu_cpp.h>
-#include "util/wgpu_util.h"
+#include <glm/glm.hpp>
 #include "ring_dawn.h"
 
 struct TorusBuffers {
@@ -16,6 +16,8 @@ struct TorusBuffers {
     std::vector<unsigned int> indices;
     int nCoils;
 };
+
+glm::mat4 get_coil_model_matrix(float angle, float r1);
 
 TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int nCoils);
 

@@ -2,6 +2,7 @@
 #include <vector>
 #include <cmath>
 #include <glm/gtc/type_ptr.hpp>
+#include "util/wgpu_util.h"
 #include "torus_dawn.h"
 #include "ring_dawn.h"
 

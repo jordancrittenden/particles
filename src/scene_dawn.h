@@ -6,6 +6,7 @@
 #include "util/wgpu_util.h"
 #include "render/axes_dawn.h"
 #include "render/particles_dawn.h"
+#include "current_segment_dawn.h"
 #include "state_dawn.h"
 
 class Scene {
@@ -20,7 +21,7 @@ public:
     // Scene-dependent functions
     virtual std::vector<Cell> get_grid_cells(float spacing);
     virtual glm::f32vec4 rand_particle_position();
-    // virtual std::vector<CurrentVector> get_currents();
+    virtual std::vector<CurrentVector> get_currents();
     virtual bool process_input(GLFWwindow* window, bool (*debounce_input)());
 
     // Toggles

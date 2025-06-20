@@ -23,6 +23,7 @@
 #include "tokamak_dawn.h"
 #include "render/particles_dawn.h"
 #include "compute/particles.h"
+#include "current_segment_dawn.h"
 
 wgpu::Instance instance;
 wgpu::Adapter adapter;
@@ -179,7 +180,8 @@ int main(int argc, char* argv[]) {
 
 	ParticleCompute compute = create_particle_compute(device, scene->particles, currentSegmentsBuffer, static_cast<glm::u32>(0), state.maxParticles);
 
-    // std::vector<CurrentVector> currents = scene->get_currents();
+    std::vector<CurrentVector> currents = scene->get_currents();
+	wgpu::Buffer currentSegmentsBuffer2 = get_current_segment_buffer(device, currents);
 
     // Create additional OpenCL buffers
     std::vector<glm::f32vec4> dbgBuf(state.maxParticles);
@@ -217,7 +219,8 @@ int main(int argc, char* argv[]) {
 
             // Update current segment buffer if toroidal rings have been toggled
             if (pEnableToroidalRings != state.enableToroidalRings) {
-                // currents = scene->get_currents();
+                currents = scene->get_currents();
+                update_currents_buffer(device, currentSegmentsBuffer2, currents);
                 pEnableToroidalRings = state.enableToroidalRings;
             }
 

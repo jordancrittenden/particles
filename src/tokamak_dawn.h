@@ -31,6 +31,7 @@ public:
     // Scene-dependent functions
     std::vector<Cell> get_grid_cells(float spacing) override;
     glm::f32vec4 rand_particle_position() override;
+    std::vector<CurrentVector> get_currents() override;
     bool process_input(GLFWwindow* window, bool (*debounce_input)()) override;
 
     // Toggles

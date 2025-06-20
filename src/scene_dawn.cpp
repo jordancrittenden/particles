@@ -71,6 +71,11 @@ glm::f32vec4 Scene::rand_particle_position() {
     return free_space_rand_particle_position(minCoord, maxCoord);
 }
 
+std::vector<CurrentVector> Scene::get_currents() {
+    std::vector<CurrentVector> empty;
+    return empty;
+}
+
 bool Scene::process_input(GLFWwindow* window, bool (*debounce_input)()) {
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
         rotateLeft();
