@@ -82,9 +82,10 @@ add_executable(sim_dawn
 )
 
 target_include_directories(sim_dawn PRIVATE
+	/opt/homebrew/Cellar/glm/1.0.1/include
 	include
 	kernel
-	/opt/homebrew/Cellar/glm/1.0.1/include
+	src
 )
 
 if(EMSCRIPTEN)
