@@ -6,15 +6,22 @@
 #include "torus.h"
 #include "ring.h"
 
+struct UniformData {
+    glm::mat4 view;
+    glm::mat4 projection;
+    glm::f32 toroidalI;
+    glm::f32 padding[3]; // Padding to align to 16-byte boundary
+};
+
 // Set up transformation matrix for each circle
-glm::mat4 get_coil_model_matrix(float angle, float r1) {
+glm::mat4 get_coil_model_matrix(glm::f32 angle, glm::f32 r1) {
     glm::mat4 model = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f));
     model = glm::translate(model, glm::vec3(r1, 0.0f, 0.0f));
     model = glm::rotate(model, glm::half_pi<float>(), glm::vec3(0.0f, 0.0f, 1.0f));
     return model;
 }
 
-TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int nCoils) {
+TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, glm::u16 nCoils) {
     wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/wgpu/torus.wgsl");
     if (!shaderModule) {
         std::cerr << "Failed to create torus shader module" << std::endl;
@@ -60,7 +67,7 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int nC
     // Create uniform buffer for view and projection matrices
     wgpu::BufferDescriptor uniformBufferDesc = {
         .label = "Torus Uniform Buffer",
-        .size = sizeof(glm::mat4) * 2,  // view, projection
+        .size = sizeof(UniformData),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
         .mappedAtCreation = false
     };
@@ -69,10 +76,10 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int nC
     // Create bind group layout
     wgpu::BindGroupLayoutEntry binding = {
         .binding = 0,
-        .visibility = wgpu::ShaderStage::Vertex,
+        .visibility = wgpu::ShaderStage::Vertex | wgpu::ShaderStage::Fragment,
         .buffer = {
             .type = wgpu::BufferBindingType::Uniform,
-            .minBindingSize = sizeof(glm::mat4) * 2
+            .minBindingSize = sizeof(UniformData)
         }
     };
 
@@ -183,7 +190,7 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int nC
         .binding = 0,
         .buffer = buf.uniformBuffer,
         .offset = 0,
-        .size = sizeof(glm::mat4) * 2
+        .size = sizeof(UniformData)
     };
 
     wgpu::BindGroupDescriptor bindGroupDesc = {
@@ -197,13 +204,13 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, int nC
     return buf;
 }
 
-void render_torus(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const TorusBuffers& torusBuf, float primaryRadius, glm::mat4 view, glm::mat4 projection) {
+void render_torus(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const TorusBuffers& torusBuf, glm::f32 primaryRadius, glm::f32 toroidalI, glm::mat4 view, glm::mat4 projection) {
     // Generate model matrices for each ring
     std::vector<glm::mat4> modelMatrices;
     modelMatrices.reserve(torusBuf.nCoils);
     
-    for (int i = 0; i < torusBuf.nCoils; i++) {
-        float angle = (2.0f * M_PI * i) / torusBuf.nCoils;
+    for (glm::u16 i = 0; i < torusBuf.nCoils; i++) {
+        glm::f32 angle = (2.0f * M_PI * i) / torusBuf.nCoils;
         glm::mat4 model = get_coil_model_matrix(angle, primaryRadius);
         modelMatrices.push_back(model);
     }
@@ -211,9 +218,15 @@ void render_torus(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const Tor
     // Update instance buffer with model matrices
     device.GetQueue().WriteBuffer(torusBuf.instanceBuffer, 0, modelMatrices.data(), sizeof(glm::mat4) * torusBuf.nCoils);
     
-    // Update uniform buffer with view and projection matrices
-    std::vector<glm::mat4> matrices = {view, projection};
-    device.GetQueue().WriteBuffer(torusBuf.uniformBuffer, 0, matrices.data(), sizeof(glm::mat4) * 2);
+    UniformData uniformData = {
+        .view = view,
+        .projection = projection,
+        .toroidalI = toroidalI,
+        .padding = {0.0f, 0.0f, 0.0f}
+    };
+    
+    // Update uniform buffer with view, projection, and toroidalI
+    device.GetQueue().WriteBuffer(torusBuf.uniformBuffer, 0, &uniformData, sizeof(UniformData));
 
     // Set the pipeline and bind group
     pass.SetPipeline(torusBuf.pipeline);

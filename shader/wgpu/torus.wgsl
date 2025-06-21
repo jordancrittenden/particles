@@ -1,6 +1,7 @@
 struct Uniforms {
     view: mat4x4<f32>,
     projection: mat4x4<f32>,
+    toroidalI: f32,
 }
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -44,5 +45,9 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4<f32> {
     let lightDir = normalize(vec3<f32>(1.0, 1.0, 1.0));
     let brightness = max(dot(normalize(input.normal), lightDir), 0.1);
     
-    return vec4(vec3(0.6, 0.6, 0.6) * brightness, 1.0);
+    if (uniforms.toroidalI != 0.0) {
+        return vec4(vec3(0.3, 0.7, 1.0) * brightness, 1.0); // Blue color with lighting effect
+    } else {
+        return vec4(vec3(0.6, 0.6, 0.6) * brightness, 1.0); // Light gray color with lighting effect
+    }
 } 
