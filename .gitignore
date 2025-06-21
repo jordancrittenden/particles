@@ -35,6 +35,6 @@ include/opencl.hpp
 
 build/
 build-web/
-dawn/
+/dawn/
 .vscode/
 .DS_Store
