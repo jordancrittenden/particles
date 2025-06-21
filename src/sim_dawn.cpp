@@ -24,6 +24,7 @@
 #include "render/particles_dawn.h"
 #include "compute/particles.h"
 #include "current_segment_dawn.h"
+#include "plasma_dawn.h"
 
 wgpu::Instance instance;
 wgpu::Adapter adapter;
@@ -167,10 +168,19 @@ int main(int argc, char* argv[]) {
     scene = new TokamakScene(state, torus, solenoid);
     scene->initialize(device);
 
+	state.nParticles = state.initialParticles;
+	state.particles = create_particle_buffers(
+        device,
+        [](){ return scene->rand_particle_position(); },
+        [&state](PARTICLE_SPECIES species){ return maxwell_boltzmann_particle_velocty(state.initialTemperature, particle_mass(species)); },
+        [](){ return rand_particle_species(0.0f, 0.3f, 0.7f, 0.0f, 0.0f, 0.0f, 0.0f); },
+        state.initialParticles,
+        state.maxParticles);
+
     std::vector<CurrentVector> currents = scene->get_currents();
 	wgpu::Buffer currentSegmentsBuffer = get_current_segment_buffer(device, currents);
 
-	ParticleCompute compute = create_particle_compute(device, scene->particles, currentSegmentsBuffer, static_cast<glm::u32>(currents.size()), state.maxParticles);
+	ParticleCompute compute = create_particle_compute(device, state.particles, currentSegmentsBuffer, static_cast<glm::u32>(currents.size()), state.maxParticles);
 
     // Create additional OpenCL buffers
     std::vector<glm::f32vec4> dbgBuf(state.maxParticles);
@@ -180,7 +190,6 @@ int main(int argc, char* argv[]) {
     }
 
     // Main render loop
-    glm::u32 nParticles = state.initialParticles;
     int frameCount = 0;
     int simulationStep = 0;
     float frameTimeSec = 1.0f / (float)targetFPS;
@@ -223,18 +232,22 @@ int main(int argc, char* argv[]) {
 				device,
 				pass,
 				compute,
-				nParticles,
 				state.dt,
 				state.solenoidFlux,
 				state.enableParticleFieldContributions,
 				static_cast<glm::u32>(currents.size()));
 
 			pass.End();
+
+			encoder.CopyBufferToBuffer(state.particles.nCur, 0, compute.nCurReadBuf, 0, sizeof(glm::u32));
+
 			wgpu::CommandBuffer commands = encoder.Finish();
 			device.GetQueue().Submit(1, &commands);
 
+			state.nParticles = read_nparticles(device, instance, compute);
+
             if (simulationStep % 100 == 0) {
-                std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << ") [" << nParticles << " particles]" << std::endl;
+                std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << ") [" << state.nParticles << " particles]" << std::endl;
             }
 
             frameDur = std::chrono::high_resolution_clock::now() - frameStart;

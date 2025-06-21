@@ -6,8 +6,10 @@
 #include "physical_constants.h"
 
 struct ParticleBuffers {
-    wgpu::Buffer pos;
-    wgpu::Buffer vel;
+    wgpu::Buffer nCur;   // Current number of particles
+    wgpu::Buffer pos;    // Particle positions
+    wgpu::Buffer vel;    // Particle velocities
+    glm::u32 nMax;       // Maximum number of particles
 };
 
 ParticleBuffers create_particle_buffers(

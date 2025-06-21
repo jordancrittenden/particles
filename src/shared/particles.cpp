@@ -14,7 +14,7 @@ ParticleBuffers create_particle_buffers(
     glm::u32 initialParticles,
     glm::u32 maxParticles
 ) {
-    ParticleBuffers buf = {};
+    ParticleBuffers buf = {.nMax = maxParticles};
     std::vector<glm::f32vec4> position_and_type;
     std::vector<glm::f32vec4> velocity;
 
@@ -41,9 +41,19 @@ ParticleBuffers create_particle_buffers(
         }
     }
 
-    // Create shared position buffer (used by both compute and render)
+    // Current number of particles
+    wgpu::BufferDescriptor nCurDesc = {
+        .label = "Particle Number Buffer",
+        .size = sizeof(glm::u32),
+        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::Storage,
+        .mappedAtCreation = false
+    };
+    buf.nCur = device.CreateBuffer(&nCurDesc);
+    device.GetQueue().WriteBuffer(buf.nCur, 0, &initialParticles, sizeof(glm::u32));
+
+    // Particle position buffer
     wgpu::BufferDescriptor posDesc = {
-        .label = "Shared Particle Position Buffer",
+        .label = "Particle Position Buffer",
         .size = maxParticles * sizeof(glm::f32vec4),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Storage | wgpu::BufferUsage::Vertex,
         .mappedAtCreation = false
@@ -51,9 +61,9 @@ ParticleBuffers create_particle_buffers(
     buf.pos = device.CreateBuffer(&posDesc);
     device.GetQueue().WriteBuffer(buf.pos, 0, position_and_type.data(), position_and_type.size() * sizeof(glm::f32vec4));
 
-    // Create shared velocity buffer (used by both compute and render)
+    // Particle velocity buffer
     wgpu::BufferDescriptor velDesc = {
-        .label = "Shared Particle Velocity Buffer",
+        .label = "Particle Velocity Buffer",
         .size = maxParticles * sizeof(glm::f32vec4),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Storage,
         .mappedAtCreation = false

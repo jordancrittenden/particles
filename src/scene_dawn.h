@@ -44,8 +44,6 @@ public:
     int getTracerPoints();
     int getNumTracers();
     
-    ParticleBuffers particles;
-
 protected:
     SimulationState* state;
 

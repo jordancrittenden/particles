@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <webgpu/webgpu_cpp.h>
 #include "physical_constants.h"
+#include "shared/particles.h"
 
 typedef struct Cell {
     glm::f32vec4 pos; // [centerX, centerY, centerZ, isActive]
@@ -20,14 +21,12 @@ typedef struct SimulationState {
 
     // State variables
     std::vector<Cell> cells;                // Simulation cells
-    wgpu::Buffer particlePosBuf;            // Particle positions (shared between compute and render)
-    wgpu::Buffer particleVelBuf;            // Particle velocities (shared between compute and render)
-    wgpu::Buffer nParticlesBuf;             // Current number of particles
+    ParticleBuffers particles;              // Particle buffers
+    glm::u32 nParticles;                    // Current number of particles
     // cl::BufferGL eFieldVecBufCL;            // The E field at each cell center
     // cl::BufferGL bFieldVecBufCL;            // The B field at each cell center
     // cl::BufferGL eTracerBufCL;              // E field tracer trails
     // cl::BufferGL bTracerBufCL;              // B field tracer trails
-    glm::u32 nParticles = 10000;            // Current number of particles
     glm::f32 t = 0.0f * _S;                 // Simulation time, s
     glm::f32 dt = 1e-8f * _S;               // Simulation dt, s
     glm::f32 cellSpacing = 0.08f * _M;      // Distance between simulation grid cells, m

@@ -21,17 +21,7 @@ void Scene::initialize(wgpu::Device& device) {
     std::cout << "Simulation cells: " << state->cells.size() << std::endl;
 
     this->axes = create_axes_buffers(device);
-
-    this->particles = create_particle_buffers(
-        device,
-        [this](){ return rand_particle_position(); },
-        [this](PARTICLE_SPECIES species){ return maxwell_boltzmann_particle_velocty(state->initialTemperature, particle_mass(species)); },
-        [](){ return rand_particle_species(0.0f, 0.3f, 0.7f, 0.0f, 0.0f, 0.0f, 0.0f); },
-        state->initialParticles,
-        state->maxParticles);
-
     this->particleRender = create_particle_render(device);
-
     this->cameraDistance = 0.5f * _M;
 }
 
@@ -54,7 +44,7 @@ void Scene::render(wgpu::Device& device, wgpu::RenderPassEncoder& pass, float as
     this->projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
 
     if (this->showAxes)      render_axes(device, pass, axes, view, projection);
-    if (this->showParticles) render_particles(device, pass, particles, particleRender, state->nParticles, view, projection);
+    if (this->showParticles) render_particles(device, pass, state->particles, particleRender, state->nParticles, view, projection);
 }
 
 std::vector<Cell> Scene::get_grid_cells(float spacing) {

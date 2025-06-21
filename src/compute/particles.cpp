@@ -28,14 +28,14 @@ ParticleCompute create_particle_compute(
         exit(1);
     }
 
-    // Create persistent compute buffers
-    wgpu::BufferDescriptor nParticlesBufferDesc = {
-        .label = "nParticles Buffer",
+    // Read buffer for number of current particles
+    wgpu::BufferDescriptor readBufDesc = {
+        .label = "Particle Number Read Buffer",
         .size = sizeof(glm::u32),
-        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Storage,
+        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead,
         .mappedAtCreation = false
     };
-    compute.nParticlesBuffer = device.CreateBuffer(&nParticlesBufferDesc);
+    compute.nCurReadBuf = device.CreateBuffer(&readBufDesc);
 
     // Create debug buffer
     wgpu::BufferDescriptor debugBufferDesc = {
@@ -62,7 +62,7 @@ ParticleCompute create_particle_compute(
             .visibility = wgpu::ShaderStage::Compute,
             .buffer = {
                 .type = wgpu::BufferBindingType::Storage,
-                .minBindingSize = sizeof(uint32_t)
+                .minBindingSize = sizeof(glm::u32)
             }
         }, { // particlePos
             .binding = 1,
@@ -131,7 +131,7 @@ ParticleCompute create_particle_compute(
     std::vector<wgpu::BindGroupEntry> computeEntries = {
         { // nParticles
             .binding = 0,
-            .buffer = compute.nParticlesBuffer,
+            .buffer = particleBuf.nCur,
             .offset = 0,
             .size = sizeof(uint32_t)
         }, { // particlePos
@@ -177,15 +177,11 @@ void run_particle_compute(
     wgpu::Device& device,
     wgpu::ComputePassEncoder& computePass,
     const ParticleCompute& compute,
-    glm::u32 nParticles,
     glm::f32 dt,
     glm::f32 solenoidFlux,
     glm::u32 enableParticleFieldContributions,
     glm::u32 nCurrentSegments)
 {
-    // Update persistent buffers with current values
-    device.GetQueue().WriteBuffer(compute.nParticlesBuffer, 0, &nParticles, sizeof(uint32_t));
-
     // Update params buffer
     ComputeMotionParams params = {
         .dt = dt,
@@ -198,4 +194,9 @@ void run_particle_compute(
     computePass.SetPipeline(compute.pipeline);
     computePass.SetBindGroup(0, compute.bindGroup);
     computePass.DispatchWorkgroups(256, 1, 1);
+}
+
+glm::u32 read_nparticles(wgpu::Device& device, wgpu::Instance& instance, const ParticleCompute& compute) {
+    const void* nParticlesRaw = read_buffer(device, instance, compute.nCurReadBuf, sizeof(glm::u32));
+    return *reinterpret_cast<const glm::u32*>(nParticlesRaw);
 }

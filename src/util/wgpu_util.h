@@ -4,6 +4,9 @@
 #include <vector>
 #include <webgpu/webgpu_cpp.h>
 
+void poll_events(wgpu::Device& device, bool yieldToWebBrowser);
+const void* read_buffer(wgpu::Device& device, wgpu::Instance& instance, const wgpu::Buffer& buffer, size_t size);
+
 wgpu::ShaderModule create_shader_module(wgpu::Device& device, std::string shaderPath);
 wgpu::ShaderModule create_shader_module(wgpu::Device& device, std::string kernelPath, std::vector<std::string> headerPaths);
 

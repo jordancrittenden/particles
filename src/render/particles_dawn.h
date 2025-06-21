@@ -22,6 +22,6 @@ void render_particles(
     wgpu::RenderPassEncoder& pass,
     const ParticleBuffers& particleBuf,
     const ParticleRender& render,
-    int nParticles,
+    glm::u32 nParticles,
     glm::mat4 view,
     glm::mat4 projection);

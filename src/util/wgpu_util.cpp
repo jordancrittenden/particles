@@ -5,6 +5,44 @@
 #include <regex>
 #include "wgpu_util.h"
 
+// We define a function that hides implementation-specific variants of device polling
+void poll_events(wgpu::Device& device, bool yieldToWebBrowser) {
+#if defined(WEBGPU_BACKEND_DAWN)
+    device.tick();
+#elif defined(WEBGPU_BACKEND_WGPU)
+    device.poll(false);
+#elif defined(WEBGPU_BACKEND_EMSCRIPTEN)
+    if (yieldToWebBrowser) {
+        emscripten_sleep(100);
+    }
+#endif
+}
+
+const void* read_buffer(wgpu::Device& device, wgpu::Instance& instance, const wgpu::Buffer& buffer, size_t size) {
+    bool success = false;
+    wgpu::FutureWaitInfo waitInfo {
+        buffer.MapAsync(
+            wgpu::MapMode::Read,
+            0,
+            size,
+            wgpu::CallbackMode::WaitAnyOnly,
+            [&](wgpu::MapAsyncStatus status, wgpu::StringView message) {
+                success = status == wgpu::MapAsyncStatus::Success;
+                if (!success) {
+                    std::cerr << "Error reading buffer: " << message.data << std::endl;
+                }}
+            )
+    };
+    wgpu::WaitStatus status =
+        instance.WaitAny(1, &waitInfo, std::numeric_limits<uint64_t>::max());
+    if (!success) {
+        return nullptr;
+    }
+    const void* data = buffer.GetConstMappedRange(0, size);
+    buffer.Unmap();
+    return data;
+}
+
 wgpu::ShaderModule create_shader_module(wgpu::Device& device, std::string path, std::vector<std::string> headerPaths) {
     // WebGPU does not support #include, so we manually support including header files
 

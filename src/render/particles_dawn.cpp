@@ -125,7 +125,7 @@ ParticleRender create_particle_render(wgpu::Device& device) {
     return render;
 }
 
-void render_particles(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const ParticleBuffers& particleBuf, const ParticleRender& render, int nParticles, glm::mat4 view, glm::mat4 projection) {
+void render_particles(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const ParticleBuffers& particleBuf, const ParticleRender& render, glm::u32 nParticles, glm::mat4 view, glm::mat4 projection) {
     // Update uniform buffer with matrices
     std::vector<glm::mat4> matrices = {view, projection};
     device.GetQueue().WriteBuffer(render.uniformBuffer, 0, matrices.data(), sizeof(glm::mat4) * 2);
