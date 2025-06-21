@@ -5,6 +5,14 @@
 #include "solenoid.h"
 #include "ring.h"
 
+struct UniformData {
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 projection;
+    glm::f32 solenoidFlux;
+    glm::f32 padding[3]; // Padding to align to 16-byte boundary
+};
+
 SolenoidBuffers create_solenoid_buffers(wgpu::Device& device, const Ring& ring) {
     wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/wgpu/solenoid.wgsl");
     if (!shaderModule) {
@@ -41,7 +49,7 @@ SolenoidBuffers create_solenoid_buffers(wgpu::Device& device, const Ring& ring) 
     // Create uniform buffer
     wgpu::BufferDescriptor uniformBufferDesc = {
         .label = "Solenoid Uniform Buffer",
-        .size = sizeof(glm::mat4) * 3,  // model, view, projection
+        .size = sizeof(UniformData),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
         .mappedAtCreation = false
     };
@@ -50,10 +58,10 @@ SolenoidBuffers create_solenoid_buffers(wgpu::Device& device, const Ring& ring) 
     // Create bind group layout
     wgpu::BindGroupLayoutEntry binding = {
         .binding = 0,
-        .visibility = wgpu::ShaderStage::Vertex,
+        .visibility = wgpu::ShaderStage::Vertex | wgpu::ShaderStage::Fragment,
         .buffer = {
             .type = wgpu::BufferBindingType::Uniform,
-            .minBindingSize = sizeof(glm::mat4) * 3
+            .minBindingSize = sizeof(UniformData)
         }
     };
 
@@ -137,7 +145,7 @@ SolenoidBuffers create_solenoid_buffers(wgpu::Device& device, const Ring& ring) 
         .binding = 0,
         .buffer = buf.uniformBuffer,
         .offset = 0,
-        .size = sizeof(glm::mat4) * 3
+        .size = sizeof(UniformData)
     };
 
     wgpu::BindGroupDescriptor bindGroupDesc = {
@@ -151,12 +159,19 @@ SolenoidBuffers create_solenoid_buffers(wgpu::Device& device, const Ring& ring) 
     return buf;
 }
 
-void render_solenoid(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const SolenoidBuffers& solenoidBuf, glm::mat4 view, glm::mat4 projection) {
-    // Update uniform buffer with matrices
+void render_solenoid(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const SolenoidBuffers& solenoidBuf, glm::f32 solenoidFlux, glm::mat4 view, glm::mat4 projection) {
+    // Update uniform buffer with matrices and solenoidFlux
     glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f));
 
-    std::vector<glm::mat4> matrices = {model, view, projection};
-    device.GetQueue().WriteBuffer(solenoidBuf.uniformBuffer, 0, matrices.data(), sizeof(glm::mat4) * 3);
+    UniformData uniformData = {
+        .model = model,
+        .view = view,
+        .projection = projection,
+        .solenoidFlux = solenoidFlux,
+        .padding = {0.0f, 0.0f, 0.0f}
+    };
+    
+    device.GetQueue().WriteBuffer(solenoidBuf.uniformBuffer, 0, &uniformData, sizeof(UniformData));
 
     // Set the pipeline and bind group
     pass.SetPipeline(solenoidBuf.pipeline);

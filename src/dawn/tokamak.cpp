@@ -37,7 +37,7 @@ void TokamakScene::initialize(wgpu::Device& device, const SimulationParams& para
 void TokamakScene::render(wgpu::Device& device, wgpu::RenderPassEncoder& pass, float aspectRatio) {
     Scene::render(device, pass, aspectRatio);
     if (this->showTorus) render_torus(device, pass, torusBuf, torusParameters.r1, this->toroidalI, view, projection);
-    if (this->showSolenoid) render_solenoid(device, pass, solenoidBuf, view, projection);
+    if (this->showSolenoid) render_solenoid(device, pass, solenoidBuf, this->solenoidFlux, view, projection);
 }
 
 void TokamakScene::compute_step(wgpu::Device& device, wgpu::ComputePassEncoder pass) {

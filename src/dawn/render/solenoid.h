@@ -17,4 +17,4 @@ typedef struct SolenoidBuffers {
 
 SolenoidBuffers create_solenoid_buffers(wgpu::Device& device, const Ring& ring);
 
-void render_solenoid(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const SolenoidBuffers& solenoidBuf, glm::mat4 view, glm::mat4 projection); 
+void render_solenoid(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const SolenoidBuffers& solenoidBuf, glm::f32 solenoidFlux, glm::mat4 view, glm::mat4 projection); 
