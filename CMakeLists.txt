@@ -9,37 +9,37 @@ add_subdirectory("dawn" EXCLUDE_FROM_ALL)
 
 
 # Simulation project
-add_executable(sim
-	src/util/glad.c
-	src/util/cl_util.cpp
-	src/util/gl_util.cpp
-	src/render/axes.cpp
-	src/render/field_vector.cpp
-	src/render/particles.cpp
-	src/render/ring.cpp
-	src/render/solenoid.cpp
-	src/render/torus.cpp
-	src/render/tracer.cpp
-	src/keyboard.cpp
-	src/plasma.cpp
-	src/current_segment.cpp
-	src/state.cpp
-	src/scene.cpp
-	src/args.cpp
-	src/tokamak.cpp
-	src/sim.cpp
+add_executable(sim_opengl
+	src/opengl/util/glad.c
+	src/opengl/util/cl_util.cpp
+	src/opengl/util/gl_util.cpp
+	src/opengl/render/axes.cpp
+	src/opengl/render/field_vector.cpp
+	src/opengl/render/particles.cpp
+	src/opengl/render/ring.cpp
+	src/opengl/render/solenoid.cpp
+	src/opengl/render/torus.cpp
+	src/opengl/render/tracer.cpp
+	src/opengl/keyboard.cpp
+	src/opengl/plasma.cpp
+	src/opengl/current_segment.cpp
+	src/opengl/state.cpp
+	src/opengl/scene.cpp
+	src/opengl/args.cpp
+	src/opengl/tokamak.cpp
+	src/opengl/sim.cpp
 )
 
-target_include_directories(sim PRIVATE
+target_include_directories(sim_opengl PRIVATE
 	/opt/homebrew/Cellar/glfw/3.4/include/GLFW
 	/opt/homebrew/Cellar/glew/2.2.0_1/include
 	/opt/homebrew/Cellar/glm/1.0.1/include
 	include
 	kernel
-	src
+	src/opengl
 )
 
-target_link_libraries(sim PRIVATE
+target_link_libraries(sim_opengl PRIVATE
 	/opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib
 	/opt/homebrew/Cellar/glew/2.2.0_1/lib/libGLEW.2.2.0.dylib
 	/opt/homebrew/Cellar/glm/1.0.1/lib/libglm.dylib
@@ -51,29 +51,28 @@ target_link_libraries(sim PRIVATE
 
 # Simulation project (Dawn)
 add_executable(sim_dawn
-	src/util/wgpu_util.cpp
-	src/compute/particles.cpp
-	src/render/axes_dawn.cpp
-	src/render/particles_dawn.cpp
-	src/render/ring_dawn.cpp
-	src/render/solenoid_dawn.cpp
-	src/render/torus_dawn.cpp
-	src/shared/particles.cpp
-	src/keyboard_dawn.cpp
-	src/state_dawn.cpp
-	src/scene_dawn.cpp
-	src/args_dawn.cpp
-	src/tokamak_dawn.cpp
-	src/plasma_dawn.cpp
-	src/current_segment_dawn.cpp
-	src/sim_dawn.cpp
+	src/dawn/util/wgpu_util.cpp
+	src/dawn/compute/particles.cpp
+	src/dawn/render/axes.cpp
+	src/dawn/render/particles.cpp
+	src/dawn/render/ring.cpp
+	src/dawn/render/solenoid.cpp
+	src/dawn/render/torus.cpp
+	src/dawn/shared/particles.cpp
+	src/dawn/scene.cpp
+	src/dawn/args.cpp
+	src/dawn/free_space.cpp
+	src/dawn/tokamak.cpp
+	src/dawn/plasma.cpp
+	src/dawn/current_segment.cpp
+	src/dawn/sim.cpp
 )
 
 target_include_directories(sim_dawn PRIVATE
 	/opt/homebrew/Cellar/glm/1.0.1/include
 	include
 	kernel
-	src
+	src/dawn
 )
 
 if(EMSCRIPTEN)
