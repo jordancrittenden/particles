@@ -70,6 +70,7 @@ protected:
     bool enableParticleFieldContributions = false;
 
     ParticleCompute compute;
+    glm::u32 nParticles;
 
     // Currents
     std::vector<CurrentVector> cachedCurrents;
@@ -80,7 +81,6 @@ private:
 
     // Particles
     ParticleBuffers particles;
-    glm::u32 nParticles;
     ParticleRender particleRender;
 
 	// Axes

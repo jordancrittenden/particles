@@ -66,7 +66,8 @@ void Scene::compute_step(wgpu::Device& device, wgpu::ComputePassEncoder pass) {
         dt,
         0.0f,
         enableParticleFieldContributions,
-        static_cast<glm::u32>(this->cachedCurrents.size()));
+        static_cast<glm::u32>(this->cachedCurrents.size()),
+        nParticles);
 
     t += dt;
 }

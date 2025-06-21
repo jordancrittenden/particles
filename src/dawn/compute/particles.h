@@ -28,6 +28,7 @@ void run_particle_compute(
     glm::f32 dt,
     glm::f32 solenoidFlux,
     glm::u32 enableParticleFieldContributions,
-    glm::u32 nCurrentSegments);
+    glm::u32 nCurrentSegments,
+    glm::u32 nParticles);
 
 glm::u32 read_nparticles(wgpu::Device& device, wgpu::Instance& instance, const ParticleCompute& compute);
