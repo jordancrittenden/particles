@@ -16,9 +16,7 @@
 #include <webgpu/webgpu_glfw.h>
 #endif
 
-#include "keyboard_dawn.h"
 #include "args_dawn.h"
-#include "state_dawn.h"
 #include "scene_dawn.h"
 #include "tokamak_dawn.h"
 #include "render/particles_dawn.h"
@@ -26,23 +24,38 @@
 #include "current_segment_dawn.h"
 #include "plasma_dawn.h"
 
+GLFWwindow* window = nullptr;
 wgpu::Instance instance;
 wgpu::Adapter adapter;
 wgpu::Device device;
 wgpu::Surface surface;
 wgpu::TextureFormat format;
 
-// Window
-glm::u32 windowWidth = 1600;
-glm::u32 windowHeight = 1200;
-GLFWwindow* window = nullptr;
+SimulationParams params;
+TokamakScene* scene = nullptr;
 
-// FPS
+// Window
 int targetFPS = 60;
 
-Scene* scene = nullptr;
+bool debounce_input() {
+	static auto lastInputTime = std::chrono::high_resolution_clock::now();
+    auto now = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = now - lastInputTime;
+    if (diff.count() < 0.1) return false;
+    lastInputTime = now;
+    return true;
+}
 
-void init_webgpu() {
+// GLFW callback for handling keyboard input
+void process_input(GLFWwindow* window, Scene* scene) {
+    if (scene->process_input(window, debounce_input)) return;
+
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, true);
+    }
+}
+
+void init_webgpu(glm::u32 windowWidth, glm::u32 windowHeight) {
     wgpu::InstanceDescriptor instanceDesc{.capabilities = {.timedWaitAnyEnable = true}};
 	instance = wgpu::CreateInstance(&instanceDesc);
 
@@ -114,7 +127,7 @@ void render_frame() {
 	};
 
 	wgpu::TextureDescriptor depthTextureDesc {
-		.size = {windowWidth, windowHeight},
+		.size = {params.windowWidth, params.windowHeight},
 		.format = wgpu::TextureFormat::Depth24Plus,
 		.usage = wgpu::TextureUsage::RenderAttachment
 	};
@@ -138,7 +151,7 @@ void render_frame() {
 	wgpu::CommandEncoder encoder = device.CreateCommandEncoder(&encoderDesc);
 	wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderpass);
 
-	scene->render(device, pass, static_cast<float>(windowWidth) / static_cast<float>(windowHeight));
+	scene->render(device, pass, static_cast<float>(params.windowWidth) / static_cast<float>(params.windowHeight));
 
 	pass.End();
 	wgpu::CommandBuffer commands = encoder.Finish();
@@ -147,45 +160,30 @@ void render_frame() {
 
 // Main function
 int main(int argc, char* argv[]) {
-    init_webgpu();
-
-    TorusParameters torus;
-    SolenoidParameters solenoid;
-    SimulationState state;
-
 #if !defined(__EMSCRIPTEN__)
     // Parse CLI arguments into state variables
     try {
         auto args = parse_args(argc, argv);
-        extract_state_vars(args, &state, &windowWidth, &windowHeight, &targetFPS);
+        params = extract_params(args);
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
 #endif
 
+    // Initialize WebGPU
+    init_webgpu(params.windowWidth, params.windowHeight);
+
     // Initialize the Scene
-    scene = new TokamakScene(state, torus, solenoid);
-    scene->initialize(device);
+	TorusParameters torus;
+    SolenoidParameters solenoid;
+    scene = new TokamakScene(torus, solenoid);
+    scene->initialize(device, params);
 
-	state.nParticles = state.initialParticles;
-	state.particles = create_particle_buffers(
-        device,
-        [](){ return scene->rand_particle_position(); },
-        [&state](PARTICLE_SPECIES species){ return maxwell_boltzmann_particle_velocty(state.initialTemperature, particle_mass(species)); },
-        [](){ return rand_particle_species(0.0f, 0.3f, 0.7f, 0.0f, 0.0f, 0.0f, 0.0f); },
-        state.initialParticles,
-        state.maxParticles);
-
-    std::vector<CurrentVector> currents = scene->get_currents();
-	wgpu::Buffer currentSegmentsBuffer = get_current_segment_buffer(device, currents);
-
-	ParticleCompute compute = create_particle_compute(device, state.particles, currentSegmentsBuffer, static_cast<glm::u32>(currents.size()), state.maxParticles);
-
-    // Create additional OpenCL buffers
-    std::vector<glm::f32vec4> dbgBuf(state.maxParticles);
+    // Create additional buffers
+    std::vector<glm::f32vec4> dbgBuf(params.maxParticles);
     std::vector<glm::f32vec4> cellLocations;
-    for (auto& cell : state.cells) {
+    for (auto& cell : scene->cells) {
         cellLocations.push_back(cell.pos);
     }
 
@@ -193,7 +191,6 @@ int main(int argc, char* argv[]) {
     int frameCount = 0;
     int simulationStep = 0;
     float frameTimeSec = 1.0f / (float)targetFPS;
-    bool pEnableToroidalRings = state.enableToroidalRings;
 
 #if defined(__EMSCRIPTEN__)
 	emscripten_set_main_loop(render_frame, 0, false);
@@ -202,59 +199,37 @@ int main(int argc, char* argv[]) {
         auto frameStart = std::chrono::high_resolution_clock::now();
 
 		// Process keyboard input
-        process_input(window, state, scene);
+        process_input(window, scene);
 
         glfwPollEvents();
+
         render_frame();
+
 		surface.Present();
 		instance.ProcessEvents();
 
         std::chrono::duration<double> frameDur;
         do {
-            // Update kernel args that could have changed
-            state.toroidalI = state.enableToroidalRings ? torus.maxToroidalI : 0.0f;
-            state.solenoidFlux = state.enableSolenoidFlux ? solenoid.maxSolenoidFlux : 0.0f;
-
-            // Update current segment buffer if toroidal rings have been toggled
-            if (pEnableToroidalRings != state.enableToroidalRings) {
-                currents = scene->get_currents();
-                update_currents_buffer(device, currentSegmentsBuffer, currents);
-                pEnableToroidalRings = state.enableToroidalRings;
-            }
-
-			// Run compute pass using persistent bind group
+			// Run compute pass
 			wgpu::CommandEncoderDescriptor encoderDesc{.label = "Compute Command Encoder"};
 			wgpu::CommandEncoder encoder = device.CreateCommandEncoder(&encoderDesc);
 			wgpu::ComputePassDescriptor computePassDesc{.label = "Compute Pass"};
 			wgpu::ComputePassEncoder pass = encoder.BeginComputePass(&computePassDesc);
-			
-			run_particle_compute(
-				device,
-				pass,
-				compute,
-				state.dt,
-				state.solenoidFlux,
-				state.enableParticleFieldContributions,
-				static_cast<glm::u32>(currents.size()));
-
+            scene->compute_step(device, pass);
 			pass.End();
-
-			encoder.CopyBufferToBuffer(state.particles.nCur, 0, compute.nCurReadBuf, 0, sizeof(glm::u32));
-
+			scene->compute_copy(encoder);
 			wgpu::CommandBuffer commands = encoder.Finish();
 			device.GetQueue().Submit(1, &commands);
-
-			state.nParticles = read_nparticles(device, instance, compute);
+			scene->compute_read(device, instance);
 
             if (simulationStep % 100 == 0) {
-                std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << ") [" << state.nParticles << " particles]" << std::endl;
+                std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << ") [" << scene->nParticles << " particles]" << std::endl;
             }
 
             frameDur = std::chrono::high_resolution_clock::now() - frameStart;
             simulationStep++;
         } while (frameDur.count() < frameTimeSec);
 
-        state.t += state.dt;
         frameCount++;
     }
 #endif

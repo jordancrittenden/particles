@@ -5,21 +5,27 @@
 #include <webgpu/webgpu_cpp.h>
 #include "util/wgpu_util.h"
 #include "render/axes_dawn.h"
+#include "shared/particles.h"
 #include "render/particles_dawn.h"
+#include "compute/particles.h"
 #include "current_segment_dawn.h"
-#include "state_dawn.h"
+#include "cell.h"
+#include "args_dawn.h"
 
 class Scene {
 public:
-    Scene(SimulationState& state);
-    ~Scene();
-    virtual void initialize(wgpu::Device& device);
+    virtual void initialize(wgpu::Device& device, const SimulationParams& params);
 
     // Rendering
     virtual void render(wgpu::Device& device, wgpu::RenderPassEncoder& pass, float aspectRatio);
 
+    // Compute
+    virtual void compute_step(wgpu::Device& device, wgpu::ComputePassEncoder pass);
+    virtual void compute_copy(wgpu::CommandEncoder& encoder);
+    virtual void compute_read(wgpu::Device& device, wgpu::Instance& instance);
+
     // Scene-dependent functions
-    virtual std::vector<Cell> get_grid_cells(float spacing);
+    virtual std::vector<Cell> get_grid_cells(glm::f32 spacing);
     virtual glm::f32vec4 rand_particle_position();
     virtual std::vector<CurrentVector> get_currents();
     virtual bool process_input(GLFWwindow* window, bool (*debounce_input)());
@@ -43,10 +49,17 @@ public:
     // Misc
     int getTracerPoints();
     int getNumTracers();
-    
-protected:
-    SimulationState* state;
 
+    // Particle buffers
+    ParticleBuffers particles;
+    glm::u32 nParticles;
+
+    // Simulation cells
+    std::vector<Cell> cells;
+
+protected:
+    bool refreshCurrents = false;
+    
     // Camera settings
     float cameraDistance = 5.0f * _M;
     float cameraTheta = 5.0f/6.0f * M_PI_2;
@@ -57,8 +70,12 @@ protected:
 private:
     glm::mat4 get_orbit_view_matrix();
 
+    ParticleCompute compute;
     ParticleRender particleRender;
     AxesBuffers axes;
+
+    std::vector<CurrentVector> cachedCurrents;
+    wgpu::Buffer currentSegmentsBuffer;
 
     // Field vectors
 
@@ -77,6 +94,11 @@ private:
     bool showBField = false;
     bool showETracers = false;
     bool showBTracers = false;
+
+    // Physics state variables
+    glm::f32 t = 0.0f * _S;    // Simulation time, s
+    glm::f32 dt = 1e-8f * _S;  // Simulation dt, s
+    bool enableParticleFieldContributions = false;
 
     // Tracer settings
     int tracerPoints = 100;

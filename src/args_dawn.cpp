@@ -4,8 +4,7 @@
 #include <iostream>
 #include <glm/glm.hpp>
 
-#include "state_dawn.h"
-#include "scene_dawn.h"
+#include "args_dawn.h"
 
 std::unordered_map<std::string, std::string> parse_args(int argc, char* argv[]) {
     std::unordered_map<std::string, std::string> args;
@@ -35,16 +34,17 @@ std::unordered_map<std::string, std::string> parse_args(int argc, char* argv[]) 
     return args;
 }
 
-void extract_state_vars(std::unordered_map<std::string, std::string> args, SimulationState* state, glm::u32* windowWidth, glm::u32* windowHeight, int* targetFPS) {
+SimulationParams extract_params(std::unordered_map<std::string, std::string> args) {
+    SimulationParams params;
      for (const auto& [key, value] : args) {
-             if (key == "initialParticles")           state->initialParticles                 = stoi(value);
-        else if (key == "initialTemperature")         state->initialTemperature               = stoi(value) * _K;
-        else if (key == "maxParticles")               state->maxParticles                     = stoi(value);
-        else if (key == "fps")                        *targetFPS                              = stoi(value);
-        else if (key == "width")                      *windowWidth                            = stoi(value);
-        else if (key == "height")                     *windowHeight                           = stoi(value);
-        else if (key == "cellSpacing")                state->cellSpacing                      = stof(value) * _M;
-        else if (key == "particleFieldContributions") state->enableParticleFieldContributions = (value == "true");
+             if (key == "initialParticles")   params.initialParticles    = stoi(value);
+        else if (key == "initialTemperature") params.initialTemperature  = stoi(value) * _K;
+        else if (key == "maxParticles")       params.maxParticles        = stoi(value);
+        else if (key == "fps")                params.targetFPS           = stoi(value);
+        else if (key == "width")              params.windowWidth         = stoi(value);
+        else if (key == "height")             params.windowHeight        = stoi(value);
+        else if (key == "cellSpacing")        params.cellSpacing         = stof(value) * _M;
         else throw std::invalid_argument("Invalid argument '" + key + "'");
      }
+    return params;
 }

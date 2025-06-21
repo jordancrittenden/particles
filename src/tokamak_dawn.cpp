@@ -1,3 +1,4 @@
+#include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
 #include "tokamak_dawn.h"
 #include "render/torus_dawn.h"
@@ -9,12 +10,12 @@ inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
 }
 
-TokamakScene::TokamakScene(SimulationState& state, TorusParameters& params, SolenoidParameters& solenoidParams) 
-    : Scene(state), torusParameters(params), solenoidParameters(solenoidParams) {
+TokamakScene::TokamakScene(const TorusParameters& params, const SolenoidParameters& solenoidParams) 
+    : Scene(), torusParameters(params), solenoidParameters(solenoidParams) {
 }
 
-void TokamakScene::initialize(wgpu::Device& device) {
-    Scene::initialize(device);
+void TokamakScene::initialize(wgpu::Device& device, const SimulationParams& params) {
+    Scene::initialize(device, params);
 
     // Create torus buffers
     Ring toroidalRing;
@@ -33,16 +34,25 @@ void TokamakScene::initialize(wgpu::Device& device) {
     this->cameraDistance = 5.0f * _M;
 }
 
-TokamakScene::~TokamakScene() {
-}
-
 void TokamakScene::render(wgpu::Device& device, wgpu::RenderPassEncoder& pass, float aspectRatio) {
     Scene::render(device, pass, aspectRatio);
     if (this->showTorus) render_torus(device, pass, torusBuf, torusParameters.r1, view, projection);
     if (this->showSolenoid) render_solenoid(device, pass, solenoidBuf, view, projection);
 }
 
-std::vector<Cell> TokamakScene::get_grid_cells(float dx) {
+void TokamakScene::compute_step(wgpu::Device& device, wgpu::ComputePassEncoder pass) {
+    Scene::compute_step(device, pass);
+}
+
+void TokamakScene::compute_copy(wgpu::CommandEncoder& encoder) {
+    Scene::compute_copy(encoder);
+}
+
+void TokamakScene::compute_read(wgpu::Device& device, wgpu::Instance& instance) {
+    Scene::compute_read(device, instance);
+}
+
+std::vector<Cell> TokamakScene::get_grid_cells(glm::f32 dx) {
     std::vector<Cell> cells;
 
     glm::vec3 minCoord(-(torusParameters.r1 + torusParameters.r2), -torusParameters.r2, -(torusParameters.r1 + torusParameters.r2));
@@ -105,7 +115,7 @@ std::vector<CurrentVector> TokamakScene::get_currents() {
         for (int j = 0; j < torusParameters.coilLoopSegments; ++j) {
             CurrentVector current;
             current.x = model * circleVertices[j];
-            current.i = state->toroidalI;
+            current.i = toroidalI;
 
             if (j > 0) currents[idx-1].dx = current.x - currents[idx-1].x;
 
@@ -127,6 +137,14 @@ bool TokamakScene::process_input(GLFWwindow* window, bool (*debounce_input)()) {
         toggleShowSolenoid();
         return true;
     }
+    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && debounce_input()) {
+        toggleEnableToroidalRings();
+        return true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_PERIOD) == GLFW_PRESS && debounce_input()) {
+        toggleEnableSolenoidFlux();
+        return true;
+    }
     return Scene::process_input(window, debounce_input);
 }
 
@@ -136,4 +154,17 @@ void TokamakScene::toggleShowTorus() {
 
 void TokamakScene::toggleShowSolenoid() {
     this->showSolenoid = !this->showSolenoid;
+}
+
+void TokamakScene::toggleEnableToroidalRings() {
+    this->refreshCurrents = true;
+    this->enableToroidalRings = !this->enableToroidalRings;
+    this->toroidalI = this->enableToroidalRings ? torusParameters.maxToroidalI : 0.0f;
+    std::cout << "toroidal rings: " << (this->enableToroidalRings ? "ENABLED" : "DISABLED") << std::endl;
+}
+
+void TokamakScene::toggleEnableSolenoidFlux() {
+    this->enableSolenoidFlux = !this->enableSolenoidFlux;
+    this->solenoidFlux = this->enableSolenoidFlux ? solenoidParameters.maxSolenoidFlux : 0.0f;
+    std::cout << "solenoid: " << (this->enableSolenoidFlux ? "ENABLED" : "DISABLED") << std::endl;
 }

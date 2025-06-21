@@ -5,27 +5,31 @@
 #include "render/axes_dawn.h"
 #include "render/particles_dawn.h"
 #include "scene_dawn.h"
-#include "state_dawn.h"
+#include "free_space.h"
 #include "plasma_dawn.h"
+#include "cell.h"
 
-inline float rand_range(float min, float max) {
-    return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
-}
-
-Scene::Scene(SimulationState& state) {
-    this->state = &state;
-}
-
-void Scene::initialize(wgpu::Device& device) {
-    state->cells = get_grid_cells(state->cellSpacing);
-    std::cout << "Simulation cells: " << state->cells.size() << std::endl;
+void Scene::initialize(wgpu::Device& device, const SimulationParams& params) {
+    cells = get_grid_cells(params.cellSpacing);
+    std::cout << "Simulation cells: " << cells.size() << std::endl;
 
     this->axes = create_axes_buffers(device);
     this->particleRender = create_particle_render(device);
     this->cameraDistance = 0.5f * _M;
-}
 
-Scene::~Scene() {
+    nParticles = params.initialParticles;
+	particles = create_particle_buffers(
+        device,
+        [this](){ return rand_particle_position(); },
+        [&params](PARTICLE_SPECIES species){ return maxwell_boltzmann_particle_velocty(params.initialTemperature, particle_mass(species)); },
+        [](){ return rand_particle_species(0.0f, 0.3f, 0.7f, 0.0f, 0.0f, 0.0f, 0.0f); },
+        params.initialParticles,
+        params.maxParticles);
+
+    this->cachedCurrents = get_currents();
+	this->currentSegmentsBuffer = get_current_segment_buffer(device, this->cachedCurrents);
+
+	compute = create_particle_compute(device, particles, this->currentSegmentsBuffer, static_cast<glm::u32>(this->cachedCurrents.size()), params.maxParticles);
 }
 
 glm::mat4 Scene::get_orbit_view_matrix() {
@@ -44,10 +48,38 @@ void Scene::render(wgpu::Device& device, wgpu::RenderPassEncoder& pass, float as
     this->projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
 
     if (this->showAxes)      render_axes(device, pass, axes, view, projection);
-    if (this->showParticles) render_particles(device, pass, state->particles, particleRender, state->nParticles, view, projection);
+    if (this->showParticles) render_particles(device, pass, particles, particleRender, nParticles, view, projection);
 }
 
-std::vector<Cell> Scene::get_grid_cells(float spacing) {
+void Scene::compute_step(wgpu::Device& device, wgpu::ComputePassEncoder pass) {
+    // Update current segments
+    if (this->refreshCurrents) {
+        this->cachedCurrents = get_currents();
+        update_currents_buffer(device, this->currentSegmentsBuffer, this->cachedCurrents);
+        this->refreshCurrents = false;
+    }
+
+    run_particle_compute(
+        device,
+        pass,
+        compute,
+        dt,
+        0.0f,
+        enableParticleFieldContributions,
+        static_cast<glm::u32>(this->cachedCurrents.size()));
+
+    t += dt;
+}
+
+void Scene::compute_copy(wgpu::CommandEncoder& encoder) {
+    encoder.CopyBufferToBuffer(particles.nCur, 0, compute.nCurReadBuf, 0, sizeof(glm::u32));
+}
+
+void Scene::compute_read(wgpu::Device& device, wgpu::Instance& instance) {
+    nParticles = read_nparticles(device, instance, compute);
+}
+
+std::vector<Cell> Scene::get_grid_cells(glm::f32 spacing) {
     float s = 0.1f * _M;
     glm::vec3 minCoord { -s, -s, -s };
     glm::vec3 maxCoord { s, s, s };
@@ -67,6 +99,18 @@ std::vector<CurrentVector> Scene::get_currents() {
 }
 
 bool Scene::process_input(GLFWwindow* window, bool (*debounce_input)()) {
+    if (glfwGetKey(window, GLFW_KEY_EQUAL) == GLFW_PRESS && debounce_input()) {
+        dt *= 1.2f;
+        std::cout << "dt: " << dt << std::endl;
+    }
+    if (glfwGetKey(window, GLFW_KEY_MINUS) == GLFW_PRESS && debounce_input()) {
+        dt /= 1.2f;
+        std::cout << "dt: " << dt << std::endl;
+    }
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS && debounce_input()) {
+        enableParticleFieldContributions = !enableParticleFieldContributions;
+        std::cout << "particle field contributions: " << (enableParticleFieldContributions ? "ENABLED" : "DISABLED") << std::endl;
+    }
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
         rotateLeft();
         return true;
