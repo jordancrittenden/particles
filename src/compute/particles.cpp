@@ -197,8 +197,5 @@ void run_particle_compute(
 
     computePass.SetPipeline(compute.pipeline);
     computePass.SetBindGroup(0, compute.bindGroup);
-    
-    // Calculate workgroup count (256 threads per workgroup)
-    uint32_t workgroupCount = (nParticles + 255) / 256;
-    computePass.DispatchWorkgroups(workgroupCount, 1, 1);
+    computePass.DispatchWorkgroups(256, 1, 1);
 }

@@ -45,7 +45,7 @@ ParticleBuffers create_particle_buffers(
     wgpu::BufferDescriptor posDesc = {
         .label = "Shared Particle Position Buffer",
         .size = maxParticles * sizeof(glm::f32vec4),
-        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::Storage | wgpu::BufferUsage::Vertex,
+        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Storage | wgpu::BufferUsage::Vertex,
         .mappedAtCreation = false
     };
     buf.pos = device.CreateBuffer(&posDesc);
@@ -55,7 +55,7 @@ ParticleBuffers create_particle_buffers(
     wgpu::BufferDescriptor velDesc = {
         .label = "Shared Particle Velocity Buffer",
         .size = maxParticles * sizeof(glm::f32vec4),
-        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::Storage,
+        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Storage,
         .mappedAtCreation = false
     };
     buf.vel = device.CreateBuffer(&velDesc);
