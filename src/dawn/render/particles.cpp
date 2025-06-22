@@ -71,7 +71,6 @@ ParticleRender create_particle_render(wgpu::Device& device) {
     // Create color state
     wgpu::ColorTargetState colorTarget = {
         .format = wgpu::TextureFormat::BGRA8Unorm,
-        .blend = nullptr,
         .writeMask = wgpu::ColorWriteMask::All
     };
 
@@ -83,6 +82,7 @@ ParticleRender create_particle_render(wgpu::Device& device) {
         .targets = &colorTarget
     };
 
+    // Create depth stencil state
     wgpu::DepthStencilState depthStencilState = {
         .depthWriteEnabled = true,
         .depthCompare = wgpu::CompareFunction::Less,

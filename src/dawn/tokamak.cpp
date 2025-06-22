@@ -47,11 +47,20 @@ void TokamakScene::compute_step(wgpu::Device& device, wgpu::ComputePassEncoder p
         update_currents_buffer(device, this->currentSegmentsBuffer, this->cachedCurrents);
         this->refreshCurrents = false;
     }
+    
+    run_field_compute(
+        device,
+        pass,
+        fieldCompute,
+        static_cast<glm::u32>(cells.size()),
+        static_cast<glm::u32>(cachedCurrents.size()),
+        solenoidFlux,
+        enableParticleFieldContributions);
 
     run_particle_compute(
         device,
         pass,
-        compute,
+        particleCompute,
         dt,
         solenoidFlux,
         enableParticleFieldContributions,

@@ -1,35 +1,58 @@
 #include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
-#include "util/wgpu_util.h"
 #include "shared/particles.h"
+#include "shared/fields.h"
 #include "render/axes.h"
 #include "render/particles.h"
+#include "render/fields.h"
+#include "compute/particles.h"
+#include "compute/fields.h"
+#include "current_segment.h"
 #include "scene.h"
 #include "free_space.h"
 #include "plasma.h"
 #include "cell.h"
 
 void Scene::initialize(wgpu::Device& device, const SimulationParams& params) {
-    cells = get_grid_cells(params.cellSpacing);
+    this->cells = get_grid_cells(params.cellSpacing);
     std::cout << "Simulation cells: " << cells.size() << std::endl;
 
     this->axes = create_axes_buffers(device);
-    this->particleRender = create_particle_render(device);
     this->cameraDistance = 0.5f * _M;
 
-    nParticles = params.initialParticles;
-	particles = create_particle_buffers(
+    // Initialize particles
+    this->nParticles = params.initialParticles;
+	this->particles = create_particle_buffers(
         device,
         [this](){ return rand_particle_position(); },
         [&params](PARTICLE_SPECIES species){ return maxwell_boltzmann_particle_velocty(params.initialTemperature, particle_mass(species)); },
         [](){ return rand_particle_species(0.0f, 0.3f, 0.7f, 0.0f, 0.0f, 0.0f, 0.0f); },
         params.initialParticles,
         params.maxParticles);
+    this->particleRender = create_particle_render(device);
 
+    // Initialize field vectors
+    std::vector<glm::f32vec4> eFieldLoc, eFieldVec;
+    std::vector<glm::f32vec4> bFieldLoc, bFieldVec;
+    for (auto& cell : cells) {
+        eFieldLoc.push_back(glm::f32vec4(cell.pos.x, cell.pos.y, cell.pos.z, 0.0f)); // Last element indicates E vs B
+        eFieldVec.push_back(glm::f32vec4(1.0f, 0.0f, 0.0f, 0.0f));  // initial (meaningless) value
+        bFieldLoc.push_back(glm::f32vec4(cell.pos.x, cell.pos.y, cell.pos.z, 1.0f)); // Last element indicates E vs B
+        bFieldVec.push_back(glm::f32vec4(-1.0f, 1.0f, 0.0f, 0.0f)); // initial (meaningless) value
+    }
+    this->fields = create_fields_buffers(device, cells.size());
+    this->eFieldRender = create_fields_render(device, eFieldLoc, eFieldVec, 0.03f * _M);
+    this->bFieldRender = create_fields_render(device, bFieldLoc, bFieldVec, 0.03f * _M);
+
+    // Initialize currents
     this->cachedCurrents = get_currents();
 	this->currentSegmentsBuffer = get_current_segment_buffer(device, this->cachedCurrents);
 
-	compute = create_particle_compute(device, particles, this->currentSegmentsBuffer, static_cast<glm::u32>(this->cachedCurrents.size()), params.maxParticles);
+    // Initialize particle compute
+	this->particleCompute = create_particle_compute(device, particles, this->currentSegmentsBuffer, static_cast<glm::u32>(this->cachedCurrents.size()), params.maxParticles);
+
+    // Initialize field compute    
+    this->fieldCompute = create_field_compute(device, cells, particles, fields, this->currentSegmentsBuffer, static_cast<glm::u32>(this->cachedCurrents.size()), params.maxParticles);
 }
 
 glm::mat4 Scene::get_orbit_view_matrix() {
@@ -49,6 +72,8 @@ void Scene::render(wgpu::Device& device, wgpu::RenderPassEncoder& pass, float as
 
     if (this->showAxes)      render_axes(device, pass, axes, view, projection);
     if (this->showParticles) render_particles(device, pass, particles, particleRender, nParticles, view, projection);
+    if (this->showEField)    render_fields(device, pass, eFieldRender, fields.eField, cells.size(), view, projection);
+    if (this->showBField)    render_fields(device, pass, bFieldRender, fields.bField, cells.size(), view, projection);
 }
 
 void Scene::compute_step(wgpu::Device& device, wgpu::ComputePassEncoder pass) {
@@ -58,26 +83,35 @@ void Scene::compute_step(wgpu::Device& device, wgpu::ComputePassEncoder pass) {
         update_currents_buffer(device, this->currentSegmentsBuffer, this->cachedCurrents);
         this->refreshCurrents = false;
     }
+    
+    run_field_compute(
+        device,
+        pass,
+        fieldCompute,
+        static_cast<glm::u32>(cells.size()),
+        static_cast<glm::u32>(cachedCurrents.size()),
+        0.0f,
+        enableParticleFieldContributions);
 
     run_particle_compute(
         device,
         pass,
-        compute,
+        particleCompute,
         dt,
         0.0f,
         enableParticleFieldContributions,
-        static_cast<glm::u32>(this->cachedCurrents.size()),
+        static_cast<glm::u32>(cachedCurrents.size()),
         nParticles);
 
     t += dt;
 }
 
 void Scene::compute_copy(wgpu::CommandEncoder& encoder) {
-    encoder.CopyBufferToBuffer(particles.nCur, 0, compute.nCurReadBuf, 0, sizeof(glm::u32));
+    encoder.CopyBufferToBuffer(particles.nCur, 0, particleCompute.nCurReadBuf, 0, sizeof(glm::u32));
 }
 
 void Scene::compute_read(wgpu::Device& device, wgpu::Instance& instance) {
-    nParticles = read_nparticles(device, instance, compute);
+    nParticles = read_nparticles(device, instance, particleCompute);
 }
 
 std::vector<Cell> Scene::get_grid_cells(glm::f32 spacing) {

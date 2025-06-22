@@ -4,10 +4,13 @@
 #include <GLFW/glfw3.h>
 #include <webgpu/webgpu_cpp.h>
 #include "util/wgpu_util.h"
-#include "render/axes.h"
 #include "shared/particles.h"
+#include "shared/fields.h"
+#include "render/axes.h"
 #include "render/particles.h"
+#include "render/fields.h"
 #include "compute/particles.h"
+#include "compute/fields.h"
 #include "current_segment.h"
 #include "cell.h"
 #include "args.h"
@@ -69,7 +72,8 @@ protected:
     glm::f32 dt = 1e-8f * _S;  // Simulation dt, s
     bool enableParticleFieldContributions = false;
 
-    ParticleCompute compute;
+    ParticleCompute particleCompute;
+    FieldCompute fieldCompute;
     glm::u32 nParticles;
 
     // Currents
@@ -82,11 +86,14 @@ private:
     // Particles
     ParticleBuffers particles;
     ParticleRender particleRender;
+    
+    // Field vectors
+    FieldBuffers fields;
+    FieldRender eFieldRender;
+    FieldRender bFieldRender;
 
 	// Axes
     AxesBuffers axes;
-    
-    // Field vectors
 
     // Tracer buffers
     // tracer.vbo: [
