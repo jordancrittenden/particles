@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iostream>
 #include <regex>
+#include <cstdio>
 #include "wgpu_util.h"
 
 // We define a function that hides implementation-specific variants of device polling
@@ -43,29 +44,48 @@ const void* read_buffer(wgpu::Device& device, wgpu::Instance& instance, const wg
     return data;
 }
 
-wgpu::ShaderModule create_shader_module(wgpu::Device& device, std::string path, std::vector<std::string> headerPaths) {
-    // WebGPU does not support #include, so we manually support including header files
-
-    // Load shader source
-    std::ifstream shaderFile(path);
-    if (!shaderFile.is_open()) {
+std::string read_file(std::string path) {
+    std::string buf;
+#if defined(__EMSCRIPTEN__)
+    // Use Emscripten's file system API for web
+    FILE* file = fopen(path.c_str(), "r");
+    if (!file) {
         std::cerr << "Failed to open shader file: " << path << std::endl;
         return nullptr;
     }
-    std::string shaderSrc(std::istreambuf_iterator<char>(shaderFile), (std::istreambuf_iterator<char>()));
-    shaderFile.close();
+    
+    // Get file size
+    fseek(file, 0, SEEK_END);
+    long fileSize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    
+    // Read file content
+    buf.resize(fileSize);
+    fread(&buf[0], 1, fileSize, file);
+    fclose(file);
+#else
+    // Use standard file I/O for native platforms
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open shader file: " << path << std::endl;
+        return nullptr;
+    }
+    buf = std::string(std::istreambuf_iterator<char>(file), (std::istreambuf_iterator<char>()));
+    file.close();
+#endif
+    return buf;
+}
+
+wgpu::ShaderModule create_shader_module(wgpu::Device& device, std::string path, std::vector<std::string> headerPaths) {
+    // Load shader source
+    std::string shaderSrc = read_file(path);
 
     // Load header sources
+    // WebGPU does not support #include, so we manually support including header files
     std::string headerSrc;
     for (const auto& headerPath : headerPaths) {
-        std::ifstream headerFile(headerPath);
-        if (!headerFile.is_open()) {
-            std::cerr << "Failed to open header file: " << headerPath << std::endl;
-            return nullptr;
-        }
-        headerSrc += std::string(std::istreambuf_iterator<char>(headerFile), (std::istreambuf_iterator<char>()));
+        headerSrc += read_file(headerPath);
         headerSrc += "\n";
-        headerFile.close();
     }
 
     std::string src = headerSrc + "\n" + shaderSrc;
