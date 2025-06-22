@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dawn/webgpu_cpp.h>
+#include <webgpu/webgpu_cpp.h>
 #include "util/wgpu_util.h"
 #include "ring.h"
 

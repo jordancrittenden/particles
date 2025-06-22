@@ -4,15 +4,14 @@
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
-
-#include <dawn/webgpu_cpp_print.h>
-#include <webgpu/webgpu_cpp.h>
 #include <glm/glm.hpp>
 
+#include <GLFW/glfw3.h>
 #if defined(__EMSCRIPTEN__)
 #include <emscripten/emscripten.h>
 #else
-#include <GLFW/glfw3.h>
+#include <dawn/webgpu_cpp_print.h>
+#include <webgpu/webgpu_cpp.h>
 #include <webgpu/webgpu_glfw.h>
 #endif
 
@@ -52,7 +51,7 @@ void init_webgpu(glm::u32 windowWidth, glm::u32 windowHeight) {
 		wgpu::CallbackMode::WaitAnyOnly,
 		[](wgpu::RequestAdapterStatus status, wgpu::Adapter a, wgpu::StringView message) {
 			if (status != wgpu::RequestAdapterStatus::Success) {
-				std::cout << "RequestAdapter: " << message << "\n";
+				std::cout << "RequestAdapter: " << message.data << "\n";
 				exit(0);
 			}
 			adapter = std::move(a);
@@ -61,14 +60,14 @@ void init_webgpu(glm::u32 windowWidth, glm::u32 windowHeight) {
 
 	wgpu::DeviceDescriptor desc{};
 	desc.SetUncapturedErrorCallback([](const wgpu::Device&, wgpu::ErrorType errorType, wgpu::StringView message) {
-		std::cout << "Error: " << errorType << " - message: " << message << "\n";
+		std::cout << "Error: " << static_cast<uint32_t>(errorType) << " - message: " << message.data << "\n";
 	});
 
 	wgpu::Future f2 = adapter.RequestDevice(
 		&desc, wgpu::CallbackMode::WaitAnyOnly,
 		[](wgpu::RequestDeviceStatus status, wgpu::Device d, wgpu::StringView message) {
 			if (status != wgpu::RequestDeviceStatus::Success) {
-				std::cout << "RequestDevice: " << message << "\n";
+				std::cout << "RequestDevice: " << message.data << "\n";
 				exit(0);
 			}
 			device = std::move(d);
@@ -188,10 +187,12 @@ int main(int argc, char* argv[]) {
 
 		// Process keyboard input
         glfwPollEvents();
+#if !defined(__EMSCRIPTEN__)
         scene->process_input(window, debounce_input);
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 			glfwSetWindowShouldClose(window, true);
 		}
+#endif
 
 		// Render frame
         render_frame();
@@ -224,7 +225,9 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
+#if !defined(__EMSCRIPTEN__)
     glfwTerminate();
+#endif
 
     delete scene;
     

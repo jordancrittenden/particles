@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dawn/webgpu_cpp.h>
+#include <webgpu/webgpu_cpp.h>
 #include <functional>
 #include <glm/glm.hpp>
 #include "physical_constants.h"

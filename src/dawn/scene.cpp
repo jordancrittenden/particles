@@ -138,6 +138,7 @@ glm::u32 Scene::getNumParticles() {
 }
 
 bool Scene::process_input(GLFWwindow* window, bool (*debounce_input)()) {
+#if !defined(__EMSCRIPTEN__)
     if (glfwGetKey(window, GLFW_KEY_EQUAL) == GLFW_PRESS && debounce_input()) {
         dt *= 1.2f;
         std::cout << "dt: " << dt << std::endl;
@@ -198,6 +199,7 @@ bool Scene::process_input(GLFWwindow* window, bool (*debounce_input)()) {
         toggleShowParticles();
         return true;
     }
+#endif
     return false;
 }
 

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <glm/glm.hpp>
-#include <dawn/webgpu_cpp.h>
+#include <webgpu/webgpu_cpp.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "fields.h"

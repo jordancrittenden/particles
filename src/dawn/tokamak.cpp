@@ -155,6 +155,7 @@ std::vector<CurrentVector> TokamakScene::get_currents() {
 }
 
 bool TokamakScene::process_input(GLFWwindow* window, bool (*debounce_input)()) {
+#if !defined(__EMSCRIPTEN__)
     if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS && debounce_input()) {
         toggleShowTorus();
         return true;
@@ -171,6 +172,7 @@ bool TokamakScene::process_input(GLFWwindow* window, bool (*debounce_input)()) {
         toggleEnableSolenoidFlux();
         return true;
     }
+#endif
     return Scene::process_input(window, debounce_input);
 }
 

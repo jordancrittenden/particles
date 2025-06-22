@@ -1,4 +1,4 @@
-#include <dawn/webgpu_cpp.h>
+#include <webgpu/webgpu_cpp.h>
 #include <glm/glm.hpp>
 #include "fields.h"
 

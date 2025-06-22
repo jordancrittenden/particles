@@ -1,5 +1,5 @@
 #include <iostream>
-#include <dawn/webgpu_cpp.h>
+#include <webgpu/webgpu_cpp.h>
 #include <glm/gtc/type_ptr.hpp>
 #include "particles.h"
 #include "util/wgpu_util.h"
