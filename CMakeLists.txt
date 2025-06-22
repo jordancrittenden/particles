@@ -53,12 +53,15 @@ target_link_libraries(sim_opengl PRIVATE
 add_executable(sim_dawn
 	src/dawn/util/wgpu_util.cpp
 	src/dawn/compute/particles.cpp
+	src/dawn/compute/fields.cpp
 	src/dawn/render/axes.cpp
 	src/dawn/render/particles.cpp
+	src/dawn/render/fields.cpp
 	src/dawn/render/ring.cpp
 	src/dawn/render/solenoid.cpp
 	src/dawn/render/torus.cpp
 	src/dawn/shared/particles.cpp
+	src/dawn/shared/fields.cpp
 	src/dawn/scene.cpp
 	src/dawn/args.cpp
 	src/dawn/free_space.cpp

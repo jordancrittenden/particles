@@ -1,19 +1,19 @@
-struct FieldsParams {
+struct ComputeFieldsParams {
     nCells: u32,
     nCurrentSegments: u32,
     solenoidFlux: f32,
     enableParticleFieldContributions: u32,
 }
 
-@group(0) @binding(0) var<storage, read> nParticles: u32;
+@group(0) @binding(0) var<storage, read_write> nParticles: u32;
 @group(0) @binding(1) var<storage, read> cellLocation: array<vec4<f32>>;
 @group(0) @binding(2) var<storage, read_write> eField: array<vec4<f32>>;
 @group(0) @binding(3) var<storage, read_write> bField: array<vec4<f32>>;
-@group(0) @binding(4) var<storage, read> particlePos: array<vec4<f32>>;
-@group(0) @binding(5) var<storage, read> particleVel: array<vec4<f32>>;
+@group(0) @binding(4) var<storage, read_write> particlePos: array<vec4<f32>>;
+@group(0) @binding(5) var<storage, read_write> particleVel: array<vec4<f32>>;
 @group(0) @binding(6) var<storage, read> currentSegments: array<vec4<f32>>;
 @group(0) @binding(7) var<storage, read_write> debug: array<vec4<f32>>;
-@group(0) @binding(8) var<uniform> params: FieldsParams;
+@group(0) @binding(8) var<uniform> params: ComputeFieldsParams;
 
 @compute @workgroup_size(256)
 fn computeFields(@builtin(global_invocation_id) global_id: vec3<u32>) {
