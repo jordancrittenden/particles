@@ -8,6 +8,47 @@ add_subdirectory("dawn" EXCLUDE_FROM_ALL)
 
 
 
+# Simulation project
+add_executable(sim_opengl
+	src/opengl/util/glad.c
+	src/opengl/util/cl_util.cpp
+	src/opengl/util/gl_util.cpp
+	src/opengl/render/axes.cpp
+	src/opengl/render/field_vector.cpp
+	src/opengl/render/particles.cpp
+	src/opengl/render/ring.cpp
+	src/opengl/render/solenoid.cpp
+	src/opengl/render/torus.cpp
+	src/opengl/render/tracer.cpp
+	src/opengl/keyboard.cpp
+	src/opengl/plasma.cpp
+	src/opengl/current_segment.cpp
+	src/opengl/state.cpp
+	src/opengl/scene.cpp
+	src/opengl/args.cpp
+	src/opengl/tokamak.cpp
+	src/opengl/sim.cpp
+)
+
+target_include_directories(sim_opengl PRIVATE
+	/opt/homebrew/Cellar/glfw/3.4/include/GLFW
+	/opt/homebrew/Cellar/glew/2.2.0_1/include
+	/opt/homebrew/Cellar/glm/1.0.1/include
+	include
+	kernel
+	src/opengl
+)
+
+target_link_libraries(sim_opengl PRIVATE
+	/opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib
+	/opt/homebrew/Cellar/glew/2.2.0_1/lib/libGLEW.2.2.0.dylib
+	/opt/homebrew/Cellar/glm/1.0.1/lib/libglm.dylib
+	"-framework OpenGL"
+	"-framework OpenCL"
+)
+
+
+
 # Simulation project (Dawn)
 add_executable(sim_dawn
 	src/dawn/util/wgpu_util.cpp
