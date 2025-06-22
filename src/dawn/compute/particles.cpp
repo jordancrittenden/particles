@@ -19,7 +19,7 @@ ParticleCompute create_particle_compute(
     glm::u32 nCurrentSegments,
     glm::u32 maxParticles)
 {
-    ParticleCompute compute = {};
+    ParticleCompute particleCompute = {};
 
     // Create compute shader module
     wgpu::ShaderModule computeShaderModule = create_shader_module(device, "kernel/wgpu/particles.wgsl", {"kernel/wgpu/physical_constants.wgsl", "kernel/wgpu/field_common.wgsl"});
@@ -35,25 +35,25 @@ ParticleCompute create_particle_compute(
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead,
         .mappedAtCreation = false
     };
-    compute.nCurReadBuf = device.CreateBuffer(&readBufDesc);
+    particleCompute.nCurReadBuf = device.CreateBuffer(&readBufDesc);
 
     // Create debug buffer
     wgpu::BufferDescriptor debugBufferDesc = {
-        .label = "Debug Buffer",
+        .label = "Particle Debug Buffer",
         .size = maxParticles * sizeof(glm::f32vec4),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Storage,
         .mappedAtCreation = false
     };
-    compute.debugBuffer = device.CreateBuffer(&debugBufferDesc);
+    particleCompute.debugBuffer = device.CreateBuffer(&debugBufferDesc);
 
     // Create params uniform buffer
     wgpu::BufferDescriptor paramsBufferDesc = {
-        .label = "Compute Params Buffer",
+        .label = "Particle Compute Params Buffer",
         .size = sizeof(ComputeMotionParams),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
         .mappedAtCreation = false
     };
-    compute.paramsBuffer = device.CreateBuffer(&paramsBufferDesc);
+    particleCompute.paramsBuffer = device.CreateBuffer(&paramsBufferDesc);
 
     // Create compute bind group layout
     std::vector<wgpu::BindGroupLayoutEntry> computeBindings = {
@@ -103,17 +103,17 @@ ParticleCompute create_particle_compute(
     };
 
     wgpu::BindGroupLayoutDescriptor computeBindGroupLayoutDesc = {
-        .label = "Compute Bind Group Layout",
+        .label = "Particle Compute Bind Group Layout",
         .entryCount = static_cast<uint32_t>(computeBindings.size()),
         .entries = computeBindings.data()
     };
-    compute.bindGroupLayout = device.CreateBindGroupLayout(&computeBindGroupLayoutDesc);
+    particleCompute.bindGroupLayout = device.CreateBindGroupLayout(&computeBindGroupLayoutDesc);
 
     // Create compute pipeline
     wgpu::PipelineLayoutDescriptor computePipelineLayoutDesc = {
-        .label = "Compute Pipeline Layout",
+        .label = "Particle Compute Pipeline Layout",
         .bindGroupLayoutCount = 1,
-        .bindGroupLayouts = &compute.bindGroupLayout
+        .bindGroupLayouts = &particleCompute.bindGroupLayout
     };
     wgpu::PipelineLayout computePipelineLayout = device.CreatePipelineLayout(&computePipelineLayoutDesc);
 
@@ -125,7 +125,7 @@ ParticleCompute create_particle_compute(
             .entryPoint = "computeMotion"
         }
     };
-    compute.pipeline = device.CreateComputePipeline(&computePipelineDesc);
+    particleCompute.pipeline = device.CreateComputePipeline(&computePipelineDesc);
 
     // Create compute bind group with persistent buffers
     std::vector<wgpu::BindGroupEntry> computeEntries = {
@@ -151,32 +151,32 @@ ParticleCompute create_particle_compute(
             .size = nCurrentSegments * sizeof(glm::f32vec4) * 3
         }, { // debug
             .binding = 4,
-            .buffer = compute.debugBuffer,
+            .buffer = particleCompute.debugBuffer,
             .offset = 0,
             .size = maxParticles * sizeof(glm::f32vec4)
         }, { // params
             .binding = 5,
-            .buffer = compute.paramsBuffer,
+            .buffer = particleCompute.paramsBuffer,
             .offset = 0,
             .size = sizeof(ComputeMotionParams)
         }
     };
 
     wgpu::BindGroupDescriptor computeBindGroupDesc = {
-        .label = "Compute Bind Group",
-        .layout = compute.bindGroupLayout,
+        .label = "Particle Compute Bind Group",
+        .layout = particleCompute.bindGroupLayout,
         .entryCount = static_cast<uint32_t>(computeEntries.size()),
         .entries = computeEntries.data()
     };
-    compute.bindGroup = device.CreateBindGroup(&computeBindGroupDesc);
+    particleCompute.bindGroup = device.CreateBindGroup(&computeBindGroupDesc);
 
-    return compute;
+    return particleCompute;
 }
 
 void run_particle_compute(
     wgpu::Device& device,
     wgpu::ComputePassEncoder& computePass,
-    const ParticleCompute& compute,
+    const ParticleCompute& particleCompute,
     glm::f32 dt,
     glm::f32 solenoidFlux,
     glm::u32 enableParticleFieldContributions,
@@ -190,15 +190,14 @@ void run_particle_compute(
         .solenoidFlux = solenoidFlux,
         .enableParticleFieldContributions = enableParticleFieldContributions
     };
-    device.GetQueue().WriteBuffer(compute.paramsBuffer, 0, &params, sizeof(ComputeMotionParams));
+    device.GetQueue().WriteBuffer(particleCompute.paramsBuffer, 0, &params, sizeof(ComputeMotionParams));
 
-    // Calculate the number of workgroups needed to process all particles
     // Each workgroup processes 16 particles (workgroup_size(16))
     glm::u32 workgroupSize = 16;
-    glm::u32 nWorkgroups = (nParticles + workgroupSize - 1) / workgroupSize; // Ceiling division
+    glm::u32 nWorkgroups = (nParticles + workgroupSize - 1) / workgroupSize;
 
-    computePass.SetPipeline(compute.pipeline);
-    computePass.SetBindGroup(0, compute.bindGroup);
+    computePass.SetPipeline(particleCompute.pipeline);
+    computePass.SetBindGroup(0, particleCompute.bindGroup);
     computePass.DispatchWorkgroups(nWorkgroups, 1, 1);
 }
 
