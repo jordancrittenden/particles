@@ -180,6 +180,7 @@ int main(int argc, char* argv[]) {
     float frameTimeSec = 1.0f / (float)params.targetFPS;
 
 #if defined(__EMSCRIPTEN__)
+	std::cout << "Starting main loop" << std::endl;
 	emscripten_set_main_loop(render_frame, 0, false);
 #else
     while (!glfwWindowShouldClose(window)) {
