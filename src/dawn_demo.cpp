@@ -28,7 +28,7 @@ const char shaderCode[] = R"(
 		return vec4f(pos[i], 0, 1);
 	}
 	@fragment fn fragmentMain() -> @location(0) vec4f {
-		return vec4f(0, 0, 1, 1);
+		return vec4f(1, 0, 1, 1);
 	}
 )";
 
@@ -99,18 +99,38 @@ void render_frame() {
 	wgpu::RenderPassColorAttachment attachment {
 		.view = surfaceTexture.texture.CreateView(),
 		.loadOp = wgpu::LoadOp::Clear,
-		.storeOp = wgpu::StoreOp::Store
+		.storeOp = wgpu::StoreOp::Store,
+		.clearValue = {1.0f, 1.0f, 1.0f, 1.0f}  // White background
+	};
+
+	wgpu::TextureDescriptor depthTextureDesc {
+		.size = {kWidth, kHeight},
+		.format = wgpu::TextureFormat::Depth24Plus,
+		.usage = wgpu::TextureUsage::RenderAttachment
+	};
+	wgpu::Texture depthTexture = device.CreateTexture(&depthTextureDesc);
+
+	wgpu::RenderPassDepthStencilAttachment depthAttachment {
+		.view = depthTexture.CreateView(),
+		.depthClearValue = 1.0,
+		.depthLoadOp = wgpu::LoadOp::Clear,
+		.depthStoreOp = wgpu::StoreOp::Store,
 	};
 
 	wgpu::RenderPassDescriptor renderpass{
+		.label = "Render Pass",
 		.colorAttachmentCount = 1,
-		.colorAttachments = &attachment
+		.colorAttachments = &attachment,
+		.depthStencilAttachment = &depthAttachment
 	};
 
-	wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+	wgpu::CommandEncoderDescriptor encoderDesc{.label = "Render Command Encoder"};
+	wgpu::CommandEncoder encoder = device.CreateCommandEncoder(&encoderDesc);
 	wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderpass);
+
 	pass.SetPipeline(pipeline);
 	pass.Draw(3);
+
 	pass.End();
 	wgpu::CommandBuffer commands = encoder.Finish();
 	device.GetQueue().Submit(1, &commands);
@@ -128,9 +148,15 @@ int main() {
 		.targetCount = 1,
 		.targets = &colorTargetState
 	};
+    wgpu::DepthStencilState depthStencilState = {
+        .depthWriteEnabled = true,
+        .depthCompare = wgpu::CompareFunction::Less,
+        .format = wgpu::TextureFormat::Depth24Plus
+    };
 	wgpu::RenderPipelineDescriptor descriptor{
 		.vertex = {.module = shaderModule},
-		.fragment = &fragmentState
+		.fragment = &fragmentState,
+		.depthStencil = &depthStencilState
 	};
 
 	pipeline = device.CreateRenderPipeline(&descriptor);

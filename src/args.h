@@ -6,8 +6,8 @@
 
 struct SimulationParams {
     // Rendering parameters
-    glm::u32 windowWidth = 1024;            // Window width, px
-    glm::u32 windowHeight = 1024;           // Window height, px
+    glm::u32 windowWidth = 512;             // Window width, px
+    glm::u32 windowHeight = 512;            // Window height, px
     glm::u16 targetFPS = 60;                // Target FPS
 
     // Particle initialization parameters
