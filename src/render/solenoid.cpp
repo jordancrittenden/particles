@@ -14,7 +14,7 @@ struct UniformData {
 };
 
 SolenoidBuffers create_solenoid_buffers(wgpu::Device& device, const Ring& ring) {
-    wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/wgpu/solenoid.wgsl");
+    wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/solenoid.wgsl");
     if (!shaderModule) {
         std::cerr << "Failed to create solenoid shader module" << std::endl;
         exit(1);

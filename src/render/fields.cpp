@@ -73,7 +73,7 @@ FieldRender create_fields_render(wgpu::Device& device, std::vector<glm::f32vec4>
     FieldRender render = {};
 
     // Create render shader module
-    wgpu::ShaderModule renderShaderModule = create_shader_module(device, "shader/wgpu/vector.wgsl");
+    wgpu::ShaderModule renderShaderModule = create_shader_module(device, "shader/vector.wgsl");
     if (!renderShaderModule) {
         std::cerr << "Failed to create render shader module" << std::endl;
         exit(1);

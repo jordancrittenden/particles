@@ -22,7 +22,7 @@ ParticleCompute create_particle_compute(
     ParticleCompute particleCompute = {};
 
     // Create compute shader module
-    wgpu::ShaderModule computeShaderModule = create_shader_module(device, "kernel/wgpu/particles.wgsl", {"kernel/wgpu/physical_constants.wgsl", "kernel/wgpu/field_common.wgsl"});
+    wgpu::ShaderModule computeShaderModule = create_shader_module(device, "kernel/particles.wgsl", {"kernel/physical_constants.wgsl", "kernel/field_common.wgsl"});
     if (!computeShaderModule) {
         std::cerr << "Failed to create compute shader module" << std::endl;
         exit(1);

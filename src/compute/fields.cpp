@@ -25,7 +25,7 @@ FieldCompute create_field_compute(
     FieldCompute fieldCompute = {};
 
     // Create compute shader module
-    wgpu::ShaderModule computeShaderModule = create_shader_module(device, "kernel/wgpu/fields.wgsl", {"kernel/wgpu/physical_constants.wgsl", "kernel/wgpu/field_common.wgsl"});
+    wgpu::ShaderModule computeShaderModule = create_shader_module(device, "kernel/fields.wgsl", {"kernel/physical_constants.wgsl", "kernel/field_common.wgsl"});
     if (!computeShaderModule) {
         std::cerr << "Failed to create compute shader module" << std::endl;
         exit(1);

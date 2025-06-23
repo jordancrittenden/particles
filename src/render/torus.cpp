@@ -22,7 +22,7 @@ glm::mat4 get_coil_model_matrix(glm::f32 angle, glm::f32 r1) {
 }
 
 TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, glm::u16 nCoils) {
-    wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/wgpu/torus.wgsl");
+    wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/torus.wgsl");
     if (!shaderModule) {
         std::cerr << "Failed to create torus shader module" << std::endl;
         exit(1);

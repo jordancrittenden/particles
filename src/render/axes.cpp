@@ -6,7 +6,7 @@
 #include "physical_constants.h"
 
 AxesBuffers create_axes_buffers(wgpu::Device& device) {
-    wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/wgpu/axes.wgsl");
+    wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/axes.wgsl");
     if (!shaderModule) {
         std::cerr << "Failed to create axes shader module" << std::endl;
         exit(1);
