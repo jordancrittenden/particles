@@ -79,13 +79,23 @@ target_include_directories(sim_dawn PRIVATE
 )
 
 if(EMSCRIPTEN)
+	# Copy kernel and shader directories to build-web before building
+	add_custom_target(copy_assets ALL
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/kernel/wgpu ${CMAKE_BINARY_DIR}/kernel/wgpu
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/shader/wgpu ${CMAKE_BINARY_DIR}/shader/wgpu
+		COMMENT "Copying kernel and shader directories to build directory"
+	)
+
 	set_target_properties(sim_dawn PROPERTIES SUFFIX ".html")
 	target_link_libraries(sim_dawn PRIVATE emdawnwebgpu_cpp)
 	target_link_options(sim_dawn PRIVATE
 		-s ASYNCIFY=1
-		--embed-file kernel/wgpu
-		--preload-file shader/wgpu@shader/wgpu
+		--embed-file ${CMAKE_BINARY_DIR}/kernel/wgpu@kernel/wgpu
+		--preload-file ${CMAKE_BINARY_DIR}/shader/wgpu@shader/wgpu
 	)
+	
+	# Make sim_dawn depend on copy_assets
+	add_dependencies(sim_dawn copy_assets)
 else()
 	target_link_libraries(sim_dawn PRIVATE
 		dawn::webgpu_dawn
