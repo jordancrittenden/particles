@@ -29,7 +29,6 @@ wgpu::Surface surface;
 wgpu::TextureFormat format;
 
 SimulationParams params;
-TokamakScene* scene = nullptr;
 
 auto lastInputTime = std::chrono::high_resolution_clock::now();
 bool debounce_input() {
@@ -100,7 +99,7 @@ void init_webgpu(glm::u32 windowWidth, glm::u32 windowHeight) {
     surface.Configure(&config);
 }
 
-void render_frame() {
+void render_frame(void* scene) {
     wgpu::SurfaceTexture surfaceTexture;
     surface.GetCurrentTexture(&surfaceTexture);
 
@@ -112,17 +111,17 @@ void render_frame() {
     };
 
     wgpu::TextureDescriptor depthTextureDesc {
+        .usage = wgpu::TextureUsage::RenderAttachment,
         .size = {params.windowWidth, params.windowHeight},
-        .format = wgpu::TextureFormat::Depth24Plus,
-        .usage = wgpu::TextureUsage::RenderAttachment
+        .format = wgpu::TextureFormat::Depth24Plus
     };
     wgpu::Texture depthTexture = device.CreateTexture(&depthTextureDesc);
 
     wgpu::RenderPassDepthStencilAttachment depthAttachment {
         .view = depthTexture.CreateView(),
-        .depthClearValue = 1.0,
         .depthLoadOp = wgpu::LoadOp::Clear,
         .depthStoreOp = wgpu::StoreOp::Store,
+        .depthClearValue = 1.0
     };
 
     wgpu::RenderPassDescriptor renderpass{
@@ -136,9 +135,7 @@ void render_frame() {
     wgpu::CommandEncoder encoder = device.CreateCommandEncoder(&encoderDesc);
     wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderpass);
 
-#if !defined(__EMSCRIPTEN__)
-    scene->render(device, pass, static_cast<float>(params.windowWidth) / static_cast<float>(params.windowHeight));
-#endif
+    ((Scene*)scene)->render(device, pass, static_cast<float>(params.windowWidth) / static_cast<float>(params.windowHeight));
 
     pass.End();
     wgpu::CommandBuffer commands = encoder.Finish();
@@ -164,7 +161,7 @@ int main(int argc, char* argv[]) {
     // Initialize the Scene
     TorusParameters torus;
     SolenoidParameters solenoid;
-    scene = new TokamakScene(torus, solenoid);
+    Scene* scene = new TokamakScene(torus, solenoid);
     scene->initialize(device, params);
 
     // Main render loop
@@ -173,7 +170,7 @@ int main(int argc, char* argv[]) {
     float frameTimeSec = 1.0f / (float)params.targetFPS;
 
 #if defined(__EMSCRIPTEN__)
-    emscripten_set_main_loop(render_frame, 0, false);
+    emscripten_set_main_loop_arg(render_frame, scene, 0, false);
 #else
     while (!glfwWindowShouldClose(window)) {
         auto frameStart = std::chrono::high_resolution_clock::now();
@@ -186,7 +183,7 @@ int main(int argc, char* argv[]) {
         }
 
         // Render frame
-        render_frame();
+        render_frame(scene);
         surface.Present();
         instance.ProcessEvents();
 
