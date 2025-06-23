@@ -1,12 +1,15 @@
+#include <iostream>
+#include <glm/glm.hpp>
 #include <dawn/webgpu_cpp_print.h>
 #include <webgpu/webgpu_cpp.h>
 
-#include <iostream>
 #if defined(__EMSCRIPTEN__)
 #include <emscripten/emscripten.h>
 #else
 #include <GLFW/glfw3.h>
 #include <webgpu/webgpu_glfw.h>
+
+GLFWwindow* window = nullptr;
 #endif
 
 wgpu::Instance instance;
@@ -25,11 +28,56 @@ const char shaderCode[] = R"(
 		return vec4f(pos[i], 0, 1);
 	}
 	@fragment fn fragmentMain() -> @location(0) vec4f {
-		return vec4f(1, 0, 0, 1);
+		return vec4f(0, 0, 1, 1);
 	}
 )";
 
-void ConfigureSurface() {
+void init_webgpu(glm::u32 windowWidth, glm::u32 windowHeight) {
+    wgpu::InstanceDescriptor instanceDesc{.capabilities = {.timedWaitAnyEnable = true}};
+	instance = wgpu::CreateInstance(&instanceDesc);
+
+	wgpu::Future f1 = instance.RequestAdapter(
+		nullptr,
+		wgpu::CallbackMode::WaitAnyOnly,
+		[](wgpu::RequestAdapterStatus status, wgpu::Adapter a, wgpu::StringView message) {
+			if (status != wgpu::RequestAdapterStatus::Success) {
+				std::cout << "RequestAdapter: " << message.data << "\n";
+				exit(0);
+			}
+			adapter = std::move(a);
+		});
+	instance.WaitAny(f1, UINT64_MAX);
+
+	wgpu::DeviceDescriptor desc{};
+	desc.SetUncapturedErrorCallback([](const wgpu::Device&, wgpu::ErrorType errorType, wgpu::StringView message) {
+		std::cout << "Error: " << static_cast<uint32_t>(errorType) << " - message: " << message.data << "\n";
+	});
+
+	wgpu::Future f2 = adapter.RequestDevice(
+		&desc, wgpu::CallbackMode::WaitAnyOnly,
+		[](wgpu::RequestDeviceStatus status, wgpu::Device d, wgpu::StringView message) {
+			if (status != wgpu::RequestDeviceStatus::Success) {
+				std::cout << "RequestDevice: " << message.data << "\n";
+				exit(0);
+			}
+			device = std::move(d);
+		});
+	instance.WaitAny(f2, UINT64_MAX);
+
+#if defined(__EMSCRIPTEN__)
+	wgpu::EmscriptenSurfaceSourceCanvasHTMLSelector src{{.selector = "#canvas"}};
+	wgpu::SurfaceDescriptor surfaceDesc{.nextInChain = &src};
+	surface = instance.CreateSurface(&surfaceDesc);
+#else
+	if (!glfwInit()) {
+		return;
+	}
+
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	window = glfwCreateWindow(windowWidth, windowHeight, "Plasma Simulation", nullptr, nullptr);
+	surface = wgpu::glfw::CreateSurfaceForWindow(instance, window);
+#endif
+
 	wgpu::SurfaceCapabilities capabilities;
 	surface.GetCapabilities(adapter, &capabilities);
 	format = capabilities.formats[0];
@@ -37,32 +85,14 @@ void ConfigureSurface() {
 	wgpu::SurfaceConfiguration config{
 		.device = device,
 		.format = format,
-		.width = kWidth,
-		.height = kHeight,
+		.width = windowWidth,
+		.height = windowHeight,
 		.presentMode = wgpu::PresentMode::Fifo
 	};
 	surface.Configure(&config);
 }
 
-void CreateRenderPipeline() {
-	wgpu::ShaderSourceWGSL wgsl{{.code = shaderCode}};
-	wgpu::ShaderModuleDescriptor shaderModuleDescriptor{.nextInChain = &wgsl};
-	wgpu::ShaderModule shaderModule =  device.CreateShaderModule(&shaderModuleDescriptor);
-	wgpu::ColorTargetState colorTargetState{.format = format};
-	wgpu::FragmentState fragmentState{
-		.module = shaderModule,
-		.targetCount = 1,
-		.targets = &colorTargetState
-	};
-	wgpu::RenderPipelineDescriptor descriptor{
-		.vertex = {.module = shaderModule},
-		.fragment = &fragmentState
-	};
-
-	pipeline = device.CreateRenderPipeline(&descriptor);
-}
-
-void Render() {
+void render_frame() {
 	wgpu::SurfaceTexture surfaceTexture;
 	surface.GetCurrentTexture(&surfaceTexture);
 
@@ -87,61 +117,30 @@ void Render() {
 }
 
 int main() {
-	wgpu::InstanceDescriptor instanceDesc{.capabilities = {.timedWaitAnyEnable = true}};
-	instance = wgpu::CreateInstance(&instanceDesc);
+	init_webgpu(kWidth, kHeight);
 
-	wgpu::Future f1 = instance.RequestAdapter(
-		nullptr,
-		wgpu::CallbackMode::WaitAnyOnly,
-		[](wgpu::RequestAdapterStatus status, wgpu::Adapter a, wgpu::StringView message) {
-			if (status != wgpu::RequestAdapterStatus::Success) {
-				std::cout << "RequestAdapter: " << message << "\n";
-				exit(0);
-			}
-			adapter = std::move(a);
-		});
-	instance.WaitAny(f1, UINT64_MAX);
+	wgpu::ShaderSourceWGSL wgsl{{.code = shaderCode}};
+	wgpu::ShaderModuleDescriptor shaderModuleDescriptor{.nextInChain = &wgsl};
+	wgpu::ShaderModule shaderModule =  device.CreateShaderModule(&shaderModuleDescriptor);
+	wgpu::ColorTargetState colorTargetState{.format = format};
+	wgpu::FragmentState fragmentState{
+		.module = shaderModule,
+		.targetCount = 1,
+		.targets = &colorTargetState
+	};
+	wgpu::RenderPipelineDescriptor descriptor{
+		.vertex = {.module = shaderModule},
+		.fragment = &fragmentState
+	};
 
-	wgpu::DeviceDescriptor desc{};
-	desc.SetUncapturedErrorCallback([](const wgpu::Device&, wgpu::ErrorType errorType, wgpu::StringView message) {
-		std::cout << "Error: " << errorType << " - message: " << message << "\n";
-	});
-
-	wgpu::Future f2 = adapter.RequestDevice(
-		&desc, wgpu::CallbackMode::WaitAnyOnly,
-		[](wgpu::RequestDeviceStatus status, wgpu::Device d, wgpu::StringView message) {
-			if (status != wgpu::RequestDeviceStatus::Success) {
-				std::cout << "RequestDevice: " << message << "\n";
-				exit(0);
-			}
-			device = std::move(d);
-		});
-	instance.WaitAny(f2, UINT64_MAX);
-
+	pipeline = device.CreateRenderPipeline(&descriptor);
 
 #if defined(__EMSCRIPTEN__)
-	wgpu::EmscriptenSurfaceSourceCanvasHTMLSelector src{{.selector = "#canvas"}};
-	wgpu::SurfaceDescriptor surfaceDesc{.nextInChain = &src};
-	surface = instance.CreateSurface(&surfaceDesc);
-#else
-	if (!glfwInit()) {
-		return -1;
-	}
-
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	GLFWwindow* window = glfwCreateWindow(kWidth, kHeight, "WebGPU window", nullptr, nullptr);
-	surface = wgpu::glfw::CreateSurfaceForWindow(instance, window);
-#endif
-
-	ConfigureSurface();
-	CreateRenderPipeline();
-
-#if defined(__EMSCRIPTEN__)
-	emscripten_set_main_loop(Render, 0, false);
+	emscripten_set_main_loop(render_frame, 0, false);
 #else
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
-		Render();
+		render_frame();
 		surface.Present();
 		instance.ProcessEvents();
 	}

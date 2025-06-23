@@ -6,14 +6,8 @@
 #include <cstdlib>
 #include <glm/glm.hpp>
 
-#include <GLFW/glfw3.h>
-#if defined(__EMSCRIPTEN__)
-#include <emscripten/emscripten.h>
-#else
 #include <dawn/webgpu_cpp_print.h>
 #include <webgpu/webgpu_cpp.h>
-#include <webgpu/webgpu_glfw.h>
-#endif
 
 #include "args.h"
 #include "scene.h"
@@ -23,7 +17,15 @@
 #include "current_segment.h"
 #include "plasma.h"
 
+#if defined(__EMSCRIPTEN__)
+#include <emscripten/emscripten.h>
+#else
+#include <GLFW/glfw3.h>
+#include <webgpu/webgpu_glfw.h>
+
 GLFWwindow* window = nullptr;
+#endif
+
 wgpu::Instance instance;
 wgpu::Adapter adapter;
 wgpu::Device device;
