@@ -26,21 +26,20 @@ class TokamakScene : public Scene {
 public:
     TokamakScene(const TorusParameters& params, const SolenoidParameters& solenoidParams);
 
-    void initialize(wgpu::Device& device, const SimulationParams& params) override;
+    // Initialization
+    void init(const SimulationParams& params) override;
 
     // Rendering
-    void render(wgpu::Device& device, wgpu::RenderPassEncoder& pass, float aspectRatio) override;
+    void render_details(wgpu::RenderPassEncoder& pass) override;
 
     // Compute
-    void compute_step(wgpu::Device& device, wgpu::ComputePassEncoder pass) override;
-    void compute_copy(wgpu::CommandEncoder& encoder) override;
-    void compute_read(wgpu::Device& device, wgpu::Instance& instance) override;
+    void compute_step(wgpu::ComputePassEncoder& pass) override;
 
     // Scene-dependent functions
     std::vector<Cell> get_grid_cells(glm::f32 spacing) override;
     glm::f32vec4 rand_particle_position() override;
     std::vector<CurrentVector> get_currents() override;
-    bool process_input(GLFWwindow* window, bool (*debounce_input)()) override;
+    bool process_input(bool (*debounce_input)()) override;
 
     // Toggles
     void toggleShowTorus();

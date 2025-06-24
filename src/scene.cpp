@@ -13,7 +13,82 @@
 #include "plasma.h"
 #include "cell.h"
 
-void Scene::initialize(wgpu::Device& device, const SimulationParams& params) {
+void Scene::init_webgpu() {
+    wgpu::InstanceDescriptor instanceDesc{.capabilities = {.timedWaitAnyEnable = true}};
+    instance = wgpu::CreateInstance(&instanceDesc);
+
+    wgpu::Future f1 = instance.RequestAdapter(
+        nullptr,
+        wgpu::CallbackMode::WaitAnyOnly,
+        [this](wgpu::RequestAdapterStatus status, wgpu::Adapter a, wgpu::StringView message) {
+            if (status != wgpu::RequestAdapterStatus::Success) {
+                std::cout << "RequestAdapter: " << message.data << "\n";
+                exit(0);
+            }
+            adapter = std::move(a);
+        });
+    instance.WaitAny(f1, UINT64_MAX);
+
+    wgpu::DeviceDescriptor desc{};
+    desc.SetUncapturedErrorCallback([](const wgpu::Device&, wgpu::ErrorType errorType, wgpu::StringView message) {
+        std::cout << "Error: " << static_cast<uint32_t>(errorType) << " - message: " << message.data << "\n";
+    });
+
+    wgpu::Future f2 = adapter.RequestDevice(
+        &desc, wgpu::CallbackMode::WaitAnyOnly,
+        [this](wgpu::RequestDeviceStatus status, wgpu::Device d, wgpu::StringView message) {
+            if (status != wgpu::RequestDeviceStatus::Success) {
+                std::cout << "RequestDevice: " << message.data << "\n";
+                exit(0);
+            }
+            device = std::move(d);
+        });
+    instance.WaitAny(f2, UINT64_MAX);
+
+#if defined(__EMSCRIPTEN__)
+    wgpu::EmscriptenSurfaceSourceCanvasHTMLSelector src{{.selector = "#canvas"}};
+    wgpu::SurfaceDescriptor surfaceDesc{.nextInChain = &src};
+    surface = instance.CreateSurface(&surfaceDesc);
+#else
+    if (!glfwInit()) {
+        return;
+    }
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    window = glfwCreateWindow(windowWidth, windowHeight, "Plasma Simulation", nullptr, nullptr);
+    surface = wgpu::glfw::CreateSurfaceForWindow(instance, window);
+#endif
+
+    wgpu::SurfaceCapabilities capabilities;
+    surface.GetCapabilities(adapter, &capabilities);
+    format = capabilities.formats[0];
+
+    wgpu::SurfaceConfiguration config{
+        .device = device,
+        .format = format,
+        .width = windowWidth,
+        .height = windowHeight,
+        .presentMode = wgpu::PresentMode::Fifo
+    };
+    surface.Configure(&config);
+}
+
+bool Scene::is_running() {
+    return !glfwWindowShouldClose(window);
+}
+
+void Scene::terminate() {
+#if !defined(__EMSCRIPTEN__)
+    glfwDestroyWindow(window);
+    glfwTerminate();
+#endif
+}
+
+void Scene::init(const SimulationParams& params) {
+    this->windowWidth = params.windowWidth;
+    this->windowHeight = params.windowHeight;
+    this->init_webgpu();
+
     this->cells = get_grid_cells(params.cellSpacing);
     std::cout << "Simulation cells: " << cells.size() << std::endl;
 
@@ -66,7 +141,71 @@ glm::mat4 Scene::get_orbit_view_matrix() {
     );
 }
 
-void Scene::render(wgpu::Device& device, wgpu::RenderPassEncoder& pass, float aspectRatio) {
+auto lastInputTime = std::chrono::high_resolution_clock::now();
+bool debounce_input() {
+    auto now = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = now - lastInputTime;
+    if (diff.count() < 0.1) return false;
+    lastInputTime = now;
+    return true;
+}
+
+void Scene::render() {
+    // Process keyboard input
+    glfwPollEvents();
+    this->process_input(debounce_input);
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, true);
+    }
+    poll_events(device, false);
+
+    wgpu::SurfaceTexture surfaceTexture;
+    surface.GetCurrentTexture(&surfaceTexture);
+
+    wgpu::RenderPassColorAttachment attachment {
+        .view = surfaceTexture.texture.CreateView(),
+        .loadOp = wgpu::LoadOp::Clear,
+        .storeOp = wgpu::StoreOp::Store,
+        .clearValue = {1.0f, 1.0f, 1.0f, 1.0f}  // White background
+    };
+
+    wgpu::TextureDescriptor depthTextureDesc {
+        .usage = wgpu::TextureUsage::RenderAttachment,
+        .size = {windowWidth, windowHeight},
+        .format = wgpu::TextureFormat::Depth24Plus
+    };
+    wgpu::Texture depthTexture = device.CreateTexture(&depthTextureDesc);
+
+    wgpu::RenderPassDepthStencilAttachment depthAttachment {
+        .view = depthTexture.CreateView(),
+        .depthLoadOp = wgpu::LoadOp::Clear,
+        .depthStoreOp = wgpu::StoreOp::Store,
+        .depthClearValue = 1.0
+    };
+
+    wgpu::RenderPassDescriptor renderPass{
+        .label = "Render Pass",
+        .colorAttachmentCount = 1,
+        .colorAttachments = &attachment,
+        .depthStencilAttachment = &depthAttachment
+    };
+
+    wgpu::CommandEncoderDescriptor encoderDesc{.label = "Render Command Encoder"};
+    wgpu::CommandEncoder encoder = device.CreateCommandEncoder(&encoderDesc);
+    wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+
+    this->render_details(pass);
+
+    pass.End();
+    wgpu::CommandBuffer commands = encoder.Finish();
+    device.GetQueue().Submit(1, &commands);
+
+    surface.Present();
+    instance.ProcessEvents();
+}
+
+void Scene::render_details(wgpu::RenderPassEncoder& pass) {
+    float aspectRatio = static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
     this->view = get_orbit_view_matrix();
     this->projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
 
@@ -76,7 +215,29 @@ void Scene::render(wgpu::Device& device, wgpu::RenderPassEncoder& pass, float as
     if (this->showBField)    render_fields(device, pass, bFieldRender, fields.bField, cells.size(), view, projection);
 }
 
-void Scene::compute_step(wgpu::Device& device, wgpu::ComputePassEncoder pass) {
+void Scene::compute() {
+    wgpu::CommandEncoderDescriptor encoderDesc{.label = "Compute Command Encoder"};
+    wgpu::CommandEncoder encoder = device.CreateCommandEncoder(&encoderDesc);
+    wgpu::ComputePassDescriptor computePassDesc{.label = "Compute Pass"};
+    wgpu::ComputePassEncoder pass = encoder.BeginComputePass(&computePassDesc);
+
+    this->compute_step(pass);
+
+    pass.End();
+    encoder.CopyBufferToBuffer(particles.nCur, 0, particleCompute.nCurReadBuf, 0, sizeof(glm::u32));
+
+    wgpu::CommandBuffer commands = encoder.Finish();
+    device.GetQueue().Submit(1, &commands);
+
+    nParticles = read_nparticles(device, instance, particleCompute);
+
+    if (simulationStep % 100 == 0) {
+        std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << ") [" << this->getNumParticles() << " particles]" << std::endl;
+    }
+    simulationStep++;
+}
+
+void Scene::compute_step(wgpu::ComputePassEncoder& pass) {
     // Update current segments
     if (this->refreshCurrents) {
         this->cachedCurrents = get_currents();
@@ -106,14 +267,6 @@ void Scene::compute_step(wgpu::Device& device, wgpu::ComputePassEncoder pass) {
     t += dt;
 }
 
-void Scene::compute_copy(wgpu::CommandEncoder& encoder) {
-    encoder.CopyBufferToBuffer(particles.nCur, 0, particleCompute.nCurReadBuf, 0, sizeof(glm::u32));
-}
-
-void Scene::compute_read(wgpu::Device& device, wgpu::Instance& instance) {
-    nParticles = read_nparticles(device, instance, particleCompute);
-}
-
 std::vector<Cell> Scene::get_grid_cells(glm::f32 spacing) {
     float s = 0.1f * _M;
     glm::vec3 minCoord { -s, -s, -s };
@@ -137,7 +290,7 @@ glm::u32 Scene::getNumParticles() {
     return this->nParticles;
 }
 
-bool Scene::process_input(GLFWwindow* window, bool (*debounce_input)()) {
+bool Scene::process_input(bool (*debounce_input)()) {
 #if !defined(__EMSCRIPTEN__)
     if (glfwGetKey(window, GLFW_KEY_EQUAL) == GLFW_PRESS && debounce_input()) {
         dt *= 1.2f;

@@ -149,6 +149,7 @@ AxesBuffers create_axes_buffers(wgpu::Device& device) {
 }
 
 void render_axes(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const AxesBuffers& axesBuf, glm::mat4 view, glm::mat4 projection) {
+    std::cout << "Rendering axes" << std::endl;
     // Update uniform buffer with matrices
     glm::mat4 model = glm::mat4(1.0f);
     std::vector<glm::mat4> matrices = {model, view, projection};

@@ -81,11 +81,7 @@ if(EMSCRIPTEN)
 
 	set_target_properties(sim PROPERTIES SUFFIX ".html")
 	target_link_libraries(sim PRIVATE emdawnwebgpu_cpp)
-	target_link_options(sim PRIVATE
-		-s ASYNCIFY=1
-		--embed-file ${CMAKE_BINARY_DIR}/kernel@kernel
-		--preload-file ${CMAKE_BINARY_DIR}/shader@shader
-	)
+	target_link_options(sim PRIVATE -sASYNCIFY=1 -sUSE_GLFW=3 --embed-file ${CMAKE_BINARY_DIR}/kernel@kernel --preload-file ${CMAKE_BINARY_DIR}/shader@shader)
 	
 	# Make sim depend on copy_assets
 	add_dependencies(sim copy_assets)

@@ -14,8 +14,8 @@ TokamakScene::TokamakScene(const TorusParameters& params, const SolenoidParamete
     : Scene(), torusParameters(params), solenoidParameters(solenoidParams) {
 }
 
-void TokamakScene::initialize(wgpu::Device& device, const SimulationParams& params) {
-    Scene::initialize(device, params);
+void TokamakScene::init(const SimulationParams& params) {
+    Scene::init(params);
 
     // Create torus buffers
     Ring toroidalRing;
@@ -34,13 +34,13 @@ void TokamakScene::initialize(wgpu::Device& device, const SimulationParams& para
     this->cameraDistance = 5.0f * _M;
 }
 
-void TokamakScene::render(wgpu::Device& device, wgpu::RenderPassEncoder& pass, float aspectRatio) {
-    Scene::render(device, pass, aspectRatio);
+void TokamakScene::render_details(wgpu::RenderPassEncoder& pass) {
+    Scene::render_details(pass);
     if (this->showTorus) render_torus(device, pass, torusBuf, torusParameters.r1, this->toroidalI, view, projection);
     if (this->showSolenoid) render_solenoid(device, pass, solenoidBuf, this->solenoidFlux, view, projection);
 }
 
-void TokamakScene::compute_step(wgpu::Device& device, wgpu::ComputePassEncoder pass) {
+void TokamakScene::compute_step(wgpu::ComputePassEncoder& pass) {
     // Update current segments
     if (this->refreshCurrents) {
         this->cachedCurrents = get_currents();
@@ -68,14 +68,6 @@ void TokamakScene::compute_step(wgpu::Device& device, wgpu::ComputePassEncoder p
         nParticles);
 
     t += dt;
-}
-
-void TokamakScene::compute_copy(wgpu::CommandEncoder& encoder) {
-    Scene::compute_copy(encoder);
-}
-
-void TokamakScene::compute_read(wgpu::Device& device, wgpu::Instance& instance) {
-    Scene::compute_read(device, instance);
 }
 
 std::vector<Cell> TokamakScene::get_grid_cells(glm::f32 dx) {
@@ -154,7 +146,7 @@ std::vector<CurrentVector> TokamakScene::get_currents() {
     return currents;
 }
 
-bool TokamakScene::process_input(GLFWwindow* window, bool (*debounce_input)()) {
+bool TokamakScene::process_input(bool (*debounce_input)()) {
 #if !defined(__EMSCRIPTEN__)
     if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS && debounce_input()) {
         toggleShowTorus();
@@ -173,7 +165,7 @@ bool TokamakScene::process_input(GLFWwindow* window, bool (*debounce_input)()) {
         return true;
     }
 #endif
-    return Scene::process_input(window, debounce_input);
+    return Scene::process_input(debounce_input);
 }
 
 void TokamakScene::toggleShowTorus() {

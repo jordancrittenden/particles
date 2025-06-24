@@ -1,7 +1,6 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include <GLFW/glfw3.h>
 #include <webgpu/webgpu_cpp.h>
 #include "util/wgpu_util.h"
 #include "shared/particles.h"
@@ -15,23 +14,26 @@
 #include "cell.h"
 #include "args.h"
 
+#include <GLFW/glfw3.h>
+#include <webgpu/webgpu_glfw.h>
+
+#if defined(__EMSCRIPTEN__)
+#include <emscripten/emscripten.h>
+#endif
+
 class Scene {
 public:
-    virtual void initialize(wgpu::Device& device, const SimulationParams& params);
-
-    // Rendering
-    virtual void render(wgpu::Device& device, wgpu::RenderPassEncoder& pass, float aspectRatio);
-
-    // Compute
-    virtual void compute_step(wgpu::Device& device, wgpu::ComputePassEncoder pass);
-    virtual void compute_copy(wgpu::CommandEncoder& encoder);
-    virtual void compute_read(wgpu::Device& device, wgpu::Instance& instance);
+    virtual void init(const SimulationParams& params);
+    void render();
+    void compute();
+    void terminate();
+    bool is_running();
 
     // Scene-dependent functions
     virtual std::vector<Cell> get_grid_cells(glm::f32 spacing);
     virtual glm::f32vec4 rand_particle_position();
     virtual std::vector<CurrentVector> get_currents();
-    virtual bool process_input(GLFWwindow* window, bool (*debounce_input)());
+    virtual bool process_input(bool (*debounce_input)());
 
     // Toggles
     void toggleShowAxes();
@@ -58,6 +60,9 @@ public:
     std::vector<Cell> cells;
 
 protected:
+    virtual void render_details(wgpu::RenderPassEncoder& pass);
+    virtual void compute_step(wgpu::ComputePassEncoder& pass);
+
     bool refreshCurrents = false;
     
     // Camera settings
@@ -80,7 +85,20 @@ protected:
     std::vector<CurrentVector> cachedCurrents;
     wgpu::Buffer currentSegmentsBuffer;
 
+    // WebGPU objects
+    wgpu::Instance instance;
+    wgpu::Adapter adapter;
+    wgpu::Device device;
+    wgpu::Surface surface;
+    wgpu::TextureFormat format;
+
+    // GLFW window
+    GLFWwindow* window = nullptr;
+    glm::u32 windowWidth = 1024;
+    glm::u32 windowHeight = 768;
+
 private:
+    void init_webgpu();
     glm::mat4 get_orbit_view_matrix();
 
     // Particles
@@ -114,4 +132,7 @@ private:
     // Tracer settings
     glm::u32 tracerPoints = 100;
     glm::u32 nTracers = 0;
+
+    int frameCount = 0;
+    int simulationStep = 0;
 };
