@@ -13,6 +13,28 @@
 #include "plasma.h"
 #include "cell.h"
 
+#if defined(__EMSCRIPTEN__)
+#include <emscripten/emscripten.h>
+#include <emscripten/html5.h>
+
+// Global key state tracking for web input
+static bool keyStates[512] = {false};
+
+EM_BOOL keydown_callback(int eventType, const EmscriptenKeyboardEvent *e, void *userData) {
+    if (e->keyCode < 512) keyStates[e->keyCode] = true;
+    return EM_TRUE;
+}
+
+EM_BOOL keyup_callback(int eventType, const EmscriptenKeyboardEvent *e, void *userData) {
+    if (e->keyCode < 512) keyStates[e->keyCode] = false;
+    return EM_TRUE;
+}
+
+bool is_key_pressed(int keyCode) {
+    return keyCode < 512 && keyStates[keyCode];
+}
+#endif
+
 void Scene::init_webgpu() {
     wgpu::InstanceDescriptor instanceDesc{.capabilities = {.timedWaitAnyEnable = true}};
     instance = wgpu::CreateInstance(&instanceDesc);
@@ -49,6 +71,10 @@ void Scene::init_webgpu() {
     wgpu::EmscriptenSurfaceSourceCanvasHTMLSelector src{{.selector = "#canvas"}};
     wgpu::SurfaceDescriptor surfaceDesc{.nextInChain = &src};
     surface = instance.CreateSurface(&surfaceDesc);
+    
+    // Set up keyboard event handlers for web
+    emscripten_set_keydown_callback("#canvas", nullptr, 1, keydown_callback);
+    emscripten_set_keyup_callback("#canvas", nullptr, 1, keyup_callback);
 #else
     if (!glfwInit()) {
         return;
@@ -154,9 +180,6 @@ void Scene::render() {
     // Process keyboard input
     glfwPollEvents();
     this->process_input(debounce_input);
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, true);
-    }
     poll_events(device, false);
 
     wgpu::SurfaceTexture surfaceTexture;
@@ -204,8 +227,6 @@ void Scene::render() {
     surface.Present();
 #endif
     instance.ProcessEvents();
-
-    rotateLeft();
 }
 
 void Scene::render_details(wgpu::RenderPassEncoder& pass) {
@@ -295,7 +316,72 @@ glm::u32 Scene::getNumParticles() {
 }
 
 bool Scene::process_input(bool (*debounce_input)()) {
-#if !defined(__EMSCRIPTEN__)
+#if defined(__EMSCRIPTEN__)
+    // Web keyboard input handling
+    if (is_key_pressed(187) && debounce_input()) { // EQUAL key (=)
+        dt *= 1.2f;
+        std::cout << "dt: " << dt << std::endl;
+    }
+    if (is_key_pressed(189) && debounce_input()) { // MINUS key (-)
+        dt /= 1.2f;
+        std::cout << "dt: " << dt << std::endl;
+    }
+    if (is_key_pressed(73) && debounce_input()) { // I key
+        enableParticleFieldContributions = !enableParticleFieldContributions;
+        std::cout << "particle field contributions: " << (enableParticleFieldContributions ? "ENABLED" : "DISABLED") << std::endl;
+    }
+    if (is_key_pressed(37)) { // LEFT ARROW
+        rotateLeft();
+        return true;
+    }
+    if (is_key_pressed(39)) { // RIGHT ARROW
+        rotateRight();
+        return true;
+    }
+    if (is_key_pressed(40)) { // DOWN ARROW
+        rotateDown();
+        return true;
+    }
+    if (is_key_pressed(38)) { // UP ARROW
+        rotateUp();
+        return true;
+    }
+    if (is_key_pressed(219)) { // LEFT BRACKET [
+        zoomOut();
+        return true;
+    }
+    if (is_key_pressed(221)) { // RIGHT BRACKET ]
+        zoomIn();
+        return true;
+    }
+    if (is_key_pressed(65) && debounce_input()) { // A key
+        toggleShowAxes();
+        return true;
+    }
+    if (is_key_pressed(69) && debounce_input()) { // E key
+        toggleShowEField();
+        return true;
+    }
+    if (is_key_pressed(66) && debounce_input()) { // B key
+        toggleShowBField();
+        return true;
+    }
+    if (is_key_pressed(81) && debounce_input()) { // Q key
+        toggleShowETracers();
+        return true;
+    }
+    if (is_key_pressed(87) && debounce_input()) { // W key
+        toggleShowBTracers();
+        return true;
+    }
+    if (is_key_pressed(80) && debounce_input()) { // P key
+        toggleShowParticles();
+        return true;
+    }
+#else
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, true);
+    }
     if (glfwGetKey(window, GLFW_KEY_EQUAL) == GLFW_PRESS && debounce_input()) {
         dt *= 1.2f;
         std::cout << "dt: " << dt << std::endl;
