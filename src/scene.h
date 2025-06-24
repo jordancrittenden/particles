@@ -24,6 +24,7 @@
 class Scene {
 public:
     virtual void init(const SimulationParams& params);
+    void run_once();
     void render();
     void compute();
     void terminate();
@@ -96,6 +97,7 @@ protected:
     GLFWwindow* window = nullptr;
     glm::u32 windowWidth = 1024;
     glm::u32 windowHeight = 768;
+    float targetFPS = 60.0f;
 
 private:
     void init_webgpu();

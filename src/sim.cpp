@@ -27,12 +27,12 @@ int main(int argc, char* argv[]) {
 	// Equivalent of the main loop when using Emscripten:
 	auto callback = [](void *arg) {
 		TokamakScene* pScene = reinterpret_cast<TokamakScene*>(arg);
-		pScene->render();
+		pScene->run_once();
 	};
 	emscripten_set_main_loop_arg(callback, &scene, 0, true);
 #else
 	while (scene.is_running()) {
-		scene.render();
+		scene.run_once();
 	}
 #endif
 

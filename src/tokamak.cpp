@@ -5,6 +5,7 @@
 #include "render/solenoid.h"
 #include "render/ring.h"
 #include "render/torus.h"
+#include "emscripten_key.h"
 
 inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (max - min) + min;
@@ -147,7 +148,25 @@ std::vector<CurrentVector> TokamakScene::get_currents() {
 }
 
 bool TokamakScene::process_input(bool (*debounce_input)()) {
-#if !defined(__EMSCRIPTEN__)
+#if defined(__EMSCRIPTEN__)
+    // Web keyboard input handling
+    if (is_key_pressed(84) && debounce_input()) { // T key
+        toggleShowTorus();
+        return true;
+    }
+    if (is_key_pressed(83) && debounce_input()) { // S key
+        toggleShowSolenoid();
+        return true;
+    }
+    if (is_key_pressed(82) && debounce_input()) { // R key
+        toggleEnableToroidalRings();
+        return true;
+    }
+    if (is_key_pressed(70) && debounce_input()) { // F key
+        toggleEnableSolenoidFlux();
+        return true;
+    }
+#else
     if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS && debounce_input()) {
         toggleShowTorus();
         return true;
@@ -160,7 +179,7 @@ bool TokamakScene::process_input(bool (*debounce_input)()) {
         toggleEnableToroidalRings();
         return true;
     }
-    if (glfwGetKey(window, GLFW_KEY_PERIOD) == GLFW_PRESS && debounce_input()) {
+    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && debounce_input()) {
         toggleEnableSolenoidFlux();
         return true;
     }

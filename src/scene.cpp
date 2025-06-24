@@ -12,28 +12,7 @@
 #include "free_space.h"
 #include "plasma.h"
 #include "cell.h"
-
-#if defined(__EMSCRIPTEN__)
-#include <emscripten/emscripten.h>
-#include <emscripten/html5.h>
-
-// Global key state tracking for web input
-static bool keyStates[512] = {false};
-
-EM_BOOL keydown_callback(int eventType, const EmscriptenKeyboardEvent *e, void *userData) {
-    if (e->keyCode < 512) keyStates[e->keyCode] = true;
-    return EM_TRUE;
-}
-
-EM_BOOL keyup_callback(int eventType, const EmscriptenKeyboardEvent *e, void *userData) {
-    if (e->keyCode < 512) keyStates[e->keyCode] = false;
-    return EM_TRUE;
-}
-
-bool is_key_pressed(int keyCode) {
-    return keyCode < 512 && keyStates[keyCode];
-}
-#endif
+#include "emscripten_key.h"
 
 void Scene::init_webgpu() {
     wgpu::InstanceDescriptor instanceDesc{.capabilities = {.timedWaitAnyEnable = true}};
@@ -176,6 +155,20 @@ bool debounce_input() {
     return true;
 }
 
+void Scene::run_once() {
+    auto now = std::chrono::high_resolution_clock::now();
+
+    // Render a frame
+    render();
+
+    // Compute until the next frame
+    auto frameDur = std::chrono::high_resolution_clock::now() - now;
+    do {
+        compute();
+        frameDur = std::chrono::high_resolution_clock::now() - now;
+    } while (frameDur.count() < (1.0f / targetFPS));
+}
+
 void Scene::render() {
     // Process keyboard input
     glfwPollEvents();
@@ -227,6 +220,8 @@ void Scene::render() {
     surface.Present();
 #endif
     instance.ProcessEvents();
+
+    frameCount++;
 }
 
 void Scene::render_details(wgpu::RenderPassEncoder& pass) {
@@ -254,9 +249,9 @@ void Scene::compute() {
     wgpu::CommandBuffer commands = encoder.Finish();
     device.GetQueue().Submit(1, &commands);
 
-    nParticles = read_nparticles(device, instance, particleCompute);
+    //nParticles = read_nparticles(device, instance, particleCompute);
 
-    if (simulationStep % 100 == 0) {
+    if (simulationStep % 5000 == 0) {
         std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << ") [" << this->getNumParticles() << " particles]" << std::endl;
     }
     simulationStep++;

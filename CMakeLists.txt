@@ -56,6 +56,7 @@ add_executable(sim
 	src/shared/particles.cpp
 	src/shared/fields.cpp
 	src/scene.cpp
+	src/emscripten_key.cpp
 	src/args.cpp
 	src/free_space.cpp
 	src/tokamak.cpp
