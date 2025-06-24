@@ -7,7 +7,7 @@
 #include "render/torus.h"
 
 inline float rand_range(float min, float max) {
-    return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
+    return static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (max - min) + min;
 }
 
 TokamakScene::TokamakScene(const TorusParameters& params, const SolenoidParameters& solenoidParams) 

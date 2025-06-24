@@ -23,13 +23,10 @@ int main(int argc, char* argv[]) {
     TokamakScene scene(torus, solenoid);
     scene.init(params);
 
-    std::cout << "Scene: (nParticles: " << scene.getNumParticles() << ") @ " << &scene << std::endl;
-
 #ifdef __EMSCRIPTEN__
 	// Equivalent of the main loop when using Emscripten:
 	auto callback = [](void *arg) {
 		TokamakScene* pScene = reinterpret_cast<TokamakScene*>(arg);
-        std::cout << "Scene: (nParticles: " << pScene->getNumParticles() << ") @ " << pScene << std::endl;
 		pScene->render();
 	};
 	emscripten_set_main_loop_arg(callback, &scene, 0, true);

@@ -200,8 +200,12 @@ void Scene::render() {
     wgpu::CommandBuffer commands = encoder.Finish();
     device.GetQueue().Submit(1, &commands);
 
+#if !defined(__EMSCRIPTEN__)
     surface.Present();
+#endif
     instance.ProcessEvents();
+
+    rotateLeft();
 }
 
 void Scene::render_details(wgpu::RenderPassEncoder& pass) {
