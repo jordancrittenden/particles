@@ -47,14 +47,17 @@ add_executable(sim
 	src/util/wgpu_util.cpp
 	src/compute/particles.cpp
 	src/compute/fields.cpp
+	src/compute/tracers.cpp
 	src/render/axes.cpp
 	src/render/particles.cpp
 	src/render/fields.cpp
 	src/render/ring.cpp
 	src/render/solenoid.cpp
 	src/render/torus.cpp
+	src/render/tracers.cpp
 	src/shared/particles.cpp
 	src/shared/fields.cpp
+	src/shared/tracers.cpp
 	src/scene.cpp
 	src/emscripten_key.cpp
 	src/args.cpp

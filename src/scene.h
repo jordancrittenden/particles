@@ -5,11 +5,14 @@
 #include "util/wgpu_util.h"
 #include "shared/particles.h"
 #include "shared/fields.h"
+#include "shared/tracers.h"
 #include "render/axes.h"
 #include "render/particles.h"
 #include "render/fields.h"
+#include "render/tracers.h"
 #include "compute/particles.h"
 #include "compute/fields.h"
+#include "compute/tracers.h"
 #include "current_segment.h"
 #include "cell.h"
 #include "args.h"
@@ -53,8 +56,6 @@ public:
     void rotateDown();
 
     // Misc
-    glm::u32 getTracerPoints();
-    glm::u32 getNumTracers();
     glm::u32 getNumParticles();
 
     // Simulation cells
@@ -80,6 +81,8 @@ protected:
 
     ParticleCompute particleCompute;
     FieldCompute fieldCompute;
+    TracerCompute tracerCompute;
+    TracerBuffers tracers;
     glm::u32 nParticles;
 
     // Currents
@@ -115,25 +118,16 @@ private:
 	// Axes
     AxesBuffers axes;
 
-    // Tracer buffers
-    // tracer.vbo: [
-    //    trace0_x0, trace0_y0, trace0_z0, unused, trace0_x1, trace0_y1, trace0_z1, unused, ..., trace0_xEND, trace0_yEND, trace0_zEND, unused,
-    //    trace1_x0, trace1_y0, trace1_z0, unused, trace1_x1, trace1_y1, trace1_z1, unused, ..., trace1_xEND, trace1_yEND, trace1_zEND, unused,
-    //    ...
-    //    traceN_x0, traceN_y0, traceN_z0, unused, traceN_x1, traceN_y1, traceN_z1, unused, ..., traceN_xEND, traceN_yEND, traceN_zEND, unused,
-    // ]
+    // Tracers
+    TracerRender tracerRender;
 
     // Show/hide booleans
     bool showAxes = true;
     bool showParticles = true;
     bool showEField = false;
     bool showBField = false;
-    bool showETracers = false;
-    bool showBTracers = false;
-
-    // Tracer settings
-    glm::u32 tracerPoints = 100;
-    glm::u32 nTracers = 0;
+    bool showETracers = true;
+    bool showBTracers = true;
 
     int frameCount = 0;
     int simulationStep = 0;

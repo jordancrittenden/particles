@@ -2,11 +2,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "shared/particles.h"
 #include "shared/fields.h"
+#include "shared/tracers.h"
 #include "render/axes.h"
 #include "render/particles.h"
 #include "render/fields.h"
+#include "render/tracers.h"
 #include "compute/particles.h"
 #include "compute/fields.h"
+#include "compute/tracers.h"
 #include "current_segment.h"
 #include "scene.h"
 #include "free_space.h"
@@ -124,6 +127,16 @@ void Scene::init(const SimulationParams& params) {
     this->eFieldRender = create_fields_render(device, eFieldLoc, eFieldVec, 0.03f * _M);
     this->bFieldRender = create_fields_render(device, bFieldLoc, bFieldVec, 0.03f * _M);
 
+    // Initialize tracers
+    std::vector<glm::f32vec4> tracerLoc;
+    for (int i = 0; i < cells.size(); i++) {
+        if (i % 10 == 0) {
+            tracerLoc.push_back(glm::f32vec4(cells[i].pos.x, cells[i].pos.y, cells[i].pos.z, 0.0f));
+        }
+    }
+    this->tracers = create_tracer_buffers(device, tracerLoc);
+    this->tracerRender = create_tracer_render(device);
+
     // Initialize currents
     this->cachedCurrents = get_currents();
 	this->currentSegmentsBuffer = get_current_segment_buffer(device, this->cachedCurrents);
@@ -133,6 +146,9 @@ void Scene::init(const SimulationParams& params) {
 
     // Initialize field compute    
     this->fieldCompute = create_field_compute(device, cells, particles, fields, this->currentSegmentsBuffer, static_cast<glm::u32>(this->cachedCurrents.size()), params.maxParticles);
+
+    // Initialize tracer compute
+    this->tracerCompute = create_tracer_compute(device, tracers, particles, this->currentSegmentsBuffer, static_cast<glm::u32>(this->cachedCurrents.size()), params.maxParticles);
 }
 
 glm::mat4 Scene::get_orbit_view_matrix() {
@@ -233,6 +249,8 @@ void Scene::render_details(wgpu::RenderPassEncoder& pass) {
     if (this->showParticles) render_particles(device, pass, particles, particleRender, nParticles, view, projection);
     if (this->showEField)    render_fields(device, pass, eFieldRender, fields.eField, cells.size(), view, projection);
     if (this->showBField)    render_fields(device, pass, bFieldRender, fields.bField, cells.size(), view, projection);
+    if (this->showETracers)  render_e_tracers(device, pass, tracers, tracerRender, view, projection);
+    if (this->showBTracers)  render_b_tracers(device, pass, tracers, tracerRender, view, projection);
 }
 
 void Scene::compute() {
@@ -283,6 +301,19 @@ void Scene::compute_step(wgpu::ComputePassEncoder& pass) {
         enableParticleFieldContributions,
         static_cast<glm::u32>(cachedCurrents.size()),
         nParticles);
+
+    // // Run tracer compute
+    // run_tracer_compute(
+    //     device,
+    //     pass,
+    //     tracerCompute,
+    //     dt,
+    //     0.0f,
+    //     enableParticleFieldContributions,
+    //     static_cast<glm::u32>(cachedCurrents.size()),
+    //     nParticles,
+    //     tracers.nTracers,
+    //     TRACER_LENGTH);
 
     t += dt;
 }
@@ -487,12 +518,4 @@ void Scene::rotateUp() {
 
 void Scene::rotateDown() {
     this->cameraTheta = std::min((float)M_PI, this->cameraTheta + 0.01f);
-}
-
-glm::u32 Scene::getNumTracers() {
-    return this->nTracers;
-}
-
-glm::u32 Scene::getTracerPoints() {
-    return this->tracerPoints;
 }

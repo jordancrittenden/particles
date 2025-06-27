@@ -6,10 +6,10 @@ struct ETracerParams {
     tracerLength: u32,
 }
 
-@group(0) @binding(0) var<storage, read> nParticles: u32;
+@group(0) @binding(0) var<storage, read_write> nParticles: u32;
 @group(0) @binding(1) var<storage, read_write> eTracerTrails: array<vec3<f32>>;
-@group(0) @binding(2) var<storage, read> particlePos: array<vec4<f32>>;
-@group(0) @binding(3) var<storage, read> particleVel: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read_write> particlePos: array<vec4<f32>>;
+@group(0) @binding(3) var<storage, read_write> particleVel: array<vec4<f32>>;
 @group(0) @binding(4) var<storage, read> currentSegments: array<vec4<f32>>;
 @group(0) @binding(5) var<uniform> params: ETracerParams;
 
