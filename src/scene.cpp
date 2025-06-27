@@ -135,7 +135,8 @@ void Scene::init(const SimulationParams& params) {
         }
     }
     this->tracers = create_tracer_buffers(device, tracerLoc);
-    this->tracerRender = create_tracer_render(device);
+    this->eTracerRender = create_tracer_render(device);
+    this->bTracerRender = create_tracer_render(device);
 
     // Initialize currents
     this->cachedCurrents = get_currents();
@@ -249,8 +250,8 @@ void Scene::render_details(wgpu::RenderPassEncoder& pass) {
     if (this->showParticles) render_particles(device, pass, particles, particleRender, nParticles, view, projection);
     if (this->showEField)    render_fields(device, pass, eFieldRender, fields.eField, cells.size(), view, projection);
     if (this->showBField)    render_fields(device, pass, bFieldRender, fields.bField, cells.size(), view, projection);
-    if (this->showETracers)  render_e_tracers(device, pass, tracers, tracerRender, view, projection);
-    if (this->showBTracers)  render_b_tracers(device, pass, tracers, tracerRender, view, projection);
+    if (this->showETracers)  render_e_tracers(device, pass, tracers, eTracerRender, view, projection);
+    if (this->showBTracers)  render_b_tracers(device, pass, tracers, bTracerRender, view, projection);
 }
 
 void Scene::compute() {
@@ -302,18 +303,18 @@ void Scene::compute_step(wgpu::ComputePassEncoder& pass) {
         static_cast<glm::u32>(cachedCurrents.size()),
         nParticles);
 
-    // // Run tracer compute
-    // run_tracer_compute(
-    //     device,
-    //     pass,
-    //     tracerCompute,
-    //     dt,
-    //     0.0f,
-    //     enableParticleFieldContributions,
-    //     static_cast<glm::u32>(cachedCurrents.size()),
-    //     nParticles,
-    //     tracers.nTracers,
-    //     TRACER_LENGTH);
+    // Run tracer compute
+    run_tracer_compute(
+        device,
+        pass,
+        tracerCompute,
+        dt,
+        0.0f,
+        enableParticleFieldContributions,
+        static_cast<glm::u32>(cachedCurrents.size()),
+        nParticles,
+        tracers.nTracers,
+        TRACER_LENGTH);
 
     t += dt;
 }

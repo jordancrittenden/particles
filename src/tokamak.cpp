@@ -68,18 +68,18 @@ void TokamakScene::compute_step(wgpu::ComputePassEncoder& pass) {
         static_cast<glm::u32>(this->cachedCurrents.size()),
         nParticles);
 
-    // // Run tracer compute
-    // run_tracer_compute(
-    //     device,
-    //     pass,
-    //     tracerCompute,
-    //     dt,
-    //     solenoidFlux,
-    //     enableParticleFieldContributions,
-    //     static_cast<glm::u32>(this->cachedCurrents.size()),
-    //     nParticles,
-    //     this->tracers.nTracers,
-    //     TRACER_LENGTH);
+    // Run tracer compute
+    run_tracer_compute(
+        device,
+        pass,
+        tracerCompute,
+        dt,
+        solenoidFlux,
+        enableParticleFieldContributions,
+        static_cast<glm::u32>(this->cachedCurrents.size()),
+        nParticles,
+        this->tracers.nTracers,
+        TRACER_LENGTH);
 
     t += dt;
 }

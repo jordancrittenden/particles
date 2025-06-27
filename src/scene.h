@@ -119,7 +119,8 @@ private:
     AxesBuffers axes;
 
     // Tracers
-    TracerRender tracerRender;
+    TracerRender eTracerRender;
+    TracerRender bTracerRender;
 
     // Show/hide booleans
     bool showAxes = true;
