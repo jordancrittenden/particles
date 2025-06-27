@@ -13,6 +13,7 @@ struct TracerRender {
     wgpu::BindGroupLayout bindGroupLayout;
     wgpu::PipelineLayout pipelineLayout;
     wgpu::RenderPipeline pipeline;
+    glm::u32 headIdx;
 };
 
 TracerRender create_tracer_render(wgpu::Device& device);
@@ -21,7 +22,7 @@ void render_e_tracers(
     wgpu::Device& device,
     wgpu::RenderPassEncoder& pass,
     const TracerBuffers& tracerBuf,
-    const TracerRender& render,
+    TracerRender& render,
     glm::mat4 view,
     glm::mat4 projection);
 
@@ -29,6 +30,6 @@ void render_b_tracers(
     wgpu::Device& device,
     wgpu::RenderPassEncoder& pass,
     const TracerBuffers& tracerBuf,
-    const TracerRender& render,
+    TracerRender& render,
     glm::mat4 view,
     glm::mat4 projection);

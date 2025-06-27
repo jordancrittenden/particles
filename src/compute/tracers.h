@@ -15,6 +15,9 @@ struct TracerCompute {
 
     wgpu::Buffer eParamsBuffer;
     wgpu::Buffer bParamsBuffer;
+
+    glm::u32 curTraceIdxE;
+    glm::u32 curTraceIdxB;
 };
 
 TracerCompute create_tracer_compute(
@@ -28,7 +31,7 @@ TracerCompute create_tracer_compute(
 void run_tracer_compute(
     wgpu::Device& device,
     wgpu::ComputePassEncoder& computePass,
-    const TracerCompute& compute,
+    TracerCompute& compute,
     glm::f32 dt,
     glm::f32 solenoidFlux,
     glm::u32 enableParticleFieldContributions,

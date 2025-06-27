@@ -9,6 +9,7 @@ struct ETracerParams {
     glm::u32 enableParticleFieldContributions;
     glm::u32 nTracers;
     glm::u32 tracerLength;
+    glm::u32 curTraceIdx;
 };
 
 struct BTracerParams {
@@ -16,6 +17,7 @@ struct BTracerParams {
     glm::u32 enableParticleFieldContributions;
     glm::u32 nTracers;
     glm::u32 tracerLength;
+    glm::u32 curTraceIdx;
 };
 
 // Helper for E tracer subparts
@@ -155,6 +157,8 @@ void create_e_tracer_compute(
         .entries = eBindGroupEntries.data()
     };
     compute.eBindGroup = device.CreateBindGroup(&eBindGroupDesc);
+
+    compute.curTraceIdxE = 0;
 }
 
 // Helper for B tracer subparts
@@ -294,6 +298,8 @@ void create_b_tracer_compute(
         .entries = bBindGroupEntries.data()
     };
     compute.bBindGroup = device.CreateBindGroup(&bBindGroupDesc);
+
+    compute.curTraceIdxB = 0;
 }
 
 TracerCompute create_tracer_compute(
@@ -316,22 +322,23 @@ TracerCompute create_tracer_compute(
 void run_tracer_compute(
     wgpu::Device& device,
     wgpu::ComputePassEncoder& computePass,
-    const TracerCompute& compute,
+    TracerCompute& compute,
     glm::f32 dt,
     glm::f32 solenoidFlux,
     glm::u32 enableParticleFieldContributions,
     glm::u32 nCurrentSegments,
     glm::u32 nParticles,
     glm::u32 nTracers,
-    glm::u32 tracerLength) {
-    
+    glm::u32 tracerLength)
+{
     // Update E tracer params buffer
     ETracerParams eParams = {
         .nCurrentSegments = nCurrentSegments,
         .solenoidFlux = solenoidFlux,
         .enableParticleFieldContributions = enableParticleFieldContributions,
         .nTracers = nTracers,
-        .tracerLength = tracerLength
+        .tracerLength = tracerLength,
+        .curTraceIdx = compute.curTraceIdxE
     };
     device.GetQueue().WriteBuffer(compute.eParamsBuffer, 0, &eParams, sizeof(ETracerParams));
     
@@ -340,7 +347,8 @@ void run_tracer_compute(
         .nCurrentSegments = nCurrentSegments,
         .enableParticleFieldContributions = enableParticleFieldContributions,
         .nTracers = nTracers,
-        .tracerLength = tracerLength
+        .tracerLength = tracerLength,
+        .curTraceIdx = compute.curTraceIdxB
     };
     device.GetQueue().WriteBuffer(compute.bParamsBuffer, 0, &bParams, sizeof(BTracerParams));
     
@@ -353,4 +361,7 @@ void run_tracer_compute(
     computePass.SetPipeline(compute.bPipeline);
     computePass.SetBindGroup(0, compute.bBindGroup);
     computePass.DispatchWorkgroups(nTracers, 1, 1);
+
+    compute.curTraceIdxE = (compute.curTraceIdxE + 1) % TRACER_LENGTH;
+    compute.curTraceIdxB = (compute.curTraceIdxB + 1) % TRACER_LENGTH;
 }

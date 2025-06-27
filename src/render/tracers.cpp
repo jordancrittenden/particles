@@ -7,6 +7,9 @@ struct Uniforms {
     glm::mat4 view;
     glm::mat4 projection;
     glm::f32vec4 color;
+    glm::u32 headIdx;
+    glm::u32 tracerLength;
+    glm::f32 padding[2]; // Padding to align to 16-byte boundary
 };
 
 TracerRender create_tracer_render(wgpu::Device& device) {
@@ -69,8 +72,22 @@ TracerRender create_tracer_render(wgpu::Device& device) {
     };
     
     // Create color target state
+    wgpu::BlendState blendState = {
+        .color = {
+            .srcFactor = wgpu::BlendFactor::SrcAlpha,
+            .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
+            .operation = wgpu::BlendOperation::Add
+        },
+        .alpha = {
+            .srcFactor = wgpu::BlendFactor::One,
+            .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
+            .operation = wgpu::BlendOperation::Add
+        }
+    };
+    
     wgpu::ColorTargetState colorTarget = {
         .format = wgpu::TextureFormat::BGRA8Unorm,
+        .blend = &blendState,
         .writeMask = wgpu::ColorWriteMask::All
     };
     
@@ -122,6 +139,8 @@ TracerRender create_tracer_render(wgpu::Device& device) {
     };
     render.bindGroup = device.CreateBindGroup(&bindGroupDesc);
     
+    render.headIdx = 0;
+    
     return render;
 }
 
@@ -129,7 +148,7 @@ void render_e_tracers(
     wgpu::Device& device,
     wgpu::RenderPassEncoder& pass,
     const TracerBuffers& tracerBuf,
-    const TracerRender& render,
+    TracerRender& render,
     glm::mat4 view,
     glm::mat4 projection)
 {
@@ -137,7 +156,9 @@ void render_e_tracers(
     Uniforms uniforms = {
         .view = view,
         .projection = projection,
-        .color = glm::f32vec4(1.0f, 0.0f, 0.0f, 1.0f)
+        .color = glm::f32vec4(1.0f, 0.0f, 0.0f, 1.0f),
+        .headIdx = render.headIdx,
+        .tracerLength = TRACER_LENGTH
     };
     
     device.GetQueue().WriteBuffer(render.uniformBuffer, 0, &uniforms, sizeof(Uniforms));
@@ -151,13 +172,15 @@ void render_e_tracers(
     
     // Each tracer is TRACER_LENGTH points
     pass.Draw(TRACER_LENGTH * tracerBuf.nTracers, 1, 0, 0);
+
+    render.headIdx = (render.headIdx + 1) % TRACER_LENGTH;
 }
 
 void render_b_tracers(
     wgpu::Device& device,
     wgpu::RenderPassEncoder& pass,
     const TracerBuffers& tracerBuf,
-    const TracerRender& render,
+    TracerRender& render,
     glm::mat4 view,
     glm::mat4 projection)
 {
@@ -165,7 +188,9 @@ void render_b_tracers(
     Uniforms uniforms = {
         .view = view,
         .projection = projection,
-        .color = glm::f32vec4(0.0f, 0.0f, 1.0f, 1.0f)
+        .color = glm::f32vec4(0.0f, 0.0f, 1.0f, 1.0f),
+        .headIdx = render.headIdx,
+        .tracerLength = TRACER_LENGTH
     };
     
     device.GetQueue().WriteBuffer(render.uniformBuffer, 0, &uniforms, sizeof(Uniforms));
@@ -179,4 +204,6 @@ void render_b_tracers(
     
     // Each tracer is TRACER_LENGTH points
     pass.Draw(TRACER_LENGTH * tracerBuf.nTracers, 1, 0, 0);
+
+    render.headIdx = (render.headIdx + 1) % TRACER_LENGTH;
 }

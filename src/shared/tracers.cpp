@@ -9,7 +9,7 @@ TracerBuffers create_tracer_buffers(wgpu::Device& device, const std::vector<glm:
     float sep = 0.01f * _M;
     for (auto& pos : loc) {
         for (int i = 0; i < TRACER_LENGTH; i++) {
-            tracerTrails.push_back(glm::f32vec4 { pos.x + i * sep, pos.y, pos.z, 0.0f });
+            tracerTrails.push_back(glm::f32vec4 { pos.x, pos.y, pos.z, 0.0f });
         }
     }
 
