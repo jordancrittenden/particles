@@ -23,12 +23,6 @@ fn vertexMain(input: VertexInput) -> VertexOutput {
     // Calculate the position in view space
     let viewPos = uniforms.view * vec4f(input.position, 1.0);
     
-    // Calculate the distance from the camera to the point
-    let distance = length(viewPos.xyz);
-    
-    // Set point size based on the distance (closer points are larger)
-    output.pointSize = 10.0 / (distance + 1.0); // Adjust constants as needed
-    
     // Final position of the vertex in clip space
     output.position = uniforms.projection * viewPos;
     
