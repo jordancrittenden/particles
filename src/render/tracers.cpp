@@ -1,6 +1,6 @@
+#include <iostream>
 #include "render/tracers.h"
 #include "util/wgpu_util.h"
-#include <iostream>
 #include <glm/gtc/type_ptr.hpp>
 
 struct Uniforms {
@@ -23,7 +23,8 @@ TracerRender create_tracer_render(wgpu::Device& device) {
     wgpu::BufferDescriptor uniformBufferDesc = {
         .label = "Tracer Uniform Buffer",
         .size = sizeof(Uniforms),
-        .usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst
+        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
+        .mappedAtCreation = false
     };
     render.uniformBuffer = device.CreateBuffer(&uniformBufferDesc);
     
@@ -149,7 +150,7 @@ void render_e_tracers(
     pass.SetVertexBuffer(0, tracerBuf.e_traces, 0, tracerBuf.nTracers * TRACER_LENGTH * sizeof(glm::f32vec4));
     
     // Each tracer is TRACER_LENGTH points
-    pass.Draw(TRACER_LENGTH * tracerBuf.nTracers, 0, 0);
+    pass.Draw(TRACER_LENGTH * tracerBuf.nTracers, 1, 0, 0);
 }
 
 void render_b_tracers(
@@ -177,5 +178,5 @@ void render_b_tracers(
     pass.SetVertexBuffer(0, tracerBuf.b_traces, 0, tracerBuf.nTracers * TRACER_LENGTH * sizeof(glm::f32vec4));
     
     // Each tracer is TRACER_LENGTH points
-    pass.Draw(TRACER_LENGTH * tracerBuf.nTracers, 0, 0);
+    pass.Draw(TRACER_LENGTH * tracerBuf.nTracers, 1, 0, 0);
 }

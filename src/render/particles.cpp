@@ -1,7 +1,6 @@
 #include <iostream>
-#include <webgpu/webgpu_cpp.h>
 #include <glm/gtc/type_ptr.hpp>
-#include "particles.h"
+#include "render/particles.h"
 #include "util/wgpu_util.h"
 #include "physical_constants.h"
 
@@ -34,20 +33,20 @@ ParticleRender create_particle_render(wgpu::Device& device) {
         }
     };
 
-    wgpu::BindGroupLayoutDescriptor renderBindGroupLayoutDesc = {
+    wgpu::BindGroupLayoutDescriptor bindGroupLayoutDesc = {
         .label = "Render Bind Group Layout",
         .entryCount = 1,
         .entries = &renderBinding
     };
-    render.bindGroupLayout = device.CreateBindGroupLayout(&renderBindGroupLayoutDesc);
+    render.bindGroupLayout = device.CreateBindGroupLayout(&bindGroupLayoutDesc);
 
     // Create render pipeline layout
-    wgpu::PipelineLayoutDescriptor renderPipelineLayoutDesc = {
+    wgpu::PipelineLayoutDescriptor pipelineLayoutDesc = {
         .label = "Render Pipeline Layout",
         .bindGroupLayoutCount = 1,
         .bindGroupLayouts = &render.bindGroupLayout
     };
-    render.pipelineLayout = device.CreatePipelineLayout(&renderPipelineLayoutDesc);
+    render.pipelineLayout = device.CreatePipelineLayout(&pipelineLayoutDesc);
 
     // Create vertex state for rendering
     std::vector<wgpu::VertexAttribute> attributes = {
@@ -90,7 +89,7 @@ ParticleRender create_particle_render(wgpu::Device& device) {
     };
 
     // Create render pipeline
-    wgpu::RenderPipelineDescriptor renderPipelineDesc = {
+    wgpu::RenderPipelineDescriptor pipelineDesc = {
         .label = "Particle Render Pipeline",
         .layout = render.pipelineLayout,
         .vertex = {
@@ -105,22 +104,22 @@ ParticleRender create_particle_render(wgpu::Device& device) {
         },
         .depthStencil = &depthStencilState
     };
-    render.pipeline = device.CreateRenderPipeline(&renderPipelineDesc);
+    render.pipeline = device.CreateRenderPipeline(&pipelineDesc);
 
     // Create render bind group
-    wgpu::BindGroupEntry renderBindGroupEntry = {
+    wgpu::BindGroupEntry bindGroupEntry = {
         .binding = 0,
         .buffer = render.uniformBuffer,
         .offset = 0,
         .size = sizeof(glm::mat4) * 2
     };
 
-    wgpu::BindGroupDescriptor renderBindGroupDesc = {
+    wgpu::BindGroupDescriptor bindGroupDesc = {
         .layout = render.bindGroupLayout,
         .entryCount = 1,
-        .entries = &renderBindGroupEntry
+        .entries = &bindGroupEntry
     };
-    render.bindGroup = device.CreateBindGroup(&renderBindGroupDesc);
+    render.bindGroup = device.CreateBindGroup(&bindGroupDesc);
 
     return render;
 }
