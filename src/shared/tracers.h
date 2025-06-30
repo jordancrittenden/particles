@@ -6,7 +6,7 @@
 #include "physical_constants.h"
 #include "cell.h"
 
-#define TRACER_LENGTH 100
+#define TRACER_LENGTH 500
 
 struct TracerBuffers {
     // tracers: [

@@ -113,6 +113,7 @@ void Scene::init(const SimulationParams& params) {
         params.initialParticles,
         params.maxParticles);
     this->particleRender = create_particle_render(device);
+    this->sphereRender = create_sphere_render(device);
 
     // Initialize field vectors
     std::vector<glm::f32vec4> eFieldLoc, eFieldVec;
@@ -130,7 +131,7 @@ void Scene::init(const SimulationParams& params) {
     // Initialize tracers
     std::vector<glm::f32vec4> tracerLoc;
     for (int i = 0; i < cells.size(); i++) {
-        if (i % 10 == 0) {
+        if (i % 100 == 0) {
             tracerLoc.push_back(glm::f32vec4(cells[i].pos.x, cells[i].pos.y, cells[i].pos.z, 0.0f));
         }
     }
@@ -247,7 +248,13 @@ void Scene::render_details(wgpu::RenderPassEncoder& pass) {
     this->projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
 
     if (this->showAxes)      render_axes(device, pass, axes, view, projection);
-    if (this->showParticles) render_particles(device, pass, particles, particleRender, nParticles, view, projection);
+    if (this->showParticles) {
+        if (this->renderParticlesAsSpheres) {
+            render_particles_as_spheres(device, pass, particles, sphereRender, nParticles, view, projection);
+        } else {
+            render_particles(device, pass, particles, particleRender, nParticles, view, projection);
+        }
+    }
     if (this->showEField)    render_fields(device, pass, eFieldRender, fields.eField, cells.size(), view, projection);
     if (this->showBField)    render_fields(device, pass, bFieldRender, fields.bField, cells.size(), view, projection);
     if (this->showETracers)  render_e_tracers(device, pass, tracers, eTracerRender, view, projection);
@@ -405,6 +412,10 @@ bool Scene::process_input(bool (*debounce_input)()) {
         toggleShowParticles();
         return true;
     }
+    if (is_key_pressed(79) && debounce_input()) { // O key
+        toggleRenderParticlesAsSpheres();
+        return true;
+    }
 #else
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
@@ -469,6 +480,10 @@ bool Scene::process_input(bool (*debounce_input)()) {
         toggleShowParticles();
         return true;
     }
+    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS && debounce_input()) {
+        toggleRenderParticlesAsSpheres();
+        return true;
+    }
 #endif
     return false;
 }
@@ -495,6 +510,11 @@ void Scene::toggleShowETracers() {
 
 void Scene::toggleShowBTracers() {
     this->showBTracers = !this->showBTracers;
+}
+
+void Scene::toggleRenderParticlesAsSpheres() {
+    this->renderParticlesAsSpheres = !this->renderParticlesAsSpheres;
+    std::cout << "Particle rendering mode: " << (this->renderParticlesAsSpheres ? "SPHERES" : "POINTS") << std::endl;
 }
 
 void Scene::zoomIn() {

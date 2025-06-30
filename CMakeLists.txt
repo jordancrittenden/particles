@@ -50,6 +50,7 @@ add_executable(sim
 	src/compute/tracers.cpp
 	src/render/axes.cpp
 	src/render/particles.cpp
+	src/render/spheres.cpp
 	src/render/fields.cpp
 	src/render/ring.cpp
 	src/render/solenoid.cpp

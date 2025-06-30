@@ -12,9 +12,15 @@ struct FieldRender {
     wgpu::PipelineLayout pipelineLayout;
     wgpu::RenderPipeline pipeline;
     wgpu::BindGroup bindGroup;
-    std::vector<unsigned int> indices;
 };
 
 FieldRender create_fields_render(wgpu::Device& device, std::vector<glm::f32vec4>& loc, std::vector<glm::f32vec4>& vec, float length);
 
-void render_fields(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const FieldRender& fieldRender, wgpu::Buffer& fieldBuffer, int numFieldVectors, glm::mat4 view, glm::mat4 projection);
+void render_fields(
+    wgpu::Device& device,
+    wgpu::RenderPassEncoder& pass,
+    const FieldRender& fieldRender,
+    wgpu::Buffer& fieldBuffer,
+    int numFieldVectors,
+    glm::mat4 view,
+    glm::mat4 projection);

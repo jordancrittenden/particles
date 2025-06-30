@@ -8,6 +8,7 @@
 #include "shared/tracers.h"
 #include "render/axes.h"
 #include "render/particles.h"
+#include "render/spheres.h"
 #include "render/fields.h"
 #include "render/tracers.h"
 #include "compute/particles.h"
@@ -46,6 +47,7 @@ public:
     void toggleShowBField();
     void toggleShowETracers();
     void toggleShowBTracers();
+    void toggleRenderParticlesAsSpheres();
 
     // Camera
     void zoomIn();
@@ -109,6 +111,7 @@ private:
     // Particles
     ParticleBuffers particles;
     ParticleRender particleRender;
+    SphereRender sphereRender;
     
     // Field vectors
     FieldBuffers fields;
@@ -129,6 +132,7 @@ private:
     bool showBField = false;
     bool showETracers = true;
     bool showBTracers = true;
+    bool renderParticlesAsSpheres = false;
 
     int frameCount = 0;
     int simulationStep = 0;
