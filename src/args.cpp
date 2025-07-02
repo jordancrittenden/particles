@@ -34,10 +34,21 @@ std::unordered_map<std::string, std::string> parse_args(int argc, char* argv[]) 
     return args;
 }
 
+SceneType parse_scene_type(std::string sceneType) {
+    if (sceneType == "tokamak") {
+        return SCENE_TYPE_TOKAMAK;
+    } else if (sceneType == "free_space") {
+        return SCENE_TYPE_FREE_SPACE;
+    } else {
+        throw std::invalid_argument("Invalid scene type: " + sceneType);
+    }
+}
+
 SimulationParams extract_params(std::unordered_map<std::string, std::string> args) {
     SimulationParams params;
      for (const auto& [key, value] : args) {
-             if (key == "initialParticles")   params.initialParticles    = stoi(value);
+             if (key == "scene")              params.sceneType           = parse_scene_type(value);
+        else if (key == "initialParticles")   params.initialParticles    = stoi(value);
         else if (key == "initialTemperature") params.initialTemperature  = stoi(value) * _K;
         else if (key == "maxParticles")       params.maxParticles        = stoi(value);
         else if (key == "fps")                params.targetFPS           = stoi(value);

@@ -4,7 +4,14 @@
 #include <glm/glm.hpp>
 #include "physical_constants.h"
 
+enum SceneType {
+    SCENE_TYPE_FREE_SPACE,
+    SCENE_TYPE_TOKAMAK,
+};
+
 struct SimulationParams {
+    SceneType sceneType = SCENE_TYPE_TOKAMAK;
+
     // Rendering parameters
     glm::u32 windowWidth = 1024;            // Window width, px
     glm::u32 windowHeight = 768;            // Window height, px

@@ -57,9 +57,6 @@ public:
     void rotateUp();
     void rotateDown();
 
-    // Misc
-    glm::u32 getNumParticles();
-
     // Simulation cells
     std::vector<Cell> cells;
 

@@ -280,10 +280,8 @@ void Scene::compute() {
     wgpu::CommandBuffer commands = encoder.Finish();
     device.GetQueue().Submit(1, &commands);
 
-    std::cout << "nParticles: " << read_nparticles(device, instance, particleCompute) << std::endl;
-
     if (simulationStep % 5000 == 0) {
-        std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << ") [" << this->getNumParticles() << " particles]" << std::endl;
+        std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << ") [" << nParticles << " particles]" << std::endl;
     }
     simulationStep++;
 }
@@ -354,10 +352,6 @@ std::vector<CurrentVector> Scene::get_currents() {
         .i = 0.0f
     });
     return currents;
-}
-
-glm::u32 Scene::getNumParticles() {
-    return this->nParticles;
 }
 
 bool Scene::process_input(bool (*debounce_input)()) {

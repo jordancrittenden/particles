@@ -26,24 +26,34 @@ int main(int argc, char* argv[]) {
     // Initialize the Scene
     TorusParameters torus;
     SolenoidParameters solenoid;
-    TokamakScene scene(torus, solenoid);
-    // Scene scene;
-    scene.init(params);
+    Scene* scene;
+    switch (params.sceneType) {
+        case SCENE_TYPE_FREE_SPACE:
+            scene = new Scene();
+            break;
+        case SCENE_TYPE_TOKAMAK:
+            scene = new TokamakScene(torus, solenoid);
+            break;
+        default:
+            std::cerr << "Error: invalid scene type" << std::endl;
+            return 1;
+    }
+    scene->init(params);
 
 #ifdef __EMSCRIPTEN__
 	// Equivalent of the main loop when using Emscripten:
 	auto callback = [](void *arg) {
-		TokamakScene* pScene = reinterpret_cast<TokamakScene*>(arg);
-		pScene->run_once();
+		TokamakScene* scene = reinterpret_cast<TokamakScene*>(arg);
+		scene->run_once();
 	};
 	emscripten_set_main_loop_arg(callback, &scene, 0, true);
 #else
-	while (scene.is_running()) {
-		scene.run_once();
+	while (scene->is_running()) {
+		scene->run_once();
 	}
 #endif
 
-	scene.terminate();
+	scene->terminate();
 
     return 0;
 }
