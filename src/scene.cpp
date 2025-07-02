@@ -347,8 +347,14 @@ glm::f32vec4 Scene::rand_particle_position() {
 }
 
 std::vector<CurrentVector> Scene::get_currents() {
-    std::vector<CurrentVector> empty;
-    return empty;
+    std::vector<CurrentVector> currents;
+    // Dummy current (compute shader fails if currents is empty)
+    currents.push_back(CurrentVector {
+        .x = glm::f32vec4(0.0f, 0.0f, 0.0f, 0.0f),
+        .dx = glm::f32vec4(1.0f, 0.0f, 0.0f, 0.0f),
+        .i = 0.0f
+    });
+    return currents;
 }
 
 glm::u32 Scene::getNumParticles() {
