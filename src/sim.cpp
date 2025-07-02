@@ -17,10 +17,16 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
+    if (params.initialParticles > params.maxParticles) {
+        std::cerr << "Error: initialParticles > maxParticles" << std::endl;
+        return 1;
+    }
+
     // Initialize the Scene
     TorusParameters torus;
     SolenoidParameters solenoid;
     TokamakScene scene(torus, solenoid);
+    // Scene scene;
     scene.init(params);
 
 #ifdef __EMSCRIPTEN__

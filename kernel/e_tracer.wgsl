@@ -37,10 +37,7 @@ fn updateTrails(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Calculate the contribution of the central solenoid
-    let solenoid_axis = vec3<f32>(0.0, 1.0, 0.0);
-    let solenoid_r = vec3<f32>(pLoc.x, 0.0, pLoc.z);
-    let solenoid_e_mag = params.solenoidFlux / (2.0 * PI * length(solenoid_r));
-    E += solenoid_e_mag * cross(solenoid_axis, normalize(solenoid_r));
+    E += compute_solenoid_e_field(pLoc, params.solenoidFlux);
 
     eTracerTrails[traceStart + params.curTraceIdx] = pLoc + normalize(E) * 0.005 * _M;
 } 

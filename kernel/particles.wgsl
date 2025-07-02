@@ -80,10 +80,7 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
     compute_current_field_contributions(&currentSegments, params.nCurrentSegments, pos, &B);
 
     // Calculate the contribution of the central solenoid
-    let solenoid_axis = vec3<f32>(0.0, 1.0, 0.0);
-    let solenoid_r = vec3<f32>(pos.x, 0.0, pos.z);
-    let solenoid_e_mag = params.solenoidFlux / (2.0 * PI * length(solenoid_r));
-    E += solenoid_e_mag * cross(solenoid_axis, normalize(solenoid_r));
+    E += compute_solenoid_e_field(pos, params.solenoidFlux);
 
     // Push the particle through the electric and magnetic field: dv/dt = q/m (E + v x B);
     let t = q_over_m * B * 0.5 * params.dt;
