@@ -34,10 +34,11 @@ fn computeFields(@builtin(global_invocation_id) global_id: vec3<u32>) {
         compute_particle_field_contributions(nParticles, &particlePos, &particleVel, loc, -1, &E, &B, &unused);
     }
 
-    compute_current_field_contributions(&currentSegments, params.nCurrentSegments, loc, &B);
+    // Calculate the contribution of the currents
+    B += compute_currents_b_field(&currentSegments, params.nCurrentSegments, loc);
 
     // Calculate the contribution of the central solenoid
-    E += compute_solenoid_e_field(loc, params.solenoidFlux);
+    E += compute_solenoid_e_field(params.solenoidFlux, loc);
 
     eField[id] = vec4<f32>(E, 0.0);
     bField[id] = vec4<f32>(B, 0.0);

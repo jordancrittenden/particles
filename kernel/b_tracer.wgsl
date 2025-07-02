@@ -35,7 +35,7 @@ fn updateTrails(@builtin(global_invocation_id) global_id: vec3<u32>) {
         compute_particle_field_contributions(nParticles, &particlePos, &particleVel, pLoc, -1, &E, &B, &unused);
     }
 
-    compute_current_field_contributions(&currentSegments, params.nCurrentSegments, pLoc, &B);
+    B += compute_currents_b_field(&currentSegments, params.nCurrentSegments, pLoc);
 
     bTracerTrails[traceStart + params.curTraceIdx] = pLoc + normalize(B) * 0.005 * _M;
 } 

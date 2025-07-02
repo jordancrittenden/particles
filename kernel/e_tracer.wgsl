@@ -37,7 +37,7 @@ fn updateTrails(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Calculate the contribution of the central solenoid
-    E += compute_solenoid_e_field(pLoc, params.solenoidFlux);
+    E += compute_solenoid_e_field(params.solenoidFlux, pLoc);
 
     eTracerTrails[traceStart + params.curTraceIdx] = pLoc + normalize(E) * 0.005 * _M;
 } 
