@@ -9,8 +9,9 @@ struct ParticleCompute {
     wgpu::BindGroup bindGroup;
     wgpu::BindGroupLayout bindGroupLayout;
 
-    wgpu::Buffer nCurReadBuf;
-    wgpu::Buffer debugBuffer;
+    wgpu::Buffer nParticlesReadBuf;
+    wgpu::Buffer debugStorageBuf;
+    wgpu::Buffer debugReadBuf;
     wgpu::Buffer paramsBuffer;
 };
 
@@ -32,3 +33,5 @@ void run_particle_compute(
     glm::u32 nParticles);
 
 glm::u32 read_nparticles(wgpu::Device& device, wgpu::Instance& instance, const ParticleCompute& compute);
+
+void read_debug(wgpu::Device& device, wgpu::Instance& instance, const ParticleCompute& compute, std::vector<glm::f32vec4>& debug, glm::u32 n);

@@ -98,7 +98,7 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
     particleVel[id] = vec4<f32>(vel_new, 0.0);
 
     let v_mag = length(vel_new);
-    debug[id] = vec4<f32>(0.5 * mass * v_mag * v_mag, species, 0.0, 0.0);
+    debug[id] = vec4<f32>(B, 0.0);
 
     if (CONSTRAIN) {
         // Keep the particles in their box

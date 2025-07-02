@@ -29,22 +29,31 @@ ParticleCompute create_particle_compute(
     }
 
     // Read buffer for number of current particles
-    wgpu::BufferDescriptor readBufDesc = {
+    wgpu::BufferDescriptor nParticlesReadBufDesc = {
         .label = "Particle Number Read Buffer",
         .size = sizeof(glm::u32),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead,
         .mappedAtCreation = false
     };
-    particleCompute.nCurReadBuf = device.CreateBuffer(&readBufDesc);
+    particleCompute.nParticlesReadBuf = device.CreateBuffer(&nParticlesReadBufDesc);
 
-    // Create debug buffer
-    wgpu::BufferDescriptor debugBufferDesc = {
-        .label = "Particle Debug Buffer",
+    // Create debug storage buffer for compute shader
+    wgpu::BufferDescriptor debugStorageBufDesc = {
+        .label = "Particle Debug Storage Buffer",
         .size = maxParticles * sizeof(glm::f32vec4),
-        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Storage,
+        .usage = wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::Storage,
         .mappedAtCreation = false
     };
-    particleCompute.debugBuffer = device.CreateBuffer(&debugBufferDesc);
+    particleCompute.debugStorageBuf = device.CreateBuffer(&debugStorageBufDesc);
+
+    // Create debug read buffer for CPU access
+    wgpu::BufferDescriptor debugReadBufDesc = {
+        .label = "Particle Debug Read Buffer",
+        .size = maxParticles * sizeof(glm::f32vec4),
+        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead,
+        .mappedAtCreation = false
+    };
+    particleCompute.debugReadBuf = device.CreateBuffer(&debugReadBufDesc);
 
     // Create params uniform buffer
     wgpu::BufferDescriptor paramsBufferDesc = {
@@ -151,7 +160,7 @@ ParticleCompute create_particle_compute(
             .size = nCurrentSegments * sizeof(glm::f32vec4) * 3
         }, { // debug
             .binding = 4,
-            .buffer = particleCompute.debugBuffer,
+            .buffer = particleCompute.debugStorageBuf,
             .offset = 0,
             .size = maxParticles * sizeof(glm::f32vec4)
         }, { // params
@@ -202,6 +211,13 @@ void run_particle_compute(
 }
 
 glm::u32 read_nparticles(wgpu::Device& device, wgpu::Instance& instance, const ParticleCompute& compute) {
-    const void* nParticlesRaw = read_buffer(device, instance, compute.nCurReadBuf, sizeof(glm::u32));
+    const void* nParticlesRaw = read_buffer(device, instance, compute.nParticlesReadBuf, sizeof(glm::u32));
     return *reinterpret_cast<const glm::u32*>(nParticlesRaw);
+}
+
+void read_debug(wgpu::Device& device, wgpu::Instance& instance, const ParticleCompute& compute, std::vector<glm::f32vec4>& debug, glm::u32 n) {
+    const void* debugRaw = read_buffer(device, instance, compute.debugReadBuf, n * sizeof(glm::f32vec4));
+    const glm::f32vec4* debugStart = reinterpret_cast<const glm::f32vec4*>(debugRaw);
+    const glm::f32vec4* debugEnd = debugStart + n;
+    debug.assign(debugStart, debugEnd);
 }
