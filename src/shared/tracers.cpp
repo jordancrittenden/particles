@@ -31,8 +31,6 @@ TracerBuffers create_tracer_buffers(wgpu::Device& device, const std::vector<glm:
         .mappedAtCreation = false
     };
     buffers.b_traces = device.CreateBuffer(&bBufferDesc);
-    
-    // Upload initial data to both buffers
     device.GetQueue().WriteBuffer(buffers.b_traces, 0, tracerTrails.data(), tracerTrails.size() * sizeof(glm::f32vec4));
 
     buffers.nTracers = loc.size();

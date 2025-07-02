@@ -215,7 +215,7 @@ glm::u32 read_nparticles(wgpu::Device& device, wgpu::Instance& instance, const P
     return *reinterpret_cast<const glm::u32*>(nParticlesRaw);
 }
 
-void read_debug(wgpu::Device& device, wgpu::Instance& instance, const ParticleCompute& compute, std::vector<glm::f32vec4>& debug, glm::u32 n) {
+void read_particles_debug(wgpu::Device& device, wgpu::Instance& instance, const ParticleCompute& compute, std::vector<glm::f32vec4>& debug, glm::u32 n) {
     const void* debugRaw = read_buffer(device, instance, compute.debugReadBuf, n * sizeof(glm::f32vec4));
     const glm::f32vec4* debugStart = reinterpret_cast<const glm::f32vec4*>(debugRaw);
     const glm::f32vec4* debugEnd = debugStart + n;

@@ -16,6 +16,12 @@ struct TracerCompute {
     wgpu::Buffer eParamsBuffer;
     wgpu::Buffer bParamsBuffer;
 
+    // Debug buffers
+    wgpu::Buffer eDebugStorageBuf;
+    wgpu::Buffer eDebugReadBuf;
+    wgpu::Buffer bDebugStorageBuf;
+    wgpu::Buffer bDebugReadBuf;
+
     glm::u32 curTraceIdxE;
     glm::u32 curTraceIdxB;
 };
@@ -39,3 +45,7 @@ void run_tracer_compute(
     glm::u32 nParticles,
     glm::u32 nTracers,
     glm::u32 tracerLength);
+
+void read_e_tracer_debug(wgpu::Device& device, wgpu::Instance& instance, const TracerCompute& compute, std::vector<glm::f32vec4>& debug, glm::u32 n);
+
+void read_b_tracer_debug(wgpu::Device& device, wgpu::Instance& instance, const TracerCompute& compute, std::vector<glm::f32vec4>& debug, glm::u32 n);

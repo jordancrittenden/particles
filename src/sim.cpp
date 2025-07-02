@@ -17,6 +17,7 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
+    // Validate parameters
     if (params.initialParticles > params.maxParticles) {
         std::cerr << "Error: initialParticles > maxParticles" << std::endl;
         return 1;

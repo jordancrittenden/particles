@@ -1,5 +1,4 @@
 struct ETracerParams {
-    nCurrentSegments: u32,
     solenoidFlux: f32,
     enableParticleFieldContributions: u32,
     nTracers: u32,
@@ -11,7 +10,7 @@ struct ETracerParams {
 @group(0) @binding(1) var<storage, read_write> eTracerTrails: array<vec3<f32>>;
 @group(0) @binding(2) var<storage, read_write> particlePos: array<vec4<f32>>;
 @group(0) @binding(3) var<storage, read_write> particleVel: array<vec4<f32>>;
-@group(0) @binding(4) var<storage, read> currentSegments: array<vec4<f32>>;
+@group(0) @binding(4) var<storage, read_write> debug: array<vec4<f32>>;
 @group(0) @binding(5) var<uniform> params: ETracerParams;
 
 @compute @workgroup_size(256)
@@ -39,5 +38,14 @@ fn updateTrails(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Calculate the contribution of the central solenoid
     E += compute_solenoid_e_field(params.solenoidFlux, pLoc);
 
-    eTracerTrails[traceStart + params.curTraceIdx] = pLoc + normalize(E) * 0.005 * _M;
+    // Compute normalized E vector
+    // First scale up the field to avoid underflow when normalizing
+    E *= 1e10;
+    var E_norm = vec3<f32>(0.0);
+    if (length(E) > 0.0) {
+        E_norm = normalize(E);
+    }
+
+    eTracerTrails[traceStart + params.curTraceIdx] = pLoc + E_norm * 0.005 * _M;
+    debug[id] = vec4<f32>(E, length(E));
 } 

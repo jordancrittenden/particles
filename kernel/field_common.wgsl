@@ -47,6 +47,7 @@ fn compute_currents_b_field(
         let current_x = vec3<f32>((*currentSegments)[j * 3u].xyz);
         let current_dx = vec3<f32>((*currentSegments)[j * 3u + 1u].xyz);
         let current_i = (*currentSegments)[j * 3u + 2u].x;
+        if (current_i == 0.0) { continue; }
 
         let r = loc - current_x;
         let r_mag = length(r);

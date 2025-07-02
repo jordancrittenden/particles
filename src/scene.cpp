@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 #include "shared/particles.h"
 #include "shared/fields.h"
@@ -270,18 +271,16 @@ void Scene::compute() {
     this->compute_step(pass);
 
     pass.End();
+    
     encoder.CopyBufferToBuffer(particles.nCur, 0, particleCompute.nParticlesReadBuf, 0, sizeof(glm::u32));
     encoder.CopyBufferToBuffer(particleCompute.debugStorageBuf, 0, particleCompute.debugReadBuf, 0, 10 * sizeof(glm::f32vec4));
+    encoder.CopyBufferToBuffer(tracerCompute.eDebugStorageBuf, 0, tracerCompute.eDebugReadBuf, 0, 10 * sizeof(glm::f32vec4));
+    encoder.CopyBufferToBuffer(tracerCompute.bDebugStorageBuf, 0, tracerCompute.bDebugReadBuf, 0, 10 * sizeof(glm::f32vec4));
 
     wgpu::CommandBuffer commands = encoder.Finish();
     device.GetQueue().Submit(1, &commands);
 
     std::cout << "nParticles: " << read_nparticles(device, instance, particleCompute) << std::endl;
-    std::vector<glm::f32vec4> debug;
-    read_debug(device, instance, particleCompute, debug, 10);
-    for (auto& d : debug) {
-        std::cout << "debug: " << d.x << ", " << d.y << ", " << d.z << ", " << d.w << std::endl;
-    }
 
     if (simulationStep % 5000 == 0) {
         std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << ") [" << this->getNumParticles() << " particles]" << std::endl;

@@ -4,7 +4,6 @@
 #include <iostream>
 
 struct ETracerParams {
-    glm::u32 nCurrentSegments;
     glm::f32 solenoidFlux;
     glm::u32 enableParticleFieldContributions;
     glm::u32 nTracers;
@@ -46,7 +45,7 @@ void create_e_tracer_compute(
                 .type = wgpu::BufferBindingType::Storage,
                 .minBindingSize = sizeof(glm::u32)
             }
-        }, { // traces (E or B)
+        }, { // traces
             .binding = 1,
             .visibility = wgpu::ShaderStage::Compute,
             .buffer = {
@@ -67,14 +66,14 @@ void create_e_tracer_compute(
                 .type = wgpu::BufferBindingType::Storage,
                 .minBindingSize = maxParticles * sizeof(glm::f32vec4)
             }
-        }, { // currentSegments
+        }, { // debug
             .binding = 4,
             .visibility = wgpu::ShaderStage::Compute,
             .buffer = {
-                .type = wgpu::BufferBindingType::ReadOnlyStorage,
-                .minBindingSize = nCurrentSegments * sizeof(glm::f32vec4) * 3
+                .type = wgpu::BufferBindingType::Storage,
+                .minBindingSize = tracerBuf.nTracers * sizeof(glm::f32vec4)
             }
-        }, { // params (E or B)
+        }, { // params
             .binding = 5,
             .visibility = wgpu::ShaderStage::Compute,
             .buffer = {
@@ -109,6 +108,24 @@ void create_e_tracer_compute(
     };
     compute.ePipeline = device.CreateComputePipeline(&ePipelineDesc);
 
+    // Create debug storage buffer for E tracer compute shader
+    wgpu::BufferDescriptor eDebugStorageBufDesc = {
+        .label = "E Tracer Debug Storage Buffer",
+        .size = tracerBuf.nTracers * sizeof(glm::f32vec4),
+        .usage = wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::Storage,
+        .mappedAtCreation = false
+    };
+    compute.eDebugStorageBuf = device.CreateBuffer(&eDebugStorageBufDesc);
+    
+    // Create debug read buffer for E tracer CPU access
+    wgpu::BufferDescriptor eDebugReadBufDesc = {
+        .label = "E Tracer Debug Read Buffer",
+        .size = tracerBuf.nTracers * sizeof(glm::f32vec4),
+        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead,
+        .mappedAtCreation = false
+    };
+    compute.eDebugReadBuf = device.CreateBuffer(&eDebugReadBufDesc);
+
     // Params buffer
     wgpu::BufferDescriptor eParamsBufferDesc = {
         .label = "E Tracer Params Buffer",
@@ -139,11 +156,11 @@ void create_e_tracer_compute(
             .buffer = particleBuf.vel,
             .offset = 0,
             .size = maxParticles * sizeof(glm::f32vec4)
-        }, { // currentSegments
+        }, { // debug
             .binding = 4,
-            .buffer = currentSegmentsBuffer,
+            .buffer = compute.eDebugStorageBuf,
             .offset = 0,
-            .size = nCurrentSegments * sizeof(glm::f32vec4) * 3
+            .size = tracerBuf.nTracers * sizeof(glm::f32vec4)
         }, { // params
             .binding = 5,
             .buffer = compute.eParamsBuffer,
@@ -187,7 +204,7 @@ void create_b_tracer_compute(
                 .type = wgpu::BufferBindingType::Storage,
                 .minBindingSize = sizeof(glm::u32)
             }
-        }, { // traces (E or B)
+        }, { // traces
             .binding = 1,
             .visibility = wgpu::ShaderStage::Compute,
             .buffer = {
@@ -215,8 +232,15 @@ void create_b_tracer_compute(
                 .type = wgpu::BufferBindingType::ReadOnlyStorage,
                 .minBindingSize = nCurrentSegments * sizeof(glm::f32vec4) * 3
             }
-        }, { // params (E or B)
+        }, { // debug
             .binding = 5,
+            .visibility = wgpu::ShaderStage::Compute,
+            .buffer = {
+                .type = wgpu::BufferBindingType::Storage,
+                .minBindingSize = tracerBuf.nTracers * sizeof(glm::f32vec4)
+            }
+        }, { // params
+            .binding = 6,
             .visibility = wgpu::ShaderStage::Compute,
             .buffer = {
                 .type = wgpu::BufferBindingType::Uniform,
@@ -249,6 +273,24 @@ void create_b_tracer_compute(
         }
     };
     compute.bPipeline = device.CreateComputePipeline(&bPipelineDesc);
+
+    // Create debug storage buffer for B tracer compute shader
+    wgpu::BufferDescriptor bDebugStorageBufDesc = {
+        .label = "B Tracer Debug Storage Buffer",
+        .size = tracerBuf.nTracers * sizeof(glm::f32vec4),
+        .usage = wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::Storage,
+        .mappedAtCreation = false
+    };
+    compute.bDebugStorageBuf = device.CreateBuffer(&bDebugStorageBufDesc);
+    
+    // Create debug read buffer for B tracer CPU access
+    wgpu::BufferDescriptor bDebugReadBufDesc = {
+        .label = "B Tracer Debug Read Buffer",
+        .size = tracerBuf.nTracers * sizeof(glm::f32vec4),
+        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead,
+        .mappedAtCreation = false
+    };
+    compute.bDebugReadBuf = device.CreateBuffer(&bDebugReadBufDesc);
 
     // Params buffer
     wgpu::BufferDescriptor bParamsBufferDesc = {
@@ -285,8 +327,13 @@ void create_b_tracer_compute(
             .buffer = currentSegmentsBuffer,
             .offset = 0,
             .size = nCurrentSegments * sizeof(glm::f32vec4) * 3
-        }, { // params
+        }, { // debug
             .binding = 5,
+            .buffer = compute.bDebugStorageBuf,
+            .offset = 0,
+            .size = tracerBuf.nTracers * sizeof(glm::f32vec4)
+        }, { // params
+            .binding = 6,
             .buffer = compute.bParamsBuffer,
             .offset = 0,
             .size = sizeof(BTracerParams)
@@ -333,7 +380,6 @@ void run_tracer_compute(
 {
     // Update E tracer params buffer
     ETracerParams eParams = {
-        .nCurrentSegments = nCurrentSegments,
         .solenoidFlux = solenoidFlux,
         .enableParticleFieldContributions = enableParticleFieldContributions,
         .nTracers = nTracers,
@@ -364,4 +410,28 @@ void run_tracer_compute(
 
     compute.curTraceIdxE = (compute.curTraceIdxE + 1) % TRACER_LENGTH;
     compute.curTraceIdxB = (compute.curTraceIdxB + 1) % TRACER_LENGTH;
+}
+
+void read_e_tracer_debug(wgpu::Device& device, wgpu::Instance& instance, const TracerCompute& compute, std::vector<glm::f32vec4>& debug, glm::u32 n) {
+    const void* debugRaw = read_buffer(device, instance, compute.eDebugReadBuf, n * sizeof(glm::f32vec4));
+    if (!debugRaw) {
+        std::cerr << "Failed to read E tracer debug buffer" << std::endl;
+        debug.clear();
+        return;
+    }
+    const glm::f32vec4* debugStart = reinterpret_cast<const glm::f32vec4*>(debugRaw);
+    const glm::f32vec4* debugEnd = debugStart + n;
+    debug.assign(debugStart, debugEnd);
+}
+
+void read_b_tracer_debug(wgpu::Device& device, wgpu::Instance& instance, const TracerCompute& compute, std::vector<glm::f32vec4>& debug, glm::u32 n) {
+    const void* debugRaw = read_buffer(device, instance, compute.bDebugReadBuf, n * sizeof(glm::f32vec4));
+    if (!debugRaw) {
+        std::cerr << "Failed to read B tracer debug buffer" << std::endl;
+        debug.clear();
+        return;
+    }
+    const glm::f32vec4* debugStart = reinterpret_cast<const glm::f32vec4*>(debugRaw);
+    const glm::f32vec4* debugEnd = debugStart + n;
+    debug.assign(debugStart, debugEnd);
 }
