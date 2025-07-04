@@ -57,9 +57,6 @@ public:
     void rotateUp();
     void rotateDown();
 
-    // Simulation cells
-    std::vector<Cell> cells;
-
 protected:
     virtual void render_details(wgpu::RenderPassEncoder& pass);
     virtual void compute_step(wgpu::ComputePassEncoder& pass);
@@ -72,6 +69,9 @@ protected:
     float cameraPhi = 1.0f/6.0f * M_PI_2;
     glm::mat4 view;
     glm::mat4 projection;
+
+    // Simulation cells
+    std::vector<Cell> cells;
 
     // Physics state variables
     glm::f32 t = 0.0f * _S;    // Simulation time, s
