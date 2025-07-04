@@ -119,15 +119,21 @@ void Scene::init(const SimulationParams& params) {
     // Initialize field vectors
     std::vector<glm::f32vec4> eFieldLoc, eFieldVec;
     std::vector<glm::f32vec4> bFieldLoc, bFieldVec;
+    std::vector<bool> cellBoxesVisible;
     for (auto& cell : cells) {
         eFieldLoc.push_back(glm::f32vec4(cell.pos.x, cell.pos.y, cell.pos.z, 0.0f)); // Last element indicates E vs B
         eFieldVec.push_back(glm::f32vec4(1.0f, 0.0f, 0.0f, 0.0f));  // initial (meaningless) value
         bFieldLoc.push_back(glm::f32vec4(cell.pos.x, cell.pos.y, cell.pos.z, 1.0f)); // Last element indicates E vs B
         bFieldVec.push_back(glm::f32vec4(-1.0f, 1.0f, 0.0f, 0.0f)); // initial (meaningless) value
+        cellBoxesVisible.push_back(true);
     }
     this->fields = create_fields_buffers(device, cells.size());
     this->eFieldRender = create_fields_render(device, eFieldLoc, eFieldVec, 0.03f * _M);
     this->bFieldRender = create_fields_render(device, bFieldLoc, bFieldVec, 0.03f * _M);
+    
+    // Initialize cell boxes
+    this->cellBoxes = create_cell_box_buffers(device, cells);
+    update_cell_visibility(device, cellBoxes, cellBoxesVisible);
 
     // Initialize tracers
     std::vector<glm::f32vec4> tracerLoc;
@@ -260,6 +266,7 @@ void Scene::render_details(wgpu::RenderPassEncoder& pass) {
     if (this->showBField)    render_fields(device, pass, bFieldRender, fields.bField, cells.size(), view, projection);
     if (this->showETracers)  render_e_tracers(device, pass, tracers, eTracerRender, view, projection);
     if (this->showBTracers)  render_b_tracers(device, pass, tracers, bTracerRender, view, projection);
+    if (this->showCellBoxes) render_cell_boxes(device, pass, cellBoxes, view, projection);
 }
 
 void Scene::compute() {
@@ -421,6 +428,10 @@ bool Scene::process_input(bool (*debounce_input)()) {
         toggleRenderParticlesAsSpheres();
         return true;
     }
+    if (is_key_pressed(67) && debounce_input()) { // C key
+        toggleShowCellBoxes();
+        return true;
+    }
 #else
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
@@ -489,6 +500,10 @@ bool Scene::process_input(bool (*debounce_input)()) {
         toggleRenderParticlesAsSpheres();
         return true;
     }
+    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS && debounce_input()) {
+        toggleShowCellBoxes();
+        return true;
+    }
 #endif
     return false;
 }
@@ -515,6 +530,10 @@ void Scene::toggleShowETracers() {
 
 void Scene::toggleShowBTracers() {
     this->showBTracers = !this->showBTracers;
+}
+
+void Scene::toggleShowCellBoxes() {
+    this->showCellBoxes = !this->showCellBoxes;
 }
 
 void Scene::toggleRenderParticlesAsSpheres() {

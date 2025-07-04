@@ -49,6 +49,7 @@ add_executable(sim
 	src/compute/fields.cpp
 	src/compute/tracers.cpp
 	src/render/axes.cpp
+	src/render/cell_box.cpp
 	src/render/particles.cpp
 	src/render/spheres.cpp
 	src/render/fields.cpp

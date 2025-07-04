@@ -22,6 +22,8 @@ std::vector<Cell> get_free_space_grid_cells(glm::f32vec3 minCoord, glm::f32vec3 
             for (float y = minCoord.y; y <= maxCoord.y; y += dx) {
                 Cell cell;
                 cell.pos = glm::f32vec4 { x, y, z, 1.0f };
+                cell.min = glm::f32vec3 { x - dx/2.0f, y - dx/2.0f, z - dx/2.0f };
+                cell.max = glm::f32vec3 { x + dx/2.0f, y + dx/2.0f, z + dx/2.0f };
                 cells.push_back(cell);
             }
         }

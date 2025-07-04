@@ -7,6 +7,7 @@
 #include "shared/fields.h"
 #include "shared/tracers.h"
 #include "render/axes.h"
+#include "render/cell_box.h"
 #include "render/particles.h"
 #include "render/spheres.h"
 #include "render/fields.h"
@@ -47,8 +48,9 @@ public:
     void toggleShowBField();
     void toggleShowETracers();
     void toggleShowBTracers();
+    void toggleShowCellBoxes();
     void toggleRenderParticlesAsSpheres();
-
+    
     // Camera
     void zoomIn();
     void zoomOut();
@@ -118,6 +120,9 @@ private:
 	// Axes
     AxesBuffers axes;
 
+    // Cell boxes
+    CellBoxBuffers cellBoxes;
+
     // Tracers
     TracerRender eTracerRender;
     TracerRender bTracerRender;
@@ -129,8 +134,9 @@ private:
     bool showBField = false;
     bool showETracers = true;
     bool showBTracers = true;
+    bool showCellBoxes = true;
     bool renderParticlesAsSpheres = false;
-
+    
     int frameCount = 0;
     int simulationStep = 0;
 };

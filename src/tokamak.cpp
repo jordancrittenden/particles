@@ -110,6 +110,8 @@ std::vector<Cell> TokamakScene::get_grid_cells(glm::f32 dx) {
 
                 Cell cell;
                 cell.pos = glm::f32vec4 { x, y, z, isActive ? 1.0f : 0.0f };
+                cell.min = glm::f32vec3 { x - dx/2.0f, y - dx/2.0f, z - dx/2.0f };
+                cell.max = glm::f32vec3 { x + dx/2.0f, y + dx/2.0f, z + dx/2.0f };
                 cells.push_back(cell);
             }
         }
