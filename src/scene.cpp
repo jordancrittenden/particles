@@ -125,12 +125,12 @@ void Scene::init(const SimulationParams& params) {
         eFieldVec.push_back(glm::f32vec4(1.0f, 0.0f, 0.0f, 0.0f));  // initial (meaningless) value
         bFieldLoc.push_back(glm::f32vec4(cell.pos.x, cell.pos.y, cell.pos.z, 1.0f)); // Last element indicates E vs B
         bFieldVec.push_back(glm::f32vec4(-1.0f, 1.0f, 0.0f, 0.0f)); // initial (meaningless) value
-        cellBoxesVisible.push_back(true);
+        cellBoxesVisible.push_back(cell.pos.w > 0.0f);
     }
     this->fields = create_fields_buffers(device, cells.size());
     this->eFieldRender = create_fields_render(device, eFieldLoc, eFieldVec, 0.03f * _M);
     this->bFieldRender = create_fields_render(device, bFieldLoc, bFieldVec, 0.03f * _M);
-    
+
     // Initialize cell boxes
     this->cellBoxes = create_cell_box_buffers(device, cells);
     update_cell_visibility(device, cellBoxes, cellBoxesVisible);
