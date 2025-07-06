@@ -36,7 +36,7 @@ public:
     bool is_running();
 
     // Scene-dependent functions
-    virtual std::vector<Cell> get_grid_cells(glm::f32 spacing);
+    virtual std::vector<Cell> get_grid_cells(glm::f32 spacing, glm::u32& nx, glm::u32& ny, glm::u32& nz);
     virtual glm::f32vec4 rand_particle_position();
     virtual std::vector<CurrentVector> get_currents();
     virtual bool process_input(bool (*debounce_input)());
@@ -74,6 +74,9 @@ protected:
 
     // Simulation cells
     std::vector<Cell> cells;
+    glm::u32 cellsXSize = 0;
+    glm::u32 cellsYSize = 0;
+    glm::u32 cellsZSize = 0;
 
     // Physics state variables
     glm::f32 t = 0.0f * _S;    // Simulation time, s

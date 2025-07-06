@@ -15,8 +15,10 @@ glm::f32vec4 free_space_rand_particle_position(glm::f32vec3 minCoord, glm::f32ve
     return glm::f32vec4 { x, y, z, 0.0f };
 }
 
-std::vector<Cell> get_free_space_grid_cells(glm::f32vec3 minCoord, glm::f32vec3 maxCoord, glm::f32 dx) {
+std::vector<Cell> get_free_space_grid_cells(glm::f32vec3 minCoord, glm::f32vec3 maxCoord, glm::f32 dx, glm::u32& nx, glm::u32& ny, glm::u32& nz) {
     std::vector<Cell> cells;
+    nx = 0, ny = 0, nz = 0;
+    bool countZ = true, countY = true;
     for (float x = minCoord.x; x <= maxCoord.x; x += dx) {
         for (float z = minCoord.z; z <= maxCoord.z; z += dx) {
             for (float y = minCoord.y; y <= maxCoord.y; y += dx) {
@@ -25,8 +27,13 @@ std::vector<Cell> get_free_space_grid_cells(glm::f32vec3 minCoord, glm::f32vec3 
                 cell.min = glm::f32vec3 { x - dx/2.0f, y - dx/2.0f, z - dx/2.0f };
                 cell.max = glm::f32vec3 { x + dx/2.0f, y + dx/2.0f, z + dx/2.0f };
                 cells.push_back(cell);
+                if (countY) ny++;
             }
+            if (countZ) nz++;
+            countY = false;
         }
+        nx++;
+        countZ = false;
     }
     return cells;
 }

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 #include <glm/gtc/matrix_transform.hpp>
 #include "tokamak.h"
 #include "render/torus.h"
@@ -84,12 +85,14 @@ void TokamakScene::compute_step(wgpu::ComputePassEncoder& pass) {
     t += dt;
 }
 
-std::vector<Cell> TokamakScene::get_grid_cells(glm::f32 dx) {
+std::vector<Cell> TokamakScene::get_grid_cells(glm::f32 dx, glm::u32& nx, glm::u32& ny, glm::u32& nz) {
     std::vector<Cell> cells;
 
     glm::vec3 minCoord(-(torusParameters.r1 + torusParameters.r2), -torusParameters.r2, -(torusParameters.r1 + torusParameters.r2));
     glm::vec3 maxCoord(torusParameters.r1 + torusParameters.r2, torusParameters.r2, torusParameters.r1 + torusParameters.r2);
 
+    nx = 0, ny = 0, nz = 0;
+    bool countZ = true, countY = true;
     for (glm::f32 x = minCoord.x; x <= maxCoord.x; x += dx) {
         for (glm::f32 z = minCoord.z; z <= maxCoord.z; z += dx) {
             glm::f32 radialDistFromOrigin = sqrt(x*x + z*z);
@@ -103,8 +106,14 @@ std::vector<Cell> TokamakScene::get_grid_cells(glm::f32 dx) {
                 cell.min = glm::f32vec3 { x - dx/2.0f, y - dx/2.0f, z - dx/2.0f };
                 cell.max = glm::f32vec3 { x + dx/2.0f, y + dx/2.0f, z + dx/2.0f };
                 cells.push_back(cell);
+
+                if (countY) ny++;
             }
+            if (countZ) nz++;
+            countY = false;
         }
+        nx++;
+        countZ = false;
     }
     return cells;
 }

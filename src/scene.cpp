@@ -98,9 +98,16 @@ void Scene::init(const SimulationParams& params) {
     this->windowHeight = params.windowHeight;
     this->init_webgpu();
 
-    this->cells = get_grid_cells(params.cellSpacing);
+    // Initialize cells
+    this->cells = get_grid_cells(params.cellSpacing, this->cellsXSize, this->cellsYSize, this->cellsZSize);
+    std::vector<bool> cellBoxesVisible;
+    cellBoxesVisible.resize(cells.size(), false);
+    for (auto& cell : cells) {
+        cellBoxesVisible.push_back(cell.pos.w > 0.0f);
+    }
     std::cout << "Simulation cells: " << cells.size() << std::endl;
 
+    // Initialize axes
     this->axes = create_axes_buffers(device);
     this->cameraDistance = 0.5f * _M;
 
@@ -119,13 +126,11 @@ void Scene::init(const SimulationParams& params) {
     // Initialize field vectors
     std::vector<glm::f32vec4> eFieldLoc, eFieldVec;
     std::vector<glm::f32vec4> bFieldLoc, bFieldVec;
-    std::vector<bool> cellBoxesVisible;
     for (auto& cell : cells) {
         eFieldLoc.push_back(glm::f32vec4(cell.pos.x, cell.pos.y, cell.pos.z, 0.0f)); // Last element indicates E vs B
         eFieldVec.push_back(glm::f32vec4(1.0f, 0.0f, 0.0f, 0.0f));  // initial (meaningless) value
         bFieldLoc.push_back(glm::f32vec4(cell.pos.x, cell.pos.y, cell.pos.z, 1.0f)); // Last element indicates E vs B
         bFieldVec.push_back(glm::f32vec4(-1.0f, 1.0f, 0.0f, 0.0f)); // initial (meaningless) value
-        cellBoxesVisible.push_back(cell.pos.w > 0.0f);
     }
     this->fields = create_fields_buffers(device, cells.size());
     this->eFieldRender = create_fields_render(device, eFieldLoc, eFieldVec, 0.03f * _M);
@@ -336,11 +341,11 @@ void Scene::compute_step(wgpu::ComputePassEncoder& pass) {
     t += dt;
 }
 
-std::vector<Cell> Scene::get_grid_cells(glm::f32 spacing) {
+std::vector<Cell> Scene::get_grid_cells(glm::f32 spacing, glm::u32& nx, glm::u32& ny, glm::u32& nz) {
     float s = 0.1f * _M;
     glm::vec3 minCoord { -s, -s, -s };
     glm::vec3 maxCoord { s, s, s };
-    return get_free_space_grid_cells(minCoord, maxCoord, 0.01f * _M);
+    return get_free_space_grid_cells(minCoord, maxCoord, 0.01f * _M, this->cellsXSize, this->cellsYSize, this->cellsZSize);
 }
 
 glm::f32vec4 Scene::rand_particle_position() {

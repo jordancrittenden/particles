@@ -239,7 +239,6 @@ void render_cell_boxes(wgpu::Device& device, wgpu::RenderPassEncoder& pass, cons
     pass.SetIndexBuffer(cellBoxBuf.indexBuffer, wgpu::IndexFormat::Uint32, 0, cellBoxBuf.indexBuffer.GetSize());
 
     // Draw only the visible cell boxes
-    std::cout << "Drawing " << cellBoxBuf.nVisibleCells << " visible cells" << std::endl;
     pass.DrawIndexed(cellBoxBuf.indices.size(), cellBoxBuf.nVisibleCells, 0, 0, 0);
 }
 
