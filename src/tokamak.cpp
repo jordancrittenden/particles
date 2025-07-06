@@ -90,23 +90,13 @@ std::vector<Cell> TokamakScene::get_grid_cells(glm::f32 dx) {
     glm::vec3 minCoord(-(torusParameters.r1 + torusParameters.r2), -torusParameters.r2, -(torusParameters.r1 + torusParameters.r2));
     glm::vec3 maxCoord(torusParameters.r1 + torusParameters.r2, torusParameters.r2, torusParameters.r1 + torusParameters.r2);
 
-    glm::f32vec4 torusCenterPos = glm::f32vec4(0.0, 0.0f, torusParameters.r1, 1.0f);
-    for (float x = minCoord.x; x <= maxCoord.x; x += dx) {
-        for (float z = minCoord.z; z <= maxCoord.z; z += dx) {
-            // Find azimuthal angle
-            float torusTheta = atan2(x, z);
-
-            // Find closest torus centerpoint
-            glm::mat4 xform = glm::mat4(1.0f);
-            xform = glm::rotate(xform, torusTheta, glm::vec3(0.0f, 1.0f, 0.0f));
-            glm::f32vec4 nearestTorusCenter = xform * torusCenterPos;
-
-            for (float y = minCoord.y; y <= maxCoord.y; y += dx) {
-                float xDiff = x - nearestTorusCenter.x;
-                float yDiff = y - nearestTorusCenter.y;
-                float zDiff = z - nearestTorusCenter.z;
-
-                bool isActive = xDiff*xDiff + yDiff*yDiff + zDiff*zDiff > torusParameters.r2*torusParameters.r2;
+    for (glm::f32 x = minCoord.x; x <= maxCoord.x; x += dx) {
+        for (glm::f32 z = minCoord.z; z <= maxCoord.z; z += dx) {
+            glm::f32 radialDistFromOrigin = sqrt(x*x + z*z);
+            glm::f32 radialDistFromTorusCenterline = radialDistFromOrigin - torusParameters.r1;
+            for (glm::f32 y = minCoord.y; y <= maxCoord.y; y += dx) {
+                glm::f32 distFromTorusCenterline = sqrt(radialDistFromTorusCenterline*radialDistFromTorusCenterline + y*y);
+                bool isActive = distFromTorusCenterline < torusParameters.r2;
 
                 Cell cell;
                 cell.pos = glm::f32vec4 { x, y, z, isActive ? 1.0f : 0.0f };
