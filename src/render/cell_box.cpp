@@ -10,20 +10,20 @@ struct UniformData {
 };
 
 // Generate wireframe box vertices (12 lines for a unit cube)
-void generate_wireframe_box_vertices(std::vector<glm::f32>& vertices, std::vector<unsigned int>& indices) {
+void generate_wireframe_box_vertices(std::vector<glm::f32>& vertices, std::vector<unsigned int>& indices, glm::f32 dx) {
     // Unit cube vertices (position only, no normals needed for wireframe)
     vertices = {
         // Bottom face vertices
-        -0.5f, -0.5f, -0.5f,  // 0
-         0.5f, -0.5f, -0.5f,  // 1
-         0.5f, -0.5f,  0.5f,  // 2
-        -0.5f, -0.5f,  0.5f,  // 3
+        -dx/2.0f, -dx/2.0f, -dx/2.0f,  // 0
+         dx/2.0f, -dx/2.0f, -dx/2.0f,  // 1
+         dx/2.0f, -dx/2.0f,  dx/2.0f,  // 2
+        -dx/2.0f, -dx/2.0f,  dx/2.0f,  // 3
         
         // Top face vertices
-        -0.5f,  0.5f, -0.5f,  // 4
-         0.5f,  0.5f, -0.5f,  // 5
-         0.5f,  0.5f,  0.5f,  // 6
-        -0.5f,  0.5f,  0.5f   // 7
+        -dx/2.0f,  dx/2.0f, -dx/2.0f,  // 4
+         dx/2.0f,  dx/2.0f, -dx/2.0f,  // 5
+         dx/2.0f,  dx/2.0f,  dx/2.0f,  // 6
+        -dx/2.0f,  dx/2.0f,  dx/2.0f   // 7
     };
     
     // Indices for 12 lines (2 indices per line)
@@ -37,7 +37,7 @@ void generate_wireframe_box_vertices(std::vector<glm::f32>& vertices, std::vecto
     };
 }
 
-CellBoxBuffers create_cell_box_buffers(wgpu::Device& device, const std::vector<Cell>& cells) {
+CellBoxBuffers create_cell_box_buffers(wgpu::Device& device, const std::vector<Cell>& cells, glm::f32 dx) {
     wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/cell_box.wgsl");
     if (!shaderModule) {
         std::cerr << "Failed to create cell box shader module" << std::endl;
@@ -46,10 +46,11 @@ CellBoxBuffers create_cell_box_buffers(wgpu::Device& device, const std::vector<C
 
     CellBoxBuffers buf = {};
     buf.nCells = static_cast<glm::u32>(cells.size());
+    buf.nVisibleCells = buf.nCells; // Initially all cells are visible
 
     // Generate wireframe box vertices and indices
     std::vector<glm::f32> vertices;
-    generate_wireframe_box_vertices(vertices, buf.indices);
+    generate_wireframe_box_vertices(vertices, buf.indices, dx);
 
     // Create vertex buffer
     wgpu::BufferDescriptor vertexBufferDesc = {
@@ -84,23 +85,12 @@ CellBoxBuffers create_cell_box_buffers(wgpu::Device& device, const std::vector<C
     // Initialize instance buffer with cell data
     std::vector<glm::f32vec4> instanceData;
     instanceData.reserve(cells.size());
-    
     for (const auto& cell : cells) {
-        // Use cell position directly (all cells have the same center)
         instanceData.push_back(cell.pos);
     }
     
     // Write instance data to buffer
     device.GetQueue().WriteBuffer(buf.instanceBuffer, 0, instanceData.data(), instanceData.size() * sizeof(glm::f32vec4));
-
-    // Create visibility buffer (separate buffer for visibility control)
-    wgpu::BufferDescriptor visibilityBufferDesc = {
-        .label = "Cell Box Visibility Buffer",
-        .size = sizeof(glm::u32) * buf.nCells,
-        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Storage,
-        .mappedAtCreation = false
-    };
-    buf.visibilityBuffer = device.CreateBuffer(&visibilityBufferDesc);
 
     // Create uniform buffer for view and projection matrices
     wgpu::BufferDescriptor uniformBufferDesc = {
@@ -119,13 +109,6 @@ CellBoxBuffers create_cell_box_buffers(wgpu::Device& device, const std::vector<C
             .buffer = {
                 .type = wgpu::BufferBindingType::Uniform,
                 .minBindingSize = sizeof(UniformData)
-            }
-        }, { // Visibility buffer
-            .binding = 1,
-            .visibility = wgpu::ShaderStage::Vertex,
-            .buffer = {
-                .type = wgpu::BufferBindingType::ReadOnlyStorage,
-                .minBindingSize = sizeof(glm::u32) * buf.nCells
             }
         }
     };
@@ -223,11 +206,6 @@ CellBoxBuffers create_cell_box_buffers(wgpu::Device& device, const std::vector<C
             .buffer = buf.uniformBuffer,
             .offset = 0,
             .size = sizeof(UniformData)
-        }, { // Visibility buffer
-            .binding = 1,
-            .buffer = buf.visibilityBuffer,
-            .offset = 0,
-            .size = sizeof(glm::u32) * buf.nCells
         }
     };
 
@@ -260,18 +238,23 @@ void render_cell_boxes(wgpu::Device& device, wgpu::RenderPassEncoder& pass, cons
     pass.SetVertexBuffer(1, cellBoxBuf.instanceBuffer, 0, cellBoxBuf.instanceBuffer.GetSize());
     pass.SetIndexBuffer(cellBoxBuf.indexBuffer, wgpu::IndexFormat::Uint32, 0, cellBoxBuf.indexBuffer.GetSize());
 
-    // Draw the cell boxes with instancing
-    pass.DrawIndexed(cellBoxBuf.indices.size(), cellBoxBuf.nCells, 0, 0, 0);
+    // Draw only the visible cell boxes
+    std::cout << "Drawing " << cellBoxBuf.nVisibleCells << " visible cells" << std::endl;
+    pass.DrawIndexed(cellBoxBuf.indices.size(), cellBoxBuf.nVisibleCells, 0, 0, 0);
 }
 
-void update_cell_visibility(wgpu::Device& device, const CellBoxBuffers& cellBoxBuf, const std::vector<bool>& visibility) {
-    // Convert bool vector to u32 vector for GPU
-    std::vector<glm::u32> visibilityData;
-    visibilityData.reserve(visibility.size());
-    for (bool visible : visibility) {
-        visibilityData.push_back(visible ? 1u : 0u);
+void update_cell_visibility(wgpu::Device& device, CellBoxBuffers& cellBoxBuf, const std::vector<Cell>& cells, const std::vector<bool>& visibility) {
+    std::vector<glm::f32vec4> instances;
+    instances.reserve(visibility.size());
+    for (size_t i = 0; i < visibility.size() && i < cells.size(); ++i) {
+        if (visibility[i]) {
+            instances.push_back(cells[i].pos);
+        }
     }
     
-    // Update visibility buffer
-    device.GetQueue().WriteBuffer(cellBoxBuf.visibilityBuffer, 0, visibilityData.data(), visibilityData.size() * sizeof(glm::u32));
+    cellBoxBuf.nVisibleCells = static_cast<glm::u32>(instances.size());
+    
+    if (!instances.empty()) {
+        device.GetQueue().WriteBuffer(cellBoxBuf.instanceBuffer, 0, instances.data(), instances.size() * sizeof(glm::f32vec4));
+    }
 }

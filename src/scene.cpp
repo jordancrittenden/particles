@@ -132,8 +132,8 @@ void Scene::init(const SimulationParams& params) {
     this->bFieldRender = create_fields_render(device, bFieldLoc, bFieldVec, 0.03f * _M);
 
     // Initialize cell boxes
-    this->cellBoxes = create_cell_box_buffers(device, cells);
-    update_cell_visibility(device, cellBoxes, cellBoxesVisible);
+    this->cellBoxes = create_cell_box_buffers(device, cells, params.cellSpacing);
+    update_cell_visibility(device, cellBoxes, cells, cellBoxesVisible);
 
     // Initialize tracers
     std::vector<glm::f32vec4> tracerLoc;

@@ -4,7 +4,6 @@ struct UniformData {
 }
 
 @group(0) @binding(0) var<uniform> uniforms: UniformData;
-@group(0) @binding(1) var<storage, read> visibility: array<u32>;
 
 struct VertexInput {
     @location(0) position: vec3<f32>,
@@ -15,7 +14,6 @@ struct VertexInput {
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
     @location(0) color: vec3<f32>,
-    @location(1) is_visible: f32,
 }
 
 @vertex
@@ -34,15 +32,10 @@ fn vertexMain(input: VertexInput) -> VertexOutput {
         0.5 + 0.5 * sin(input.center.z * 10.0)
     );
     
-    // Pass visibility as a float (0.0 = invisible, 1.0 = visible)
-    let is_visible = f32(visibility[input.instance]);
-    
-    return VertexOutput(clip_pos, color, is_visible);
+    return VertexOutput(clip_pos, color);
 }
 
 @fragment
 fn fragmentMain(input: VertexOutput) -> @location(0) vec4<f32> {
-    // Use visibility to control alpha - invisible boxes are fully transparent
-    let alpha = input.is_visible;
-    return vec4<f32>(input.color, alpha);
+    return vec4<f32>(input.color, 1.0);
 } 
