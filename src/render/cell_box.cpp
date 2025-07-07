@@ -243,9 +243,13 @@ void render_cell_boxes(wgpu::Device& device, wgpu::RenderPassEncoder& pass, cons
 }
 
 void update_cell_visibility(wgpu::Device& device, CellBoxBuffers& cellBoxBuf, const std::vector<Cell>& cells, const std::vector<bool>& visibility) {
+    if (cells.size() != visibility.size()) {
+        throw std::runtime_error("cells.size() != visibility.size()");
+    }
+
     std::vector<glm::f32vec4> instances;
     instances.reserve(visibility.size());
-    for (size_t i = 0; i < visibility.size() && i < cells.size(); ++i) {
+    for (size_t i = 0; i < cells.size(); ++i) {
         if (visibility[i]) {
             instances.push_back(cells[i].pos);
         }

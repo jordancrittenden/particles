@@ -101,11 +101,13 @@ void Scene::init(const SimulationParams& params) {
     // Initialize cells
     this->cells = get_grid_cells(params.cellSpacing, this->cellsXSize, this->cellsYSize, this->cellsZSize);
     std::vector<bool> cellBoxesVisible;
-    cellBoxesVisible.resize(cells.size(), false);
+    cellBoxesVisible.reserve(cells.size());
+    glm::u32 activeCells = 0;
     for (auto& cell : cells) {
         cellBoxesVisible.push_back(cell.pos.w > 0.0f);
+        if (cell.pos.w > 0.0f) activeCells++;
     }
-    std::cout << "Simulation cells: " << cells.size() << std::endl;
+    std::cout << "Simulation cells: " << cells.size() << " (active: " << activeCells << ")" << std::endl;
 
     // Initialize axes
     this->axes = create_axes_buffers(device);
@@ -515,30 +517,37 @@ bool Scene::process_input(bool (*debounce_input)()) {
 
 void Scene::toggleShowAxes() {
     this->showAxes = !this->showAxes;
+    std::cout << "Axes: " << (this->showAxes ? "VISIBLE" : "HIDDEN") << std::endl;
 }
 
 void Scene::toggleShowParticles() {
     this->showParticles = !this->showParticles;
+    std::cout << "Particles: " << (this->showParticles ? "VISIBLE" : "HIDDEN") << std::endl;
 }
 
 void Scene::toggleShowEField() {
     this->showEField = !this->showEField;
+    std::cout << "E field: " << (this->showEField ? "VISIBLE" : "HIDDEN") << std::endl;
 }
 
 void Scene::toggleShowBField() {
     this->showBField = !this->showBField;
+    std::cout << "B field: " << (this->showBField ? "VISIBLE" : "HIDDEN") << std::endl;
 }
 
 void Scene::toggleShowETracers() {
     this->showETracers = !this->showETracers;
+    std::cout << "E tracers: " << (this->showETracers ? "VISIBLE" : "HIDDEN") << std::endl;
 }
 
 void Scene::toggleShowBTracers() {
     this->showBTracers = !this->showBTracers;
+    std::cout << "B tracers: " << (this->showBTracers ? "VISIBLE" : "HIDDEN") << std::endl;
 }
 
 void Scene::toggleShowCellBoxes() {
     this->showCellBoxes = !this->showCellBoxes;
+    std::cout << "Cell boxes: " << (this->showCellBoxes ? "VISIBLE" : "HIDDEN") << std::endl;
 }
 
 void Scene::toggleRenderParticlesAsSpheres() {

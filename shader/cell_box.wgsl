@@ -22,8 +22,7 @@ fn vertexMain(input: VertexInput) -> VertexOutput {
     let world_pos = input.center + input.position;
     
     // Transform to clip space
-    let model_view = uniforms.view;
-    let clip_pos = uniforms.projection * model_view * vec4<f32>(world_pos, 1.0);
+    let clip_pos = uniforms.projection *  uniforms.view * vec4<f32>(world_pos, 1.0);
     
     // Generate color based on position (for debugging/visualization)
     let color = vec3<f32>(
