@@ -85,26 +85,26 @@ void TokamakScene::compute_step(wgpu::ComputePassEncoder& pass) {
     t += dt;
 }
 
-std::vector<Cell> TokamakScene::get_grid_cells(glm::f32 dx, glm::u32& nx, glm::u32& ny, glm::u32& nz) {
+std::vector<Cell> TokamakScene::get_grid_cells(glm::f32vec3 size, GridProperties& grid) {
     std::vector<Cell> cells;
 
     glm::vec3 minCoord(-(torusParameters.r1 + torusParameters.r2), -torusParameters.r2, -(torusParameters.r1 + torusParameters.r2));
     glm::vec3 maxCoord(torusParameters.r1 + torusParameters.r2, torusParameters.r2, torusParameters.r1 + torusParameters.r2);
 
-    nx = 0, ny = 0, nz = 0;
+    glm::u32 nx = 0, ny = 0, nz = 0;
     bool countZ = true, countY = true;
-    for (glm::f32 x = minCoord.x; x <= maxCoord.x; x += dx) {
-        for (glm::f32 z = minCoord.z; z <= maxCoord.z; z += dx) {
+    for (glm::f32 x = minCoord.x; x <= maxCoord.x; x += size.x) {
+        for (glm::f32 z = minCoord.z; z <= maxCoord.z; z += size.z) {
             glm::f32 radialDistFromOrigin = sqrt(x*x + z*z);
             glm::f32 radialDistFromTorusCenterline = radialDistFromOrigin - torusParameters.r1;
-            for (glm::f32 y = minCoord.y; y <= maxCoord.y; y += dx) {
+            for (glm::f32 y = minCoord.y; y <= maxCoord.y; y += size.y) {
                 glm::f32 distFromTorusCenterline = sqrt(radialDistFromTorusCenterline*radialDistFromTorusCenterline + y*y);
                 bool isActive = distFromTorusCenterline < torusParameters.r2;
 
                 Cell cell;
                 cell.pos = glm::f32vec4 { x, y, z, isActive ? 1.0f : 0.0f };
-                cell.min = glm::f32vec3 { x - dx/2.0f, y - dx/2.0f, z - dx/2.0f };
-                cell.max = glm::f32vec3 { x + dx/2.0f, y + dx/2.0f, z + dx/2.0f };
+                cell.min = glm::f32vec3 { x - size.x/2.0f, y - size.y/2.0f, z - size.z/2.0f };
+                cell.max = glm::f32vec3 { x + size.x/2.0f, y + size.y/2.0f, z + size.z/2.0f };
                 cells.push_back(cell);
 
                 if (countY) ny++;
@@ -115,6 +115,11 @@ std::vector<Cell> TokamakScene::get_grid_cells(glm::f32 dx, glm::u32& nx, glm::u
         nx++;
         countZ = false;
     }
+    grid.n = glm::u32vec3 { nx, ny, nz };
+    grid.d = size;
+    grid.min = minCoord;
+    grid.max = maxCoord;
+    
     return cells;
 }
 

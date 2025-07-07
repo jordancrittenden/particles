@@ -36,7 +36,7 @@ public:
     void compute_step(wgpu::ComputePassEncoder& pass) override;
 
     // Scene-dependent functions
-    std::vector<Cell> get_grid_cells(glm::f32 spacing, glm::u32& nx, glm::u32& ny, glm::u32& nz) override;
+    std::vector<Cell> get_grid_cells(glm::f32vec3 size, GridProperties& grid) override;
     glm::f32vec4 rand_particle_position() override;
     std::vector<CurrentVector> get_currents() override;
     bool process_input(bool (*debounce_input)()) override;

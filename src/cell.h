@@ -2,6 +2,13 @@
 
 #include <glm/glm.hpp>
 
+struct GridProperties {
+    glm::f32vec3 min; // minimum cell center
+    glm::f32vec3 max; // maximum cell center
+    glm::u32vec3 n; // number of cells in each dimension
+    glm::f32vec3 d; // cell size
+};
+
 struct Cell {
     glm::f32vec4 pos; // [centerX, centerY, centerZ, isActive]
     glm::f32vec3 min; // [minX, minY, minZ]
@@ -40,5 +47,22 @@ struct CellNeighbors {
     glm::i32 xm_ym_z0; // x-1, y-1, z
     glm::i32 xm_ym_zm; // x-1, y-1, z-1
 };
+
+struct ParticleNeighbors {
+    glm::i32 xp_yp_zp; // x+, y+, z+
+    glm::i32 xp_yp_zm; // x+, y+, z-
+    glm::i32 xp_ym_zp; // x+, y-, z+
+    glm::i32 xp_ym_zm; // x+, y-, z-
+    glm::i32 xm_yp_zp; // x-, y+, z+
+    glm::i32 xm_yp_zm; // x-, y+, z-
+    glm::i32 xm_ym_zp; // x-, y-, z+
+    glm::i32 xm_ym_zm; // x-, y-, z-
+};
+
+ParticleNeighbors particle_neighbors(
+    glm::f32 x, glm::f32 y, glm::f32 z,
+    glm::f32 xmin, glm::f32 ymin, glm::f32 zmin,
+    glm::f32 xmax, glm::f32 ymax, glm::f32 zmax,
+    glm::u32 nx, glm::u32 ny, glm::u32 nz);
 
 CellNeighbors grid_neighbors(glm::u32 idx, glm::u32 nx, glm::u32 ny, glm::u32 nz);
