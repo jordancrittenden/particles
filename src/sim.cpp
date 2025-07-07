@@ -23,6 +23,20 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+#ifdef __EMSCRIPTEN__
+    // Initialize the Scene
+    TorusParameters torus;
+    SolenoidParameters solenoid;
+    TokamakScene scene(torus, solenoid);
+    scene.init(params);
+
+	// Equivalent of the main loop when using Emscripten:
+	auto callback = [](void *arg) {
+		TokamakScene* scene = reinterpret_cast<TokamakScene*>(arg);
+		scene->run_once();
+	};
+	emscripten_set_main_loop_arg(callback, &scene, 0, true);
+#else
     // Initialize the Scene
     TorusParameters torus;
     SolenoidParameters solenoid;
@@ -39,21 +53,11 @@ int main(int argc, char* argv[]) {
             return 1;
     }
     scene->init(params);
-
-#ifdef __EMSCRIPTEN__
-	// Equivalent of the main loop when using Emscripten:
-	auto callback = [](void *arg) {
-		TokamakScene* scene = reinterpret_cast<TokamakScene*>(arg);
-		scene->run_once();
-	};
-	emscripten_set_main_loop_arg(callback, &scene, 0, true);
-#else
 	while (scene->is_running()) {
 		scene->run_once();
 	}
-#endif
-
 	scene->terminate();
+#endif
 
     return 0;
 }
