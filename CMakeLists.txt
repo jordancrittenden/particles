@@ -26,7 +26,7 @@ add_executable(sim
 	src/shared/particles.cpp
 	src/shared/fields.cpp
 	src/shared/tracers.cpp
-	src/cell.cpp
+	src/mesh.cpp
 	src/scene.cpp
 	src/emscripten_key.cpp
 	src/args.cpp

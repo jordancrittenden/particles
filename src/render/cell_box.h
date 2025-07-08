@@ -3,7 +3,7 @@
 #include <webgpu/webgpu_cpp.h>
 #include <glm/glm.hpp>
 #include <vector>
-#include "cell.h"
+#include "mesh.h"
 
 struct CellBoxBuffers {
     wgpu::Buffer vertexBuffer;

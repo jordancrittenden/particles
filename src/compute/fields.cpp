@@ -3,7 +3,7 @@
 #include <vector>
 #include "util/wgpu_util.h"
 #include "compute/fields.h"
-#include "cell.h"
+#include "mesh.h"
 
 // C++ struct matching the WGSL ComputeFieldsParams struct
 struct ComputeFieldsParams {

@@ -1,3 +1,10 @@
+struct MeshProperties {
+    vec3<f32> min; // minimum cell center
+    vec3<f32> max; // maximum cell center
+    vec3<f32> dim; // number of cells in each dimension
+    vec3<f32> d; // cell size
+}
+
 // The index of the neighbors of cell x, y, z
 struct CellNeighbors {
     i32 xp_yp_zp; // x+1, y+1, z+1
@@ -42,7 +49,7 @@ struct ParticleNeighbors {
     i32 xm_ym_zm; // x-, y-, z-
 }
 
-fn grid_neighbors(idx: u32, nx: u32, ny: u32, nz: u32) -> CellNeighbors {
+fn cell_neighbors(idx: u32, nx: u32, ny: u32, nz: u32) -> CellNeighbors {
     // Calculate 3D coordinates from linear index
     // Order: x-major, then z-major, then y-major
     // idx = (x_idx * nz * ny) + (z_idx * ny) + y_idx
@@ -104,7 +111,7 @@ fn particle_neighbors(
     xmax: f32, ymax: f32, zmax: f32,
     nx: u32, ny: u32, nz: u32) -> ParticleNeighbors {
     
-    // Check if particle is outside the grid bounds
+    // Check if particle is outside the mesh bounds
     if (x < xmin || x >= xmax || y < ymin || y >= ymax || z < zmin || z >= zmax) {
         var neighbors: ParticleNeighbors;
         neighbors.xp_yp_zp = -1i;

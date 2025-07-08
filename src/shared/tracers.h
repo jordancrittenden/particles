@@ -4,7 +4,7 @@
 #include <functional>
 #include <glm/glm.hpp>
 #include "physical_constants.h"
-#include "cell.h"
+#include "mesh.h"
 
 #define TRACER_LENGTH 500
 

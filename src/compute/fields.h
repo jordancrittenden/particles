@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include "shared/particles.h"
 #include "shared/fields.h"
-#include "cell.h"
+#include "mesh.h"
 
 struct FieldCompute {
     wgpu::ComputePipeline pipeline;

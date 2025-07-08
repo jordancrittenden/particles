@@ -16,7 +16,7 @@
 #include "compute/fields.h"
 #include "compute/tracers.h"
 #include "current_segment.h"
-#include "cell.h"
+#include "mesh.h"
 #include "args.h"
 
 #include <GLFW/glfw3.h>
@@ -36,7 +36,7 @@ public:
     bool is_running();
 
     // Scene-dependent functions
-    virtual std::vector<Cell> get_grid_cells(glm::f32vec3 spacing, GridProperties& grid);
+    virtual std::vector<Cell> get_mesh_cells(glm::f32vec3 spacing, MeshProperties& mesh);
     virtual glm::f32vec4 rand_particle_position();
     virtual std::vector<CurrentVector> get_currents();
     virtual bool process_input(bool (*debounce_input)());
@@ -74,7 +74,7 @@ protected:
 
     // Simulation cells
     std::vector<Cell> cells;
-    GridProperties grid;
+    MeshProperties mesh;
 
     // Physics state variables
     glm::f32 t = 0.0f * _S;    // Simulation time, s

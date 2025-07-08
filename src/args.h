@@ -23,7 +23,7 @@ struct SimulationParams {
     glm::u32 maxParticles = 150000;         // Maximum number of particles
 
     // Cell parameters
-    glm::f32 cellSpacing = 0.08f * _M;      // Distance between simulation grid cells, m
+    glm::f32 cellSpacing = 0.08f * _M;      // Distance between simulation mesh cells, m
 };
 
 std::unordered_map<std::string, std::string> parse_args(int argc, char* argv[]);

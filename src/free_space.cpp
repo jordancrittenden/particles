@@ -1,6 +1,6 @@
 #include <iostream>
 #include <glm/glm.hpp>
-#include "cell.h"
+#include "mesh.h"
 
 inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
@@ -15,7 +15,7 @@ glm::f32vec4 free_space_rand_particle_position(glm::f32vec3 minCoord, glm::f32ve
     return glm::f32vec4 { x, y, z, 0.0f };
 }
 
-std::vector<Cell> get_free_space_grid_cells(glm::f32vec3 minCoord, glm::f32vec3 maxCoord, glm::f32vec3 size, GridProperties& grid) {
+std::vector<Cell> get_free_space_mesh_cells(glm::f32vec3 minCoord, glm::f32vec3 maxCoord, glm::f32vec3 size, MeshProperties& mesh) {
     std::vector<Cell> cells;
     glm::u32 nx = 0, ny = 0, nz = 0;
     bool countZ = true, countY = true;
@@ -35,10 +35,10 @@ std::vector<Cell> get_free_space_grid_cells(glm::f32vec3 minCoord, glm::f32vec3 
         nx++;
         countZ = false;
     }
-    grid.n = glm::u32vec3 { nx, ny, nz };
-    grid.d = size;
-    grid.min = minCoord;
-    grid.max = maxCoord;
+    mesh.dim = glm::u32vec3 { nx, ny, nz };
+    mesh.cell_size = size;
+    mesh.min = minCoord;
+    mesh.max = maxCoord;
     
     return cells;
 }

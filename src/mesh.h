@@ -2,11 +2,11 @@
 
 #include <glm/glm.hpp>
 
-struct GridProperties {
+struct MeshProperties {
     glm::f32vec3 min; // minimum cell center
     glm::f32vec3 max; // maximum cell center
-    glm::u32vec3 n; // number of cells in each dimension
-    glm::f32vec3 d; // cell size
+    glm::u32vec3 dim; // number of cells in each dimension
+    glm::f32vec3 cell_size; // cell size
 };
 
 struct Cell {
@@ -59,10 +59,6 @@ struct ParticleNeighbors {
     glm::i32 xm_ym_zm; // x-, y-, z-
 };
 
-ParticleNeighbors particle_neighbors(
-    glm::f32 x, glm::f32 y, glm::f32 z,
-    glm::f32 xmin, glm::f32 ymin, glm::f32 zmin,
-    glm::f32 xmax, glm::f32 ymax, glm::f32 zmax,
-    glm::u32 nx, glm::u32 ny, glm::u32 nz);
+ParticleNeighbors particle_neighbors(glm::f32vec3 pos, const MeshProperties& mesh);
 
-CellNeighbors grid_neighbors(glm::u32 idx, glm::u32 nx, glm::u32 ny, glm::u32 nz);
+CellNeighbors cell_neighbors(glm::u32 idx, glm::u32vec3 dim);

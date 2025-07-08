@@ -85,7 +85,7 @@ void TokamakScene::compute_step(wgpu::ComputePassEncoder& pass) {
     t += dt;
 }
 
-std::vector<Cell> TokamakScene::get_grid_cells(glm::f32vec3 size, GridProperties& grid) {
+std::vector<Cell> TokamakScene::get_mesh_cells(glm::f32vec3 size, MeshProperties& mesh) {
     std::vector<Cell> cells;
 
     glm::vec3 minCoord(-(torusParameters.r1 + torusParameters.r2), -torusParameters.r2, -(torusParameters.r1 + torusParameters.r2));
@@ -115,10 +115,10 @@ std::vector<Cell> TokamakScene::get_grid_cells(glm::f32vec3 size, GridProperties
         nx++;
         countZ = false;
     }
-    grid.n = glm::u32vec3 { nx, ny, nz };
-    grid.d = size;
-    grid.min = minCoord;
-    grid.max = maxCoord;
+    mesh.dim = glm::u32vec3 { nx, ny, nz };
+    mesh.cell_size = size;
+    mesh.min = minCoord;
+    mesh.max = maxCoord;
     
     return cells;
 }
