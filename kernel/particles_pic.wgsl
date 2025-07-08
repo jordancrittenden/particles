@@ -12,9 +12,12 @@ struct ComputeMotionParams {
 @group(0) @binding(0) var<storage, read_write> nParticles: u32;
 @group(0) @binding(1) var<storage, read_write> particlePos: array<vec4<f32>>;
 @group(0) @binding(2) var<storage, read_write> particleVel: array<vec4<f32>>;
-@group(0) @binding(3) var<storage, read> currentSegments: array<vec4<f32>>;
-@group(0) @binding(4) var<storage, read_write> debug: array<vec4<f32>>;
-@group(0) @binding(5) var<uniform> params: ComputeMotionParams;
+@group(0) @binding(3) var<storage, read_write> eField: array<vec4<f32>>;
+@group(0) @binding(4) var<storage, read_write> bField: array<vec4<f32>>;
+@group(0) @binding(5) var<storage, read> currentSegments: array<vec4<f32>>;
+@group(0) @binding(6) var<storage, read_write> debug: array<vec4<f32>>;
+@group(0) @binding(7) var<uniform> params: ComputeMotionParams;
+@group(0) @binding(8) var<uniform> mesh: MeshProperties;
 
 @compute @workgroup_size(256)
 fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -95,7 +98,13 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
     particlePos[id] = vec4<f32>(pos_new, species);
     particleVel[id] = vec4<f32>(vel_new, 0.0);
 
-    debug[id] = vec4<f32>(B, 0.0);
+    let E_interp = interp(&mesh, &eField, pos);
+    let B_interp = interp(&mesh, &bField, pos);
+    let E_interp3 = vec3<f32>(E_interp.x, E_interp.y, E_interp.z);
+    let B_interp3 = vec3<f32>(B_interp.x, B_interp.y, B_interp.z);
+    let E_diff = E - E_interp3;
+    let B_diff = B - B_interp3;
+    debug[id] = vec4<f32>(E_diff.x, E_diff.z, B_diff.x, B_diff.y);
 
     if (CONSTRAIN) {
         // Keep the particles in their box

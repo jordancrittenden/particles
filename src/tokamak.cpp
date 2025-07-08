@@ -59,10 +59,11 @@ void TokamakScene::compute_step(wgpu::ComputePassEncoder& pass) {
         solenoidFlux,
         enableParticleFieldContributions);
 
-    run_particle_compute(
+    run_particle_pic_compute(
         device,
         pass,
         particleCompute,
+        mesh,
         dt,
         solenoidFlux,
         enableParticleFieldContributions,

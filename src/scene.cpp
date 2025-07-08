@@ -168,7 +168,7 @@ void Scene::init(const SimulationParams& params) {
 	this->currentSegmentsBuffer = get_current_segment_buffer(device, this->cachedCurrents);
 
     // Initialize particle compute
-	this->particleCompute = create_particle_compute(device, particles, this->currentSegmentsBuffer, static_cast<glm::u32>(this->cachedCurrents.size()), params.maxParticles);
+	this->particleCompute = create_particle_pic_compute(device, particles, fields, this->currentSegmentsBuffer, static_cast<glm::u32>(this->cachedCurrents.size()), params.maxParticles);
 
     // Initialize field compute    
     this->fieldCompute = create_field_compute(device, cells, particles, fields, this->currentSegmentsBuffer, static_cast<glm::u32>(this->cachedCurrents.size()), params.maxParticles);
@@ -304,6 +304,12 @@ void Scene::compute() {
     wgpu::CommandBuffer commands = encoder.Finish();
     device.GetQueue().Submit(1, &commands);
 
+    std::vector<glm::f32vec4> debug;
+    read_particles_debug(device, instance, particleCompute, debug, 10);
+    for (int i = 0; i < 10; i++) {
+        std::cout << "debug[" << i << "]: " << debug[i].x << ", " << debug[i].y << ", " << debug[i].z << ", " << debug[i].w << std::endl;
+    }
+
     if (simulationStep % 5000 == 0) {
         std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << ") [" << nParticles << " particles]" << std::endl;
     }
@@ -327,10 +333,11 @@ void Scene::compute_step(wgpu::ComputePassEncoder& pass) {
         0.0f,
         enableParticleFieldContributions);
 
-    run_particle_compute(
+    run_particle_pic_compute(
         device,
         pass,
         particleCompute,
+        mesh,
         dt,
         0.0f,
         enableParticleFieldContributions,

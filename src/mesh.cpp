@@ -80,7 +80,7 @@ CellNeighbors cell_neighbors(glm::u32 idx, glm::u32vec3 dim) {
     neighbors.x0_yp_z0 = to_linear_index(glm::i32(x_idx), glm::i32(y_idx) + 1, glm::i32(z_idx), dim);
     neighbors.x0_yp_zm = to_linear_index(glm::i32(x_idx), glm::i32(y_idx) + 1, glm::i32(z_idx) - 1, dim);
     neighbors.x0_y0_zp = to_linear_index(glm::i32(x_idx), glm::i32(y_idx), glm::i32(z_idx) + 1, dim);
-    // neighbors.x0_y0_z0 is the current cell (omitted)
+    neighbors.x0_y0_z0 = to_linear_index(glm::i32(x_idx), glm::i32(y_idx), glm::i32(z_idx), dim);
     neighbors.x0_y0_zm = to_linear_index(glm::i32(x_idx), glm::i32(y_idx), glm::i32(z_idx) - 1, dim);
     neighbors.x0_ym_zp = to_linear_index(glm::i32(x_idx), glm::i32(y_idx) - 1, glm::i32(z_idx) + 1, dim);
     neighbors.x0_ym_z0 = to_linear_index(glm::i32(x_idx), glm::i32(y_idx) - 1, glm::i32(z_idx), dim);

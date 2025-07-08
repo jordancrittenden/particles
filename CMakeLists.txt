@@ -12,6 +12,7 @@ add_subdirectory("dawn" EXCLUDE_FROM_ALL)
 add_executable(sim
 	src/util/wgpu_util.cpp
 	src/compute/particles.cpp
+	src/compute/particles_pic.cpp
 	src/compute/fields.cpp
 	src/compute/tracers.cpp
 	src/render/axes.cpp

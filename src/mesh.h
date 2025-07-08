@@ -31,7 +31,7 @@ struct CellNeighbors {
     glm::i32 x0_yp_z0; // x, y+1, z
     glm::i32 x0_yp_zm; // x, y+1, z-1
     glm::i32 x0_y0_zp; // x, y,   z+1
-    // omit cell x, y, z
+    glm::i32 x0_y0_z0; // x, y,   z
     glm::i32 x0_y0_zm; // x, y,   z-1
     glm::i32 x0_ym_zp; // x, y-1, z+1
     glm::i32 x0_ym_z0; // x, y-1, z
