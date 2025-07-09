@@ -65,9 +65,6 @@ void TokamakScene::compute_step(wgpu::ComputePassEncoder& pass) {
         particleCompute,
         mesh,
         dt,
-        solenoidFlux,
-        enableParticleFieldContributions,
-        static_cast<glm::u32>(this->cachedCurrents.size()),
         nParticles);
 
     // Run tracer compute

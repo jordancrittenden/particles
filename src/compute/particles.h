@@ -29,8 +29,6 @@ ParticleCompute create_particle_pic_compute(
     wgpu::Device& device,
     const ParticleBuffers& particleBuf,
     const FieldBuffers& fieldBuf,
-    const wgpu::Buffer& currentSegmentsBuffer,
-    glm::u32 nCurrentSegments,
     glm::u32 maxParticles);
 
 void run_particle_compute(
@@ -49,9 +47,6 @@ void run_particle_pic_compute(
     const ParticleCompute& particleCompute,
     const MeshProperties& mesh,
     glm::f32 dt,
-    glm::f32 solenoidFlux,
-    glm::u32 enableParticleFieldContributions,
-    glm::u32 nCurrentSegments,
     glm::u32 nParticles);
 
 glm::u32 read_nparticles(wgpu::Device& device, wgpu::Instance& instance, const ParticleCompute& compute);

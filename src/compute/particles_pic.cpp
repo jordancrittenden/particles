@@ -5,14 +5,6 @@
 #include "compute/particles.h"
 #include "mesh.h"
 
-// C++ struct matching the WGSL ComputeMotionParams struct
-struct ComputeMotionParams {
-    glm::f32 dt;
-    glm::u32 nCurrentSegments;
-    glm::f32 solenoidFlux;
-    glm::u32 enableParticleFieldContributions;
-};
-
 struct MeshPropertiesUniform {
     glm::f32vec3 min; // minimum cell center
     glm::f32 _padding1; // padding for 16-byte alignment
@@ -28,8 +20,6 @@ ParticleCompute create_particle_pic_compute(
     wgpu::Device& device,
     const ParticleBuffers& particleBuf,
     const FieldBuffers& fieldBuf,
-    const wgpu::Buffer& currentSegmentsBuffer,
-    glm::u32 nCurrentSegments,
     glm::u32 maxParticles)
 {
     ParticleCompute particleCompute = {};
@@ -68,10 +58,10 @@ ParticleCompute create_particle_pic_compute(
     };
     particleCompute.debugReadBuf = device.CreateBuffer(&debugReadBufDesc);
 
-    // Create params uniform buffer
+    // Create dt uniform buffer
     wgpu::BufferDescriptor paramsBufferDesc = {
         .label = "Particle Compute Params Buffer",
-        .size = sizeof(ComputeMotionParams),
+        .size = sizeof(glm::f32),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
         .mappedAtCreation = false
     };
@@ -123,29 +113,22 @@ ParticleCompute create_particle_pic_compute(
                 .type = wgpu::BufferBindingType::Storage,
                 .minBindingSize = fieldBuf.nCells * sizeof(glm::f32vec4)
             }
-        }, { // currentSegments
-            .binding = 5,
-            .visibility = wgpu::ShaderStage::Compute,
-            .buffer = {
-                .type = wgpu::BufferBindingType::ReadOnlyStorage,
-                .minBindingSize = nCurrentSegments * sizeof(glm::f32vec4) * 3
-            }
         }, { // debug
-            .binding = 6,
+            .binding = 5,
             .visibility = wgpu::ShaderStage::Compute,
             .buffer = {
                 .type = wgpu::BufferBindingType::Storage,
                 .minBindingSize = maxParticles * sizeof(glm::f32vec4)
             }
-        }, { // params
-            .binding = 7,
+        }, { // dt
+            .binding = 6,
             .visibility = wgpu::ShaderStage::Compute,
             .buffer = {
                 .type = wgpu::BufferBindingType::Uniform,
-                .minBindingSize = sizeof(ComputeMotionParams)
+                .minBindingSize = sizeof(glm::f32)
             }
         }, { // mesh
-            .binding = 8,
+            .binding = 7,
             .visibility = wgpu::ShaderStage::Compute,
             .buffer = {
                 .type = wgpu::BufferBindingType::Uniform,
@@ -206,23 +189,18 @@ ParticleCompute create_particle_pic_compute(
             .buffer = fieldBuf.bField,
             .offset = 0,
             .size = fieldBuf.nCells * sizeof(glm::f32vec4)
-        }, { // currentSegments
-            .binding = 5,
-            .buffer = currentSegmentsBuffer,
-            .offset = 0,
-            .size = nCurrentSegments * sizeof(glm::f32vec4) * 3
         }, { // debug
-            .binding = 6,
+            .binding = 5,
             .buffer = particleCompute.debugStorageBuf,
             .offset = 0,
             .size = maxParticles * sizeof(glm::f32vec4)
-        }, { // params
-            .binding = 7,
+        }, { // dt
+            .binding = 6,
             .buffer = particleCompute.paramsBuffer,
             .offset = 0,
-            .size = sizeof(ComputeMotionParams)
+            .size = sizeof(glm::f32)
         }, { // mesh
-            .binding = 8,
+            .binding = 7,
             .buffer = particleCompute.meshBuffer,
             .offset = 0,
             .size = sizeof(MeshPropertiesUniform)
@@ -246,19 +224,10 @@ void run_particle_pic_compute(
     const ParticleCompute& particleCompute,
     const MeshProperties& mesh,
     glm::f32 dt,
-    glm::f32 solenoidFlux,
-    glm::u32 enableParticleFieldContributions,
-    glm::u32 nCurrentSegments,
     glm::u32 nParticles)
 {
-    // Update params buffer
-    ComputeMotionParams params = {
-        .dt = dt,
-        .nCurrentSegments = nCurrentSegments,
-        .solenoidFlux = solenoidFlux,
-        .enableParticleFieldContributions = enableParticleFieldContributions
-    };
-    device.GetQueue().WriteBuffer(particleCompute.paramsBuffer, 0, &params, sizeof(ComputeMotionParams));
+    // Update dt
+    device.GetQueue().WriteBuffer(particleCompute.paramsBuffer, 0, &dt, sizeof(glm::f32));
 
     MeshPropertiesUniform meshUniform = {
         .min = mesh.min,

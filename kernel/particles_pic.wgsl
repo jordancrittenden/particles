@@ -2,22 +2,14 @@
 const CONSTRAIN: bool = false;
 const CONSTRAIN_TO: f32 = 0.1;  // meters
 
-struct ComputeMotionParams {
-    dt: f32,
-    nCurrentSegments: u32,
-    solenoidFlux: f32,
-    enableParticleFieldContributions: u32,
-}
-
 @group(0) @binding(0) var<storage, read_write> nParticles: u32;
 @group(0) @binding(1) var<storage, read_write> particlePos: array<vec4<f32>>;
 @group(0) @binding(2) var<storage, read_write> particleVel: array<vec4<f32>>;
 @group(0) @binding(3) var<storage, read_write> eField: array<vec4<f32>>;
 @group(0) @binding(4) var<storage, read_write> bField: array<vec4<f32>>;
-@group(0) @binding(5) var<storage, read> currentSegments: array<vec4<f32>>;
-@group(0) @binding(6) var<storage, read_write> debug: array<vec4<f32>>;
-@group(0) @binding(7) var<uniform> params: ComputeMotionParams;
-@group(0) @binding(8) var<uniform> mesh: MeshProperties;
+@group(0) @binding(5) var<storage, read_write> debug: array<vec4<f32>>;
+@group(0) @binding(6) var<uniform> dt: f32;
+@group(0) @binding(7) var<uniform> mesh: MeshProperties;
 
 @compute @workgroup_size(256)
 fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -31,80 +23,31 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return; // inactive particle
     }
 
-    // Extract position and charge-to-mass ratio for this particle
+    // Extract properties for this particle
     let pos = vec3<f32>(particlePos[id].xyz);
     let vel = vec3<f32>(particleVel[id].xyz);
     let mass = particle_mass(species);
     let q_over_m = charge_to_mass_ratio(species);
 
-    // Calculate the E and B field at particle position
-    var E = vec3<f32>(0.0, 0.0, 0.0);
-    var B = vec3<f32>(0.0, 0.0, 0.0);
-
-    if (params.enableParticleFieldContributions != 0u) {
-        var collider_id: i32 = -1;
-        compute_particle_field_contributions(nParticles, &particlePos, &particleVel, pos, i32(id), &E, &B, &collider_id);
-        
-        // to avoid both work items spawning a new particle, check id < collider_id, which will only be true for one of them
-        if (collider_id >= 0 && i32(id) < collider_id) {
-            let collider_pos = vec3<f32>(particlePos[u32(collider_id)].xyz);
-            let collider_vel = vec3<f32>(particleVel[u32(collider_id)].xyz);
-            let collider_mass = particle_mass(particlePos[u32(collider_id)].w);
-            let collision_r_norm = normalize(pos - collider_pos);
-
-            // Relative velocity
-            let v = collider_vel - vel;
-
-            // Relative velocity along the line of collision
-            let v_dot_r = dot(v, collision_r_norm);
-
-            // If the relative velocity along the line of collision is >= 0, they are moving apart
-            if (v_dot_r >= 0.0) {
-                return;
-            }
-
-            // Impulse scalar
-            let impulse = (2.0 * v_dot_r) / (mass + collider_mass);
-
-            // Compute new velocities
-            let vel_new = vel + impulse * mass * collision_r_norm;
-            let collider_vel_new = collider_vel - impulse * mass * collision_r_norm;
-
-            particleVel[id] = vec4<f32>(vel_new, 0.0);
-            particleVel[u32(collider_id)] = vec4<f32>(collider_vel_new, 0.0);
-
-            // Create new particle
-            let new_idx = nParticles + id;
-            particlePos[new_idx] = vec4<f32>(pos.x + 0.01, pos.y + 0.01, pos.z + 0.01, 1.0);
-            particleVel[new_idx] = vec4<f32>(0.0, 10000.0, 0.0, 0.0);
-        }
-    }
-
-    // Calculate the contribution of the currents
-    B += compute_currents_b_field(&currentSegments, params.nCurrentSegments, pos);
-
-    // Calculate the contribution of the central solenoid
-    E += compute_solenoid_e_field(params.solenoidFlux, pos);
+    // Interpolate the E and B field at particle position from the mesh
+    let E_interp = interp(&mesh, &eField, pos);
+    let B_interp = interp(&mesh, &bField, pos);
+    let E = vec3<f32>(E_interp.x, E_interp.y, E_interp.z);
+    let B = vec3<f32>(B_interp.x, B_interp.y, B_interp.z);
 
     // Push the particle through the electric and magnetic field: dv/dt = q/m (E + v x B);
-    let t = q_over_m * B * 0.5 * params.dt;
+    let t = q_over_m * B * 0.5 * dt;
     let s = 2.0 * t / (1.0 + (length(t) * length(t)));
-    let v_minus = vel + q_over_m * E * 0.5 * params.dt;
+    let v_minus = vel + q_over_m * E * 0.5 * dt;
     let v_prime = v_minus + cross(v_minus, t);
     let v_plus = v_minus + cross(v_prime, s);
-    let vel_new = v_plus + (q_over_m * E * 0.5 * params.dt);
-    let pos_new = pos + (vel_new * params.dt);
+    let vel_new = v_plus + (q_over_m * E * 0.5 * dt);
+    let pos_new = pos + (vel_new * dt);
 
     particlePos[id] = vec4<f32>(pos_new, species);
     particleVel[id] = vec4<f32>(vel_new, 0.0);
 
-    let E_interp = interp(&mesh, &eField, pos);
-    let B_interp = interp(&mesh, &bField, pos);
-    let E_interp3 = vec3<f32>(E_interp.x, E_interp.y, E_interp.z);
-    let B_interp3 = vec3<f32>(B_interp.x, B_interp.y, B_interp.z);
-    let E_diff = E - E_interp3;
-    let B_diff = B - B_interp3;
-    debug[id] = vec4<f32>(E_diff.x, E_diff.z, B_diff.x, B_diff.y);
+    //debug[id] = vec4<f32>(0.0, 0.0, 0.0, 0.0);
 
     if (CONSTRAIN) {
         // Keep the particles in their box
