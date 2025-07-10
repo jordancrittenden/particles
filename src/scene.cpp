@@ -108,16 +108,6 @@ void Scene::init(const SimulationParams& params) {
         if (cell.pos.w > 0.0f) activeCells++;
     }
     std::cout << "Simulation cells: " << cells.size() << " (active: " << activeCells << ")" << std::endl;
-    ParticleNeighbors neighbors = particle_neighbors(glm::f32vec3(0.9f, 0.1f, 0.2f), this->mesh);
-    // cellBoxesVisible.resize(cells.size());
-    // cellBoxesVisible[neighbors.xp_yp_zp] = true;
-    // cellBoxesVisible[neighbors.xp_yp_zm] = true;
-    // cellBoxesVisible[neighbors.xp_ym_zp] = true;
-    // cellBoxesVisible[neighbors.xp_ym_zm] = true;
-    // cellBoxesVisible[neighbors.xm_yp_zp] = true;
-    // cellBoxesVisible[neighbors.xm_yp_zm] = true;
-    // cellBoxesVisible[neighbors.xm_ym_zp] = true;
-    // std::cout << "Simulation cells: " << cells.size() << std::endl;
 
     // Initialize axes
     this->axes = create_axes_buffers(device);
@@ -129,7 +119,7 @@ void Scene::init(const SimulationParams& params) {
         device,
         [this](){ return rand_particle_position(); },
         [&params](PARTICLE_SPECIES species){ return maxwell_boltzmann_particle_velocty(params.initialTemperature, particle_mass(species)); },
-        [](){ return rand_particle_species(0.0f, 0.3f, 0.7f, 0.0f, 0.0f, 0.0f, 0.0f); },
+        [](){ return rand_particle_species(0.3f, 0.1, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f); },
         params.initialParticles,
         params.maxParticles);
     this->particleRender = create_particle_render(device);
@@ -145,8 +135,8 @@ void Scene::init(const SimulationParams& params) {
         bFieldVec.push_back(glm::f32vec4(-1.0f, 1.0f, 0.0f, 0.0f)); // initial (meaningless) value
     }
     this->fields = create_fields_buffers(device, cells.size());
-    this->eFieldRender = create_fields_render(device, eFieldLoc, eFieldVec, 0.03f * _M);
-    this->bFieldRender = create_fields_render(device, bFieldLoc, bFieldVec, 0.03f * _M);
+    this->eFieldRender = create_fields_render(device, eFieldLoc, eFieldVec, params.cellSpacing / 2.0f);
+    this->bFieldRender = create_fields_render(device, bFieldLoc, bFieldVec, params.cellSpacing / 2.0f);
 
     // Initialize cell boxes
     this->cellBoxes = create_cell_box_buffers(device, cells, params.cellSpacing);

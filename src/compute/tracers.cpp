@@ -30,7 +30,14 @@ void create_e_tracer_compute(
     glm::u32 maxParticles)
 {
     // Shader
-    wgpu::ShaderModule eTracerShaderModule = create_shader_module(device, "kernel/e_tracer.wgsl", {"kernel/physical_constants.wgsl", "kernel/field_common.wgsl"});
+    wgpu::ShaderModule eTracerShaderModule = create_shader_module(
+        device,
+        "kernel/e_tracer.wgsl",
+        {
+            "kernel/physical_constants.wgsl",
+            "kernel/field_common.wgsl"
+        }
+    );
     if (!eTracerShaderModule) {
         std::cerr << "Failed to create E tracer compute shader module" << std::endl;
         exit(1);
@@ -189,7 +196,14 @@ void create_b_tracer_compute(
     glm::u32 maxParticles)
 {
     // Shader
-    wgpu::ShaderModule bTracerShaderModule = create_shader_module(device, "kernel/b_tracer.wgsl", {"kernel/physical_constants.wgsl", "kernel/field_common.wgsl"});
+    wgpu::ShaderModule bTracerShaderModule = create_shader_module(
+        device,
+        "kernel/b_tracer.wgsl",
+        {
+            "kernel/physical_constants.wgsl",
+            "kernel/field_common.wgsl"
+        }
+    );
     if (!bTracerShaderModule) {
         std::cerr << "Failed to create B tracer compute shader module" << std::endl;
         exit(1);

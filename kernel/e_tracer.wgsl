@@ -1,3 +1,5 @@
+const TRACER_STEP: f32 = 0.005 * _M;
+
 struct ETracerParams {
     solenoidFlux: f32,
     enableParticleFieldContributions: u32,
@@ -46,6 +48,6 @@ fn updateTrails(@builtin(global_invocation_id) global_id: vec3<u32>) {
         E_norm = normalize(E);
     }
 
-    eTracerTrails[traceStart + params.curTraceIdx] = pLoc + E_norm * 0.005 * _M;
+    eTracerTrails[traceStart + params.curTraceIdx] = pLoc + E_norm * TRACER_STEP;
     debug[id] = vec4<f32>(E, length(E));
 } 

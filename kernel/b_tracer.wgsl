@@ -1,3 +1,5 @@
+const TRACER_STEP: f32 = 0.005 * _M;
+
 struct BTracerParams {
     nCurrentSegments: u32,
     enableParticleFieldContributions: u32,
@@ -46,6 +48,6 @@ fn updateTrails(@builtin(global_invocation_id) global_id: vec3<u32>) {
         B_norm = normalize(B);
     }
 
-    bTracerTrails[traceStart + params.curTraceIdx] = pLoc + B_norm * 0.005 * _M;
+    bTracerTrails[traceStart + params.curTraceIdx] = pLoc + B_norm * TRACER_STEP;
     debug[id] = vec4<f32>(B, length(B));
 }
