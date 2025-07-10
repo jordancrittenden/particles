@@ -69,11 +69,10 @@ fn cell_neighbors(pos: vec3<f32>, mesh: ptr<uniform, MeshProperties>) -> CellNei
 
 fn interp(
     mesh: ptr<uniform, MeshProperties>,
+    neighbors: ptr<function, CellNeighbors>,
     field: ptr<storage, array<vec4<f32>>, read_write>,
     pos: vec3<f32>
 ) -> vec4<f32> {
-    let neighbors: CellNeighbors = cell_neighbors(pos, mesh);
-    
     // Check if particle is outside mesh bounds
     if (neighbors.xp_yp_zp == -1i) {
         return vec4<f32>(0.0, 0.0, 0.0, 0.0); // Return zero if outside bounds

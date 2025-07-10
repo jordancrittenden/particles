@@ -1,7 +1,3 @@
-// Constants for particle constraints
-const CONSTRAIN: bool = false;
-const CONSTRAIN_TO: f32 = 0.1;  // meters
-
 @group(0) @binding(0) var<storage, read_write> nParticles: u32;
 @group(0) @binding(1) var<storage, read_write> particlePos: array<vec4<f32>>;
 @group(0) @binding(2) var<storage, read_write> particleVel: array<vec4<f32>>;
@@ -18,20 +14,33 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let species = particlePos[id].w;
+    var species = particlePos[id].w;
     if (species == 0.0) {
         return; // inactive particle
     }
 
     // Extract properties for this particle
     let pos = vec3<f32>(particlePos[id].xyz);
-    let vel = vec3<f32>(particleVel[id].xyz);
+    var vel = vec3<f32>(particleVel[id].xyz);
     let mass = particle_mass(species);
     let q_over_m = charge_to_mass_ratio(species);
 
+    // Locate the particle in the mesh
+    var neighbors: CellNeighbors = cell_neighbors(pos, &mesh);
+
+    // Check to see if the particle has reached the boundary
+    if (neighbors.xp_yp_zp == -1i) {
+        if (species == NEUTRON) {
+            species = 0.0; // neutron flux into wall
+        } else {
+            // Bounce off the wall. This is a very primive model of wall interaction
+            vel = -vel;
+        }
+    }
+
     // Interpolate the E and B field at particle position from the mesh
-    let E_interp = interp(&mesh, &eField, pos);
-    let B_interp = interp(&mesh, &bField, pos);
+    let E_interp = interp(&mesh, &neighbors, &eField, pos);
+    let B_interp = interp(&mesh, &neighbors, &bField, pos);
     let E = vec3<f32>(E_interp.x, E_interp.y, E_interp.z);
     let B = vec3<f32>(B_interp.x, B_interp.y, B_interp.z);
 
@@ -47,27 +56,5 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
     particlePos[id] = vec4<f32>(pos_new, species);
     particleVel[id] = vec4<f32>(vel_new, 0.0);
 
-    //debug[id] = vec4<f32>(0.0, 0.0, 0.0, 0.0);
-
-    if (CONSTRAIN) {
-        // Keep the particles in their box
-        if (particlePos[id].x > CONSTRAIN_TO) {
-            particleVel[id].x = -particleVel[id].x;
-        }
-        if (particlePos[id].x < -CONSTRAIN_TO) {
-            particleVel[id].x = -particleVel[id].x;
-        }
-        if (particlePos[id].y > CONSTRAIN_TO) {
-            particleVel[id].y = -particleVel[id].y;
-        }
-        if (particlePos[id].y < -CONSTRAIN_TO) {
-            particleVel[id].y = -particleVel[id].y;
-        }
-        if (particlePos[id].z > CONSTRAIN_TO) {
-            particleVel[id].z = -particleVel[id].z;
-        }
-        if (particlePos[id].z < -CONSTRAIN_TO) {
-            particleVel[id].z = -particleVel[id].z;
-        }
-    }
+    //debug[id] = vec4<f32>(0.0, 0.0, 0.0, 0.0);)
 } 
