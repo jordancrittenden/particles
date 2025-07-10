@@ -5,40 +5,7 @@ struct MeshProperties {
     cell_size: vec3<f32>, // cell size
 }
 
-// The indices of the neighbors of cell x, y, z, assuming the cells are a mesh ordered in x-major, z-major, y-major order
 struct CellNeighbors {
-    xp_yp_zp: i32, // x+1, y+1, z+1
-    xp_yp_z0: i32, // x+1, y+1, z
-    xp_yp_zm: i32, // x+1, y+1, z-1
-    xp_y0_zp: i32, // x+1, y,   z+1
-    xp_y0_z0: i32, // x+1, y,   z
-    xp_y0_zm: i32, // x+1, y,   z-1
-    xp_ym_zp: i32, // x+1, y-1, z+1
-    xp_ym_z0: i32, // x+1, y-1, z
-    xp_ym_zm: i32, // x+1, y-1, z-1
-
-    x0_yp_zp: i32, // x, y+1, z+1
-    x0_yp_z0: i32, // x, y+1, z
-    x0_yp_zm: i32, // x, y+1, z-1
-    x0_y0_zp: i32, // x, y,   z+1
-    x0_y0_z0: i32, // x, y,   z+1
-    x0_y0_zm: i32, // x, y,   z-1
-    x0_ym_zp: i32, // x, y-1, z+1
-    x0_ym_z0: i32, // x, y-1, z
-    x0_ym_zm: i32, // x, y-1, z-1
-
-    xm_yp_zp: i32, // x-1, y+1, z+1
-    xm_yp_z0: i32, // x-1, y+1, z
-    xm_yp_zm: i32, // x-1, y+1, z-1
-    xm_y0_zp: i32, // x-1, y,   z+1
-    xm_y0_z0: i32, // x-1, y,   z
-    xm_y0_zm: i32, // x-1, y,   z-1
-    xm_ym_zp: i32, // x-1, y-1, z+1
-    xm_ym_z0: i32, // x-1, y-1, z
-    xm_ym_zm: i32, // x-1, y-1, z-1
-}
-
-struct ParticleNeighbors {
     xp_yp_zp: i32, // x+, y+, z+
     xp_yp_zm: i32, // x+, y+, z-
     xp_ym_zp: i32, // x+, y-, z+
@@ -57,60 +24,12 @@ fn to_linear_index(x: i32, y: i32, z: i32, dim: vec3<u32>) -> i32 {
     return i32((u32(x) * dim.z * dim.y) + (u32(z) * dim.y) + u32(y));
 }
 
-fn cell_neighbors(idx: u32, dim: vec3<u32>) -> CellNeighbors {
-    // Calculate 3D coordinates from linear index
-    // Order: x-major, then z-major, then y-major
-    // idx = (x_idx * dim.z * dim.y) + (z_idx * dim.y) + y_idx
-    let x_idx: u32 = idx / (dim.z * dim.y);
-    let remainder: u32 = idx % (dim.z * dim.y);
-    let z_idx: u32 = remainder / dim.y;
-    let y_idx: u32 = remainder % dim.y;
-    
-    // Calculate neighbor indices
-    var neighbors: CellNeighbors;
-    
-    // x+1 neighbors
-    neighbors.xp_yp_zp = to_linear_index(i32(x_idx) + 1, i32(y_idx) + 1, i32(z_idx) + 1, dim);
-    neighbors.xp_yp_z0 = to_linear_index(i32(x_idx) + 1, i32(y_idx) + 1, i32(z_idx), dim);
-    neighbors.xp_yp_zm = to_linear_index(i32(x_idx) + 1, i32(y_idx) + 1, i32(z_idx) - 1, dim);
-    neighbors.xp_y0_zp = to_linear_index(i32(x_idx) + 1, i32(y_idx), i32(z_idx) + 1, dim);
-    neighbors.xp_y0_z0 = to_linear_index(i32(x_idx) + 1, i32(y_idx), i32(z_idx), dim);
-    neighbors.xp_y0_zm = to_linear_index(i32(x_idx) + 1, i32(y_idx), i32(z_idx) - 1, dim);
-    neighbors.xp_ym_zp = to_linear_index(i32(x_idx) + 1, i32(y_idx) - 1, i32(z_idx) + 1, dim);
-    neighbors.xp_ym_z0 = to_linear_index(i32(x_idx) + 1, i32(y_idx) - 1, i32(z_idx), dim);
-    neighbors.xp_ym_zm = to_linear_index(i32(x_idx) + 1, i32(y_idx) - 1, i32(z_idx) - 1, dim);
-    
-    // x neighbors (same x)
-    neighbors.x0_yp_zp = to_linear_index(i32(x_idx), i32(y_idx) + 1, i32(z_idx) + 1, dim);
-    neighbors.x0_yp_z0 = to_linear_index(i32(x_idx), i32(y_idx) + 1, i32(z_idx), dim);
-    neighbors.x0_yp_zm = to_linear_index(i32(x_idx), i32(y_idx) + 1, i32(z_idx) - 1, dim);
-    neighbors.x0_y0_zp = to_linear_index(i32(x_idx), i32(y_idx), i32(z_idx) + 1, dim);
-    neighbors.x0_y0_z0 = to_linear_index(i32(x_idx), i32(y_idx), i32(z_idx), dim);
-    neighbors.x0_y0_zm = to_linear_index(i32(x_idx), i32(y_idx), i32(z_idx) - 1, dim);
-    neighbors.x0_ym_zp = to_linear_index(i32(x_idx), i32(y_idx) - 1, i32(z_idx) + 1, dim);
-    neighbors.x0_ym_z0 = to_linear_index(i32(x_idx), i32(y_idx) - 1, i32(z_idx), dim);
-    neighbors.x0_ym_zm = to_linear_index(i32(x_idx), i32(y_idx) - 1, i32(z_idx) - 1, dim);
-    
-    // x-1 neighbors
-    neighbors.xm_yp_zp = to_linear_index(i32(x_idx) - 1, i32(y_idx) + 1, i32(z_idx) + 1, dim);
-    neighbors.xm_yp_z0 = to_linear_index(i32(x_idx) - 1, i32(y_idx) + 1, i32(z_idx), dim);
-    neighbors.xm_yp_zm = to_linear_index(i32(x_idx) - 1, i32(y_idx) + 1, i32(z_idx) - 1, dim);
-    neighbors.xm_y0_zp = to_linear_index(i32(x_idx) - 1, i32(y_idx), i32(z_idx) + 1, dim);
-    neighbors.xm_y0_z0 = to_linear_index(i32(x_idx) - 1, i32(y_idx), i32(z_idx), dim);
-    neighbors.xm_y0_zm = to_linear_index(i32(x_idx) - 1, i32(y_idx), i32(z_idx) - 1, dim);
-    neighbors.xm_ym_zp = to_linear_index(i32(x_idx) - 1, i32(y_idx) - 1, i32(z_idx) + 1, dim);
-    neighbors.xm_ym_z0 = to_linear_index(i32(x_idx) - 1, i32(y_idx) - 1, i32(z_idx), dim);
-    neighbors.xm_ym_zm = to_linear_index(i32(x_idx) - 1, i32(y_idx) - 1, i32(z_idx) - 1, dim);
-    
-    return neighbors;
-}
-
-fn particle_neighbors(pos: vec3<f32>, mesh: ptr<uniform, MeshProperties>) -> ParticleNeighbors {
+fn cell_neighbors(pos: vec3<f32>, mesh: ptr<uniform, MeshProperties>) -> CellNeighbors {
     // Check if particle is outside the mesh bounds
     if (pos.x < (*mesh).min.x || pos.x >= (*mesh).max.x ||
         pos.y < (*mesh).min.y || pos.y >= (*mesh).max.y ||
         pos.z < (*mesh).min.z || pos.z >= (*mesh).max.z) {
-        var neighbors: ParticleNeighbors;
+        var neighbors: CellNeighbors;
         neighbors.xp_yp_zp = -1i;
         neighbors.xp_yp_zm = -1i;
         neighbors.xp_ym_zp = -1i;
@@ -134,7 +53,7 @@ fn particle_neighbors(pos: vec3<f32>, mesh: ptr<uniform, MeshProperties>) -> Par
     let base_z: i32 = cell_idx_i32.z + select(-1, 0, local_pos.z > 0.5);
     
     // Calculate the 8 corner cells around the particle
-    var neighbors: ParticleNeighbors;
+    var neighbors: CellNeighbors;
 
     neighbors.xp_yp_zp = to_linear_index(base_x + 1, base_y + 1, base_z + 1, (*mesh).dim); // x+, y+, z+
     neighbors.xp_yp_zm = to_linear_index(base_x + 1, base_y + 1, base_z, (*mesh).dim); // x+, y+, z-
@@ -153,7 +72,7 @@ fn interp(
     field: ptr<storage, array<vec4<f32>>, read_write>,
     pos: vec3<f32>
 ) -> vec4<f32> {
-    let neighbors: ParticleNeighbors = particle_neighbors(pos, mesh);
+    let neighbors: CellNeighbors = cell_neighbors(pos, mesh);
     
     // Check if particle is outside mesh bounds
     if (neighbors.xp_yp_zp == -1i) {

@@ -38,7 +38,11 @@ void Scene::init_webgpu() {
         });
     instance.WaitAny(f1, UINT64_MAX);
 
+    wgpu::Limits limits;
+    limits.maxStorageBufferBindingSize = 2ull * 1024 * 1024 * 1024; // 2GB
+
     wgpu::DeviceDescriptor desc{};
+    desc.requiredLimits = &limits;
     desc.SetUncapturedErrorCallback([](const wgpu::Device&, wgpu::ErrorType errorType, wgpu::StringView message) {
         std::cout << "Error: " << static_cast<uint32_t>(errorType) << " - message: " << message.data << "\n";
     });
