@@ -18,6 +18,10 @@
 #include "mesh.h"
 #include "emscripten_key.h"
 
+inline float rand_range(float min, float max) {
+    return static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (max - min) + min;
+}
+
 void Scene::init_webgpu() {
     wgpu::InstanceDescriptor instanceDesc{.capabilities = {.timedWaitAnyEnable = true}};
     instance = wgpu::CreateInstance(&instanceDesc);
@@ -145,7 +149,7 @@ void Scene::init(const SimulationParams& params) {
     // Initialize tracers
     std::vector<glm::f32vec4> tracerLoc;
     for (int i = 0; i < cells.size(); i++) {
-        if (i % 100 == 0) {
+        if (rand_range(0.0f, 100.0f) < params.tracerDensity) {
             tracerLoc.push_back(glm::f32vec4(cells[i].pos.x, cells[i].pos.y, cells[i].pos.z, 0.0f));
         }
     }
@@ -277,12 +281,27 @@ void Scene::render_details(wgpu::RenderPassEncoder& pass) {
 }
 
 void Scene::compute() {
+    // Update currents in scene
+    if (this->refreshCurrents) {
+        this->cachedCurrents = get_currents();
+        update_currents_buffer(device, this->currentSegmentsBuffer, this->cachedCurrents);
+        this->refreshCurrents = false;
+    }
+
     wgpu::CommandEncoderDescriptor encoderDesc{.label = "Compute Command Encoder"};
     wgpu::CommandEncoder encoder = device.CreateCommandEncoder(&encoderDesc);
     wgpu::ComputePassDescriptor computePassDesc{.label = "Compute Pass"};
     wgpu::ComputePassEncoder pass = encoder.BeginComputePass(&computePassDesc);
 
-    this->compute_step(pass);
+    this->compute_field_step(pass);
+
+    run_particle_pic_compute(
+        device,
+        pass,
+        particleCompute,
+        mesh,
+        dt,
+        nParticles);
 
     pass.End();
     
@@ -301,16 +320,11 @@ void Scene::compute() {
         std::cout << "SIM STEP " << simulationStep << " (frame " << frameCount << ") [" << nParticles << " particles]" << std::endl;
     }
     simulationStep++;
+
+    t += dt;
 }
 
-void Scene::compute_step(wgpu::ComputePassEncoder& pass) {
-    // Update current segments
-    if (this->refreshCurrents) {
-        this->cachedCurrents = get_currents();
-        update_currents_buffer(device, this->currentSegmentsBuffer, this->cachedCurrents);
-        this->refreshCurrents = false;
-    }
-    
+void Scene::compute_field_step(wgpu::ComputePassEncoder& pass) {
     run_field_compute(
         device,
         pass,
@@ -319,14 +333,6 @@ void Scene::compute_step(wgpu::ComputePassEncoder& pass) {
         static_cast<glm::u32>(cachedCurrents.size()),
         0.0f,
         enableParticleFieldContributions);
-
-    run_particle_pic_compute(
-        device,
-        pass,
-        particleCompute,
-        mesh,
-        dt,
-        nParticles);
 
     // Run tracer compute
     run_tracer_compute(
@@ -340,8 +346,6 @@ void Scene::compute_step(wgpu::ComputePassEncoder& pass) {
         nParticles,
         tracers.nTracers,
         TRACER_LENGTH);
-
-    t += dt;
 }
 
 std::vector<Cell> Scene::get_mesh_cells(glm::f32vec3 size, MeshProperties& mesh) {

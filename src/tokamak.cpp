@@ -42,14 +42,7 @@ void TokamakScene::render_details(wgpu::RenderPassEncoder& pass) {
     if (this->showSolenoid) render_solenoid(device, pass, solenoidBuf, this->solenoidFlux, view, projection);
 }
 
-void TokamakScene::compute_step(wgpu::ComputePassEncoder& pass) {
-    // Update current segments
-    if (this->refreshCurrents) {
-        this->cachedCurrents = get_currents();
-        update_currents_buffer(device, this->currentSegmentsBuffer, this->cachedCurrents);
-        this->refreshCurrents = false;
-    }
-    
+void TokamakScene::compute_field_step(wgpu::ComputePassEncoder& pass) {
     run_field_compute(
         device,
         pass,
@@ -58,14 +51,6 @@ void TokamakScene::compute_step(wgpu::ComputePassEncoder& pass) {
         static_cast<glm::u32>(cachedCurrents.size()),
         solenoidFlux,
         enableParticleFieldContributions);
-
-    run_particle_pic_compute(
-        device,
-        pass,
-        particleCompute,
-        mesh,
-        dt,
-        nParticles);
 
     // Run tracer compute
     run_tracer_compute(
@@ -79,8 +64,6 @@ void TokamakScene::compute_step(wgpu::ComputePassEncoder& pass) {
         nParticles,
         this->tracers.nTracers,
         TRACER_LENGTH);
-
-    t += dt;
 }
 
 std::vector<Cell> TokamakScene::get_mesh_cells(glm::f32vec3 size, MeshProperties& mesh) {

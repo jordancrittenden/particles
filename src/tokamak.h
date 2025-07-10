@@ -33,7 +33,7 @@ public:
     void render_details(wgpu::RenderPassEncoder& pass) override;
 
     // Compute
-    void compute_step(wgpu::ComputePassEncoder& pass) override;
+    void compute_field_step(wgpu::ComputePassEncoder& pass) override;
 
     // Scene-dependent functions
     std::vector<Cell> get_mesh_cells(glm::f32vec3 size, MeshProperties& mesh) override;

@@ -61,7 +61,7 @@ public:
 
 protected:
     virtual void render_details(wgpu::RenderPassEncoder& pass);
-    virtual void compute_step(wgpu::ComputePassEncoder& pass);
+    virtual void compute_field_step(wgpu::ComputePassEncoder& pass);
 
     bool refreshCurrents = false;
     
