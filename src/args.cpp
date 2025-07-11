@@ -53,6 +53,7 @@ SimulationParams extract_params(std::unordered_map<std::string, std::string> arg
         else if (key == "maxParticles")       params.maxParticles        = stoi(value);
         else if (key == "dt")                 params.dt                  = stof(value) * _S;
         else if (key == "fps")                params.targetFPS           = stoi(value);
+        else if (key == "tracerDensity")      params.tracerDensity       = stof(value);
         else if (key == "width")              params.windowWidth         = stoi(value);
         else if (key == "height")             params.windowHeight        = stoi(value);
         else if (key == "cellSpacing")        params.cellSpacing         = stof(value) * _M;

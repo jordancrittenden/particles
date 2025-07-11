@@ -16,7 +16,7 @@ struct SimulationParams {
     glm::u32 windowWidth = 1024;                 // Window width, px
     glm::u32 windowHeight = 768;                 // Window height, px
     glm::u16 targetFPS = 60;                     // Target FPS
-    glm::f32 tracerDensity = 0.5;                // Tracer density, % of cells
+    glm::f32 tracerDensity = 2.0;                // Tracer density, % of cells
 
     // Particle initialization parameters
     glm::f32 initialTemperature = 100000.0 * _K; // Initial plasma temperature, K
