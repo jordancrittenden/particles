@@ -55,7 +55,7 @@ SphereRender create_sphere_render(wgpu::Device& device) {
     SphereRender render = {};
     
     // Create render shader module
-    wgpu::ShaderModule renderShaderModule = create_shader_module(device, "shader/spheres.wgsl");
+    wgpu::ShaderModule renderShaderModule = create_shader_module(device, "shader/spheres.wgsl", {"kernel/physical_constants.wgsl"});
     if (!renderShaderModule) {
         std::cerr << "Failed to create sphere render shader module" << std::endl;
         exit(1);
