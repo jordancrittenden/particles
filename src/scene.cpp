@@ -129,7 +129,7 @@ void Scene::init(const SimulationParams& params) {
         device,
         [this](){ return rand_particle_position(); },
         [&params](PARTICLE_SPECIES species){ return maxwell_boltzmann_particle_velocty(params.initialTemperature, particle_mass(species)); },
-        [](){ return rand_particle_species(0.0f, 0.0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.5f); },
+        [](){ return rand_particle_species(0.0f, 0.5f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f); },
         params.initialParticles,
         params.maxParticles);
     this->particleRender = create_particle_render(device);
@@ -155,6 +155,12 @@ void Scene::init(const SimulationParams& params) {
     // Initialize tracers
     std::vector<glm::f32vec4> tracerLoc;
     for (int i = 0; i < cells.size(); i++) {
+        // Skip inactive cells
+        if (cells[i].pos.w == 0.0f) continue;
+
+        glm::f32 r2 = std::sqrt(cells[i].pos.x * cells[i].pos.x + cells[i].pos.z * cells[i].pos.z);
+        if (r2 > 1.2f || r2 < 0.8f || cells[i].pos.y < -0.2f || cells[i].pos.y > 0.2f) continue;
+
         if (rand_range(0.0f, 100.0f) < params.tracerDensity) {
             tracerLoc.push_back(glm::f32vec4(cells[i].pos.x, cells[i].pos.y, cells[i].pos.z, 0.0f));
         }
