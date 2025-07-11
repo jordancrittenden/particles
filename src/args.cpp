@@ -51,6 +51,7 @@ SimulationParams extract_params(std::unordered_map<std::string, std::string> arg
         else if (key == "initialParticles")   params.initialParticles    = stoi(value);
         else if (key == "initialTemperature") params.initialTemperature  = stoi(value) * _K;
         else if (key == "maxParticles")       params.maxParticles        = stoi(value);
+        else if (key == "dt")                 params.dt                  = stof(value) * _S;
         else if (key == "fps")                params.targetFPS           = stoi(value);
         else if (key == "width")              params.windowWidth         = stoi(value);
         else if (key == "height")             params.windowHeight        = stoi(value);

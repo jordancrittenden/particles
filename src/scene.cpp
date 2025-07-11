@@ -104,6 +104,8 @@ void Scene::terminate() {
 void Scene::init(const SimulationParams& params) {
     this->windowWidth = params.windowWidth;
     this->windowHeight = params.windowHeight;
+    this->targetFPS = params.targetFPS;
+    this->dt = params.dt;
     this->init_webgpu();
 
     // Initialize cells

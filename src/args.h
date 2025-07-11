@@ -13,18 +13,19 @@ struct SimulationParams {
     SceneType sceneType = SCENE_TYPE_TOKAMAK;
 
     // Rendering parameters
-    glm::u32 windowWidth = 1024;            // Window width, px
-    glm::u32 windowHeight = 768;            // Window height, px
-    glm::u16 targetFPS = 60;                // Target FPS
-    glm::f32 tracerDensity = 0.5;           // Tracer density, % of cells
+    glm::u32 windowWidth = 1024;                 // Window width, px
+    glm::u32 windowHeight = 768;                 // Window height, px
+    glm::u16 targetFPS = 60;                     // Target FPS
+    glm::f32 tracerDensity = 0.5;                // Tracer density, % of cells
 
     // Particle initialization parameters
-    glm::f32 initialTemperature = 300 * _K; // Initial plasma temperature, K
-    glm::u32 initialParticles = 100000;     // Number of initial particles
-    glm::u32 maxParticles = 150000;         // Maximum number of particles
+    glm::f32 initialTemperature = 100000.0 * _K; // Initial plasma temperature, K
+    glm::u32 initialParticles = 100000;          // Number of initial particles
+    glm::u32 maxParticles = 150000;              // Maximum number of particles
+    glm::f32 dt = 1e-10f * _S;                   // Simulation dt, s
 
     // Cell parameters
-    glm::f32 cellSpacing = 0.08f * _M;      // Distance between simulation mesh cells, m
+    glm::f32 cellSpacing = 0.05f * _M;           // Distance between simulation mesh cells, m
 };
 
 std::unordered_map<std::string, std::string> parse_args(int argc, char* argv[]);

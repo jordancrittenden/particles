@@ -24,7 +24,7 @@ const Q_OVER_M_HELIUM_4_NUC: f32 = 2.41056642418e7;
 const Q_OVER_M_DEUTERON: f32 = 4.79179449646e7;
 const Q_OVER_M_TRITON: f32 = 3.19964547001e7;
 
-const MACROPARTICLE_N: f32 = 1.0e7; // Number of particles per macroparticle
+const MACROPARTICLE_N: f32 = 1.0e8; // Number of particles per macroparticle
 
 // Particle species enum
 const NEUTRON:                f32 = 1.0;
