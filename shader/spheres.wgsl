@@ -39,15 +39,18 @@ fn vertexMain(input: VertexInput, instance: InstanceInput) -> VertexOutput {
     output.normal = normalize(input.position);
     
     // Set color based on species (same as particles.wgsl)
-         if (instance.instancePosition.w == 1.0) { output.color = vec4f(0.5, 0.5, 0.5, 1.0); } // neutrons are gray
-    else if (instance.instancePosition.w == 2.0) { output.color = vec4f(0.0, 0.0, 1.0, 1.0); } // electrons are blue
-    else if (instance.instancePosition.w == 3.0) { output.color = vec4f(1.0, 0.0, 0.0, 1.0); } // protons are red
-    else if (instance.instancePosition.w == 4.0) { output.color = vec4f(0.0, 1.0, 0.0, 1.0); } // deuterium is green
-    else if (instance.instancePosition.w == 5.0) { output.color = vec4f(1.0, 0.0, 1.0, 1.0); } // tritium is purple
-    else if (instance.instancePosition.w == 6.0) { output.color = vec4f(1.0, 0.7, 0.0, 1.0); } // helium-4 is orange
-    else if (instance.instancePosition.w == 7.0) { output.color = vec4f(0.0, 0.8, 0.0, 1.0); } // deuterons is light green
-    else if (instance.instancePosition.w == 8.0) { output.color = vec4f(0.8, 0.0, 0.8, 1.0); } // tritons is light purple
-    else { output.color = vec4f(1.0, 1.0, 1.0, 1.0); } // default white
+    let species = instance.instancePosition.w;
+         if (species == NEUTRON)                { output.color = vec4f(0.5, 0.5, 0.5, 1.0); } // gray
+    else if (species == ELECTRON)               { output.color = vec4f(0.0, 0.0, 1.0, 1.0); } // blue
+    else if (species == PROTON)                 { output.color = vec4f(1.0, 0.0, 0.0, 1.0); } // red
+    else if (species == DEUTERIUM)              { output.color = vec4f(0.0, 1.0, 0.0, 1.0); } // green
+    else if (species == TRITIUM)                { output.color = vec4f(1.0, 0.0, 1.0, 1.0); } // purple
+    else if (species == HELIUM_4_NUC)           { output.color = vec4f(1.0, 0.7, 0.0, 1.0); } // orange
+    else if (species == DEUTERON)               { output.color = vec4f(0.0, 0.8, 0.0, 1.0); } // green
+    else if (species == TRITON)                 { output.color = vec4f(0.8, 0.0, 0.8, 1.0); } // purple
+    else if (species == ELECTRON_MACROPARTICLE) { output.color = vec4f(0.0, 0.0, 1.0, 1.0); } // blue
+    else if (species == PROTON_MACROPARTICLE)   { output.color = vec4f(1.0, 0.0, 0.0, 1.0); } // red
+    else                                              { output.color = vec4f(1.0, 1.0, 1.0, 1.0); } // default white
     
     return output;
 }
