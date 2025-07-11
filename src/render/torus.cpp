@@ -2,42 +2,89 @@
 #include <vector>
 #include <cmath>
 #include <glm/gtc/type_ptr.hpp>
-#include "util/wgpu_util.h"
+#include <glm/glm.hpp>
 #include "torus.h"
-#include "ring.h"
 
 struct UniformData {
+    glm::mat4 model;
     glm::mat4 view;
     glm::mat4 projection;
-    glm::f32 toroidalI;
-    glm::f32 padding[3]; // Padding to align to 16-byte boundary
+    glm::f32 padding[4]; // Padding to align to 16-byte boundary
 };
 
-// Set up transformation matrix for each circle
-glm::mat4 get_coil_model_matrix(glm::f32 angle, glm::f32 r1) {
-    glm::mat4 model = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f));
-    model = glm::translate(model, glm::vec3(r1, 0.0f, 0.0f));
-    model = glm::rotate(model, glm::half_pi<float>(), glm::vec3(0.0f, 0.0f, 1.0f));
-    return model;
+// Generate torus vertices and indices
+void generate_torus_vertices(float r1, float r2, int toroidalSegments, int poloidalSegments, 
+                           std::vector<glm::f32>& vertices, std::vector<unsigned int>& indices) {
+    vertices.clear();
+    indices.clear();
+    
+    // Generate vertices
+    for (int i = 0; i <= toroidalSegments; i++) {
+        float toroidalAngle = 2.0f * M_PI * i / toroidalSegments;
+        float cosToroidal = cos(toroidalAngle);
+        float sinToroidal = sin(toroidalAngle);
+        
+        for (int j = 0; j <= poloidalSegments; j++) {
+            float poloidalAngle = 2.0f * M_PI * j / poloidalSegments;
+            float cosPoloidal = cos(poloidalAngle);
+            float sinPoloidal = sin(poloidalAngle);
+            
+            // Position - y-axis goes through the torus hole
+            float x = (r1 + r2 * cosPoloidal) * cosToroidal;
+            float y = r2 * sinPoloidal;
+            float z = (r1 + r2 * cosPoloidal) * sinToroidal;
+            
+            // Normal (for flat shading, we'll calculate per face)
+            float nx = cosPoloidal * cosToroidal;
+            float ny = sinPoloidal;
+            float nz = cosPoloidal * sinToroidal;
+            
+            vertices.push_back(x);
+            vertices.push_back(y);
+            vertices.push_back(z);
+            vertices.push_back(nx);
+            vertices.push_back(ny);
+            vertices.push_back(nz);
+        }
+    }
+    
+    // Generate indices
+    for (int i = 0; i < toroidalSegments; i++) {
+        for (int j = 0; j < poloidalSegments; j++) {
+            int current = i * (poloidalSegments + 1) + j;
+            int next = i * (poloidalSegments + 1) + (j + 1);
+            int currentNext = (i + 1) * (poloidalSegments + 1) + j;
+            int nextNext = (i + 1) * (poloidalSegments + 1) + (j + 1);
+            
+            // First triangle
+            indices.push_back(current);
+            indices.push_back(next);
+            indices.push_back(currentNext);
+            
+            // Second triangle
+            indices.push_back(next);
+            indices.push_back(nextNext);
+            indices.push_back(currentNext);
+        }
+    }
 }
 
-TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, glm::u16 nCoils) {
+TorusBuffers create_torus_buffers(wgpu::Device& device, float r1, float r2, int toroidalSegments, int poloidalSegments) {
     wgpu::ShaderModule shaderModule = create_shader_module(device, "shader/torus.wgsl");
     if (!shaderModule) {
-        std::cerr << "Failed to create torus shader module" << std::endl;
+        std::cerr << "Failed to create torus structure shader module" << std::endl;
         exit(1);
     }
 
     TorusBuffers buf = {};
-    buf.nCoils = nCoils;
 
-    // Generate solenoid vertices and indices using the ring vertex generation function
+    // Generate torus vertices and indices
     std::vector<glm::f32> vertices;
-    generate_ring_vertices(ring, vertices, buf.indices);
+    generate_torus_vertices(r1, r2, toroidalSegments, poloidalSegments, vertices, buf.indices);
 
     // Create vertex buffer
     wgpu::BufferDescriptor vertexBufferDesc = {
-        .label = "Torus Vertex Buffer",
+        .label = "Torus Structure Vertex Buffer",
         .size = vertices.size() * sizeof(glm::f32),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex,
         .mappedAtCreation = false
@@ -47,7 +94,7 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, glm::u
 
     // Create index buffer
     wgpu::BufferDescriptor indexBufferDesc = {
-        .label = "Torus Index Buffer",
+        .label = "Torus Structure Index Buffer",
         .size = buf.indices.size() * sizeof(glm::u32),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Index,
         .mappedAtCreation = false
@@ -55,18 +102,9 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, glm::u
     buf.indexBuffer = device.CreateBuffer(&indexBufferDesc);
     device.GetQueue().WriteBuffer(buf.indexBuffer, 0, buf.indices.data(), indexBufferDesc.size);
 
-    // Create instance buffer for model matrices
-    wgpu::BufferDescriptor instanceBufferDesc = {
-        .label = "Torus Instance Buffer",
-        .size = sizeof(glm::mat4) * nCoils,
-        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex,
-        .mappedAtCreation = false
-    };
-    buf.instanceBuffer = device.CreateBuffer(&instanceBufferDesc);
-
-    // Create uniform buffer for view and projection matrices
+    // Create uniform buffer
     wgpu::BufferDescriptor uniformBufferDesc = {
-        .label = "Torus Uniform Buffer",
+        .label = "Torus Structure Uniform Buffer",
         .size = sizeof(UniformData),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
         .mappedAtCreation = false
@@ -96,54 +134,27 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, glm::u
     };
     buf.pipelineLayout = device.CreatePipelineLayout(&pipelineLayoutDesc);
 
-    // Create vertex state with two buffer layouts: vertex data and instance data
-    std::vector<wgpu::VertexAttribute> vertexAttributes = {
-        { // Position
+    // Create vertex state
+    std::vector<wgpu::VertexAttribute> attributes = {
+        // Position
+        {
             .format = wgpu::VertexFormat::Float32x3,
             .offset = 0,
             .shaderLocation = 0
-        }, { // Normal
+        },
+        // Normal
+        {
             .format = wgpu::VertexFormat::Float32x3,
             .offset = 3 * sizeof(glm::f32),
             .shaderLocation = 1
         }
     };
 
-    // Model matrix (4 vec4s)
-    std::vector<wgpu::VertexAttribute> instanceAttributes = {
-        {
-            .format = wgpu::VertexFormat::Float32x4,
-            .offset = 0,
-            .shaderLocation = 2
-        }, {
-            .format = wgpu::VertexFormat::Float32x4,
-            .offset = 4 * sizeof(glm::f32),
-            .shaderLocation = 3
-        }, {
-            .format = wgpu::VertexFormat::Float32x4,
-            .offset = 8 * sizeof(glm::f32),
-            .shaderLocation = 4
-        }, {
-            .format = wgpu::VertexFormat::Float32x4,
-            .offset = 12 * sizeof(glm::f32),
-            .shaderLocation = 5
-        }
-    };
-
     wgpu::VertexBufferLayout vertexBufferLayout = {
         .arrayStride = 6 * sizeof(glm::f32),
-        .attributeCount = vertexAttributes.size(),
-        .attributes = vertexAttributes.data()
+        .attributeCount = attributes.size(),
+        .attributes = attributes.data()
     };
-
-    wgpu::VertexBufferLayout instanceBufferLayout = {
-        .arrayStride = sizeof(glm::mat4),
-        .attributeCount = instanceAttributes.size(),
-        .attributes = instanceAttributes.data(),
-        .stepMode = wgpu::VertexStepMode::Instance
-    };
-
-    std::vector<wgpu::VertexBufferLayout> bufferLayouts = {vertexBufferLayout, instanceBufferLayout};
 
     // Create color state
     wgpu::ColorTargetState colorTarget = {
@@ -168,13 +179,13 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, glm::u
 
     // Create render pipeline
     wgpu::RenderPipelineDescriptor pipelineDesc = {
-        .label = "Torus Render Pipeline",
+        .label = "Torus Structure Render Pipeline",
         .layout = buf.pipelineLayout,
         .vertex = {
             .module = shaderModule,
             .entryPoint = "vertexMain",
-            .bufferCount = bufferLayouts.size(),
-            .buffers = bufferLayouts.data()
+            .bufferCount = 1,
+            .buffers = &vertexBufferLayout
         },
         .fragment = &fragmentState,
         .primitive = {
@@ -194,7 +205,7 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, glm::u
     };
 
     wgpu::BindGroupDescriptor bindGroupDesc = {
-        .label = "Torus Bind Group",
+        .label = "Torus Structure Bind Group",
         .layout = buf.bindGroupLayout,
         .entryCount = 1,
         .entries = &bindGroupEntry
@@ -204,39 +215,27 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, const Ring& ring, glm::u
     return buf;
 }
 
-void render_torus(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const TorusBuffers& torusBuf, glm::f32 primaryRadius, glm::f32 toroidalI, glm::mat4 view, glm::mat4 projection) {
-    // Generate model matrices for each ring
-    std::vector<glm::mat4> modelMatrices;
-    modelMatrices.reserve(torusBuf.nCoils);
-    
-    for (glm::u16 i = 0; i < torusBuf.nCoils; i++) {
-        glm::f32 angle = (2.0f * M_PI * i) / torusBuf.nCoils;
-        glm::mat4 model = get_coil_model_matrix(angle, primaryRadius);
-        modelMatrices.push_back(model);
-    }
-    
-    // Update instance buffer with model matrices
-    device.GetQueue().WriteBuffer(torusBuf.instanceBuffer, 0, modelMatrices.data(), sizeof(glm::mat4) * torusBuf.nCoils);
-    
+void render_torus(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const TorusBuffers& torusStructureBuf, glm::mat4 view, glm::mat4 projection) {
+    // Update uniform buffer with matrices
+    glm::mat4 model = glm::mat4(1.0f); // Identity matrix - y-axis already goes through the torus hole
+
     UniformData uniformData = {
+        .model = model,
         .view = view,
         .projection = projection,
-        .toroidalI = toroidalI,
-        .padding = {0.0f, 0.0f, 0.0f}
+        .padding = {0.0f, 0.0f, 0.0f, 0.0f}
     };
     
-    // Update uniform buffer with view, projection, and toroidalI
-    device.GetQueue().WriteBuffer(torusBuf.uniformBuffer, 0, &uniformData, sizeof(UniformData));
+    device.GetQueue().WriteBuffer(torusStructureBuf.uniformBuffer, 0, &uniformData, sizeof(UniformData));
 
     // Set the pipeline and bind group
-    pass.SetPipeline(torusBuf.pipeline);
-    pass.SetBindGroup(0, torusBuf.bindGroup);
+    pass.SetPipeline(torusStructureBuf.pipeline);
+    pass.SetBindGroup(0, torusStructureBuf.bindGroup);
 
     // Set the vertex and index buffers
-    pass.SetVertexBuffer(0, torusBuf.vertexBuffer, 0, torusBuf.vertexBuffer.GetSize());
-    pass.SetVertexBuffer(1, torusBuf.instanceBuffer, 0, torusBuf.instanceBuffer.GetSize());
-    pass.SetIndexBuffer(torusBuf.indexBuffer, wgpu::IndexFormat::Uint32, 0, torusBuf.indexBuffer.GetSize());
+    pass.SetVertexBuffer(0, torusStructureBuf.vertexBuffer, 0, torusStructureBuf.vertexBuffer.GetSize());
+    pass.SetIndexBuffer(torusStructureBuf.indexBuffer, wgpu::IndexFormat::Uint32, 0, torusStructureBuf.indexBuffer.GetSize());
 
-    // Draw the torus with instancing
-    pass.DrawIndexed(torusBuf.indices.size(), torusBuf.nCoils, 0, 0, 0);
+    // Draw the torus structure
+    pass.DrawIndexed(torusStructureBuf.indices.size(), 1, 0, 0, 0);
 } 

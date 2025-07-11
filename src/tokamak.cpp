@@ -3,10 +3,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "tokamak.h"
 #include "render/torus.h"
-#include "render/torus_structure.h"
+#include "render/coils.h"
 #include "render/solenoid.h"
 #include "render/ring.h"
-#include "render/torus.h"
 #include "emscripten_key.h"
 
 inline float rand_range(float min, float max) {
@@ -20,15 +19,15 @@ TokamakScene::TokamakScene(const TorusParameters& params, const SolenoidParamete
 void TokamakScene::init(const SimulationParams& params) {
     Scene::init(params);
 
-    // Create torus buffers
+    // Create torus coils buffers
     Ring toroidalRing;
     toroidalRing.r = torusParameters.r2;
     toroidalRing.t = 0.05f * _M;
     toroidalRing.d = 0.1f * _M;
-    this->torusBuf = create_torus_buffers(device, toroidalRing, torusParameters.toroidalCoils);
+    this->coilsBuf = create_coils_buffers(device, toroidalRing, torusParameters.toroidalCoils);
 
     // Create torus structure buffers
-    this->torusStructureBuf = create_torus_structure_buffers(device, torusParameters.r1, torusParameters.r2, 64, 32);
+    this->torusBuf = create_torus_buffers(device, torusParameters.r1, torusParameters.r2, 64, 32);
 
     // Create solenoid buffers
     Ring solenoidRing;
@@ -42,12 +41,8 @@ void TokamakScene::init(const SimulationParams& params) {
 
 void TokamakScene::render_details(wgpu::RenderPassEncoder& pass) {
     Scene::render_details(pass);
-    if (this->showTorusStructure) {
-        render_torus_structure(device, pass, torusStructureBuf, view, projection);
-    }
-    if (this->showTorus) {
-        render_torus(device, pass, torusBuf, torusParameters.r1, this->toroidalI, view, projection);
-    }
+    if (this->showTorus)    render_torus(device, pass, torusBuf, view, projection);
+    if (this->showCoils)    render_coils(device, pass, coilsBuf, torusParameters.r1, this->toroidalI, view, projection);
     if (this->showSolenoid) render_solenoid(device, pass, solenoidBuf, this->solenoidFlux, view, projection);
 }
 
@@ -185,7 +180,7 @@ bool TokamakScene::process_input(bool (*debounce_input)()) {
         return true;
     }
     if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS && debounce_input()) {
-        toggleShowTorusStructure();
+        toggleShowCoils();
         return true;
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && debounce_input()) {
@@ -208,8 +203,8 @@ void TokamakScene::toggleShowTorus() {
     this->showTorus = !this->showTorus;
 }
 
-void TokamakScene::toggleShowTorusStructure() {
-    this->showTorusStructure = !this->showTorusStructure;
+void TokamakScene::toggleShowCoils() {
+    this->showCoils = !this->showCoils;
 }
 
 void TokamakScene::toggleShowSolenoid() {
