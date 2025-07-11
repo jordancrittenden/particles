@@ -3,6 +3,7 @@
 #include "util/wgpu_util.h"
 #include "scene.h"
 #include "render/torus.h"
+#include "render/torus_structure.h"
 #include "render/solenoid.h"
 #include "args.h"
 
@@ -43,6 +44,7 @@ public:
 
     // Toggles
     void toggleShowTorus();
+    void toggleShowTorusStructure();
     void toggleShowSolenoid();
     void toggleEnableToroidalRings();
     void toggleEnableSolenoidFlux();
@@ -52,9 +54,11 @@ private:
     const SolenoidParameters& solenoidParameters;
 
     TorusBuffers torusBuf;
+    TorusStructureBuffers torusStructureBuf;
     SolenoidBuffers solenoidBuf;
 
     bool showTorus = true;
+    bool showTorusStructure = true;
     bool showSolenoid = true;
     bool enableToroidalRings = true;
     bool enableSolenoidFlux = false;

@@ -23,6 +23,7 @@ add_executable(sim
 	src/render/ring.cpp
 	src/render/solenoid.cpp
 	src/render/torus.cpp
+	src/render/torus_structure.cpp
 	src/render/tracers.cpp
 	src/shared/particles.cpp
 	src/shared/fields.cpp
