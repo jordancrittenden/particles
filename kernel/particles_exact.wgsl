@@ -44,36 +44,7 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
         
         // to avoid both work items spawning a new particle, check id < collider_id, which will only be true for one of them
         if (collider_id >= 0 && i32(id) < collider_id) {
-            let collider_pos = vec3<f32>(particlePos[u32(collider_id)].xyz);
-            let collider_vel = vec3<f32>(particleVel[u32(collider_id)].xyz);
-            let collider_mass = particle_mass(particlePos[u32(collider_id)].w);
-            let collision_r_norm = normalize(pos - collider_pos);
-
-            // Relative velocity
-            let v = collider_vel - vel;
-
-            // Relative velocity along the line of collision
-            let v_dot_r = dot(v, collision_r_norm);
-
-            // If the relative velocity along the line of collision is >= 0, they are moving apart
-            if (v_dot_r >= 0.0) {
-                return;
-            }
-
-            // Impulse scalar
-            let impulse = (2.0 * v_dot_r) / (mass + collider_mass);
-
-            // Compute new velocities
-            let vel_new = vel + impulse * mass * collision_r_norm;
-            let collider_vel_new = collider_vel - impulse * mass * collision_r_norm;
-
-            particleVel[id] = vec4<f32>(vel_new, 0.0);
-            particleVel[u32(collider_id)] = vec4<f32>(collider_vel_new, 0.0);
-
-            // Create new particle
-            let new_idx = nParticles + id;
-            particlePos[new_idx] = vec4<f32>(pos.x + 0.01, pos.y + 0.01, pos.z + 0.01, 1.0);
-            particleVel[new_idx] = vec4<f32>(0.0, 10000.0, 0.0, 0.0);
+            // collision
         }
     }
 

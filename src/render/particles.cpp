@@ -8,7 +8,7 @@ ParticleRender create_particle_render(wgpu::Device& device) {
     ParticleRender render = {};
     
     // Create render shader module
-    wgpu::ShaderModule renderShaderModule = create_shader_module(device, "shader/particles.wgsl");
+    wgpu::ShaderModule renderShaderModule = create_shader_module(device, "shader/particles.wgsl", {"kernel/physical_constants.wgsl"});
     if (!renderShaderModule) {
         std::cerr << "Failed to create render shader module" << std::endl;
         exit(1);

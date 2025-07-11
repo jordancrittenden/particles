@@ -28,8 +28,18 @@ glm::f32vec4 maxwell_boltzmann_particle_velocty(float T, float mass) {
     return glm::f32vec4 { vx, vy, vz, 0.0f };
 }
 
-PARTICLE_SPECIES rand_particle_species(float partsNeutron, float partsElectron, float partsProton, float partsDeuterium, float partsTritium, float partsIonDeuterium, float partsIonTritium) {
-    float total = partsNeutron + partsElectron + partsProton + partsDeuterium + partsTritium + partsIonDeuterium + partsIonTritium;
+PARTICLE_SPECIES rand_particle_species(
+    float partsNeutron,
+    float partsElectron,
+    float partsProton,
+    float partsDeuterium,
+    float partsTritium,
+    float partsIonDeuterium,
+    float partsIonTritium,
+    float partsElectronMacroparticle,
+    float partsProtonMacroparticle)
+{
+    float total = partsNeutron + partsElectron + partsProton + partsDeuterium + partsTritium + partsIonDeuterium + partsIonTritium + partsElectronMacroparticle + partsProtonMacroparticle;
     float rnd = rand_range(0.0, total);
 
     float level = partsNeutron;
@@ -46,6 +56,10 @@ PARTICLE_SPECIES rand_particle_species(float partsNeutron, float partsElectron, 
     if (rnd < level) return DEUTERON;
     level += partsIonTritium;
     if (rnd < level) return TRITON;
+    level += partsElectronMacroparticle;
+    if (rnd < level) return ELECTRON_MACROPARTICLE;
+    level += partsProtonMacroparticle;
+    if (rnd < level) return PROTON_MACROPARTICLE;
 
     std::cerr << "Invalid particle species" << std::endl;
 

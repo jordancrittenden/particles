@@ -33,6 +33,8 @@
 #define Q_OVER_M_DEUTERON     ( 4.79179449646e7f  * (_A * _S / _KG))    /* A s / kg */
 #define Q_OVER_M_TRITON       ( 3.19964547001e7f  * (_A * _S / _KG))    /* A s / kg */
 
+#define MACROPARTICLE_N 1e7 // Number of particles per macroparticle
+
 enum PARTICLE_SPECIES {
     NEUTRON = 1,
     ELECTRON = 2,
@@ -41,44 +43,52 @@ enum PARTICLE_SPECIES {
     TRITIUM = 5,
     HELIUM_4_NUC = 6,
     DEUTERON = 7,
-    TRITON = 8
+    TRITON = 8,
+    ELECTRON_MACROPARTICLE = 102,
+    PROTON_MACROPARTICLE = 103
 };
 
 inline float particle_mass(float species) {
-    if      (species == 1.0) return M_NEUTRON;
-    else if (species == 2.0) return M_ELECTRON;
-    else if (species == 3.0) return M_PROTON;
-    else if (species == 4.0) return M_DEUTERIUM;
-    else if (species == 5.0) return M_TRITIUM;
-    else if (species == 6.0) return M_HELIUM_4_NUC;
-    else if (species == 7.0) return M_DEUTERON;
-    else if (species == 8.0) return M_TRITON;
+    if      (species == 1.0)   return M_NEUTRON;
+    else if (species == 2.0)   return M_ELECTRON;
+    else if (species == 3.0)   return M_PROTON;
+    else if (species == 4.0)   return M_DEUTERIUM;
+    else if (species == 5.0)   return M_TRITIUM;
+    else if (species == 6.0)   return M_HELIUM_4_NUC;
+    else if (species == 7.0)   return M_DEUTERON;
+    else if (species == 8.0)   return M_TRITON;
+    else if (species == 102.0) return M_ELECTRON;
+    else if (species == 103.0) return M_PROTON;
 
     return 0.0; // error case, should never happen
 }
 
 inline float particle_charge(float species) {
-    if      (species == 1.0) return 0;         // neutron
-    else if (species == 2.0) return -Q_E;      // electron
-    else if (species == 3.0) return Q_E;       // proton
-    else if (species == 4.0) return 0;         // deuterium
-    else if (species == 5.0) return 0;         // tritium
-    else if (species == 6.0) return 2.0 * Q_E; // helium4
-    else if (species == 7.0) return Q_E;       // ion_deuterium
-    else if (species == 8.0) return Q_E;       // ion_tritium
+    if      (species == 1.0)   return 0;         // neutron
+    else if (species == 2.0)   return -Q_E;      // electron
+    else if (species == 3.0)   return Q_E;       // proton
+    else if (species == 4.0)   return 0;         // deuterium
+    else if (species == 5.0)   return 0;         // tritium
+    else if (species == 6.0)   return 2.0 * Q_E; // helium4
+    else if (species == 7.0)   return Q_E;       // ion_deuterium
+    else if (species == 8.0)   return Q_E;       // ion_tritium
+    else if (species == 102.0) return -Q_E * MACROPARTICLE_N;   // electron macroparticle
+    else if (species == 103.0) return  Q_E * MACROPARTICLE_N;   // proton macroparticle
 
     return 0.0; // error case, should never happen
 }
 
 inline float charge_to_mass_ratio(float species) {
-    if      (species == 1.0) return 0.0;
-    else if (species == 2.0) return Q_OVER_M_ELECTRON;
-    else if (species == 3.0) return Q_OVER_M_PROTON;
-    else if (species == 4.0) return 0;
-    else if (species == 5.0) return 0;
-    else if (species == 6.0) return Q_OVER_M_HELIUM_4_NUC;
-    else if (species == 7.0) return Q_OVER_M_DEUTERON;
-    else if (species == 8.0) return Q_OVER_M_TRITON;
+    if      (species == 1.0)   return 0.0;
+    else if (species == 2.0)   return Q_OVER_M_ELECTRON;
+    else if (species == 3.0)   return Q_OVER_M_PROTON;
+    else if (species == 4.0)   return 0;
+    else if (species == 5.0)   return 0;
+    else if (species == 6.0)   return Q_OVER_M_HELIUM_4_NUC;
+    else if (species == 7.0)   return Q_OVER_M_DEUTERON;
+    else if (species == 8.0)   return Q_OVER_M_TRITON;
+    else if (species == 102.0) return Q_OVER_M_ELECTRON * MACROPARTICLE_N;
+    else if (species == 103.0) return Q_OVER_M_PROTON * MACROPARTICLE_N;
 
     return 0.0; // error case, should never happen
 }

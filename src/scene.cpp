@@ -127,7 +127,7 @@ void Scene::init(const SimulationParams& params) {
         device,
         [this](){ return rand_particle_position(); },
         [&params](PARTICLE_SPECIES species){ return maxwell_boltzmann_particle_velocty(params.initialTemperature, particle_mass(species)); },
-        [](){ return rand_particle_species(0.3f, 0.1, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f); },
+        [](){ return rand_particle_species(0.0f, 0.0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.5f); },
         params.initialParticles,
         params.maxParticles);
     this->particleRender = create_particle_render(device);

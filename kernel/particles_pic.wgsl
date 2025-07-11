@@ -22,7 +22,6 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Extract properties for this particle
     let pos = vec3<f32>(particlePos[id].xyz);
     var vel = vec3<f32>(particleVel[id].xyz);
-    let mass = particle_mass(species);
     let q_over_m = charge_to_mass_ratio(species);
 
     // Locate the particle in the mesh
