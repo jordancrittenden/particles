@@ -5,6 +5,7 @@
 #include "render/coils.h"
 #include "render/torus.h"
 #include "render/solenoid.h"
+#include "compute/torus_wall.h"
 #include "args.h"
 
 typedef struct TorusParameters {
@@ -35,6 +36,7 @@ public:
 
     // Compute
     void compute_field_step(wgpu::ComputePassEncoder& pass) override;
+    void compute_wall_interactions(wgpu::ComputePassEncoder& pass) override;
 
     // Scene-dependent functions
     std::vector<Cell> get_mesh_cells(glm::f32vec3 size, MeshProperties& mesh) override;
@@ -53,9 +55,13 @@ private:
     const TorusParameters& torusParameters;
     const SolenoidParameters& solenoidParameters;
 
+    // Render buffers
     CoilsBuffers coilsBuf;
     TorusBuffers torusBuf;
     SolenoidBuffers solenoidBuf;
+    
+    // Compute buffers
+    TorusWallCompute torusWallCompute;
 
     bool showTorus = true;
     bool showCoils = true;

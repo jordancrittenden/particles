@@ -28,16 +28,6 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Locate the particle in the mesh
     var neighbors: CellNeighbors = cell_neighbors(pos, &mesh);
 
-    // Check to see if the particle has reached the boundary
-    if (neighbors.xp_yp_zp == -1i) {
-        if (species == NEUTRON) {
-            species = 0.0; // neutron flux into wall
-        } else {
-            // Bounce off the wall. This is a very primive model of wall interaction
-            vel = -vel;
-        }
-    }
-
     // Interpolate the E and B field at particle position from the mesh
     let E_interp = interp(&mesh, &neighbors, &eField, pos);
     let B_interp = interp(&mesh, &neighbors, &bField, pos);

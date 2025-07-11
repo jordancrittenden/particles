@@ -36,6 +36,9 @@ void TokamakScene::init(const SimulationParams& params) {
     solenoidRing.d = torusParameters.r2 * 2.0f;
     this->solenoidBuf = create_solenoid_buffers(device, solenoidRing);
 
+    // Create torus wall compute
+    this->torusWallCompute = create_torus_wall_compute(device, particles, params.maxParticles);
+
     this->cameraDistance = 5.0f * _M;
 }
 
@@ -68,6 +71,16 @@ void TokamakScene::compute_field_step(wgpu::ComputePassEncoder& pass) {
         nParticles,
         this->tracers.nTracers,
         TRACER_LENGTH);
+}
+
+void TokamakScene::compute_wall_interactions(wgpu::ComputePassEncoder& pass) {
+    run_torus_wall_compute(
+        device,
+        pass,
+        torusWallCompute,
+        torusParameters.r1,
+        torusParameters.r2,
+        nParticles);
 }
 
 std::vector<Cell> TokamakScene::get_mesh_cells(glm::f32vec3 size, MeshProperties& mesh) {

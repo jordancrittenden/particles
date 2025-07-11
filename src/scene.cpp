@@ -307,6 +307,8 @@ void Scene::compute() {
         dt,
         nParticles);
 
+    this->compute_wall_interactions(pass);
+
     pass.End();
     
     encoder.CopyBufferToBuffer(particles.nCur, 0, particleCompute.nParticlesReadBuf, 0, sizeof(glm::u32));
@@ -350,6 +352,10 @@ void Scene::compute_field_step(wgpu::ComputePassEncoder& pass) {
         nParticles,
         tracers.nTracers,
         TRACER_LENGTH);
+}
+
+void Scene::compute_wall_interactions(wgpu::ComputePassEncoder& pass) {
+    // TODO: Implement wall interactions
 }
 
 std::vector<Cell> Scene::get_mesh_cells(glm::f32vec3 size, MeshProperties& mesh) {

@@ -62,6 +62,7 @@ public:
 protected:
     virtual void render_details(wgpu::RenderPassEncoder& pass);
     virtual void compute_field_step(wgpu::ComputePassEncoder& pass);
+    virtual void compute_wall_interactions(wgpu::ComputePassEncoder& pass);
 
     bool refreshCurrents = false;
     
@@ -81,10 +82,12 @@ protected:
     glm::f32 dt = 1e-8f * _S;  // Simulation dt, s
     bool enableParticleFieldContributions = false;
 
+    // Compute buffers
+    ParticleBuffers particles;
     ParticleCompute particleCompute;
     FieldCompute fieldCompute;
-    TracerCompute tracerCompute;
     TracerBuffers tracers;
+    TracerCompute tracerCompute;
     glm::u32 nParticles;
 
     // Currents
@@ -109,7 +112,6 @@ private:
     glm::mat4 get_orbit_view_matrix();
 
     // Particles
-    ParticleBuffers particles;
     ParticleRender particleRender;
     SphereRender sphereRender;
     
