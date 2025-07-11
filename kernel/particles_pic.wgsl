@@ -45,5 +45,5 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
     particlePos[id] = vec4<f32>(pos_new, species);
     particleVel[id] = vec4<f32>(vel_new, 0.0);
 
-    //debug[id] = vec4<f32>(0.0, 0.0, 0.0, 0.0);)
+    //debug[id] = vec4<f32>(0.0, 0.0, 0.0, 0.0);
 } 

@@ -33,7 +33,7 @@
 #define Q_OVER_M_DEUTERON     ( 4.79179449646e7f  * (_A * _S / _KG))    /* A s / kg */
 #define Q_OVER_M_TRITON       ( 3.19964547001e7f  * (_A * _S / _KG))    /* A s / kg */
 
-#define MACROPARTICLE_N 1e8 // Number of particles per macroparticle
+#define MACROPARTICLE_N 1e9 // Number of particles per macroparticle
 
 enum PARTICLE_SPECIES {
     NEUTRON = 1,
