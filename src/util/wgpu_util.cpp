@@ -92,7 +92,7 @@ wgpu::ShaderModule create_shader_module(wgpu::Device& device, std::string path, 
     std::cout << "Creating shader module for: " << path << " (size: " << src.size() << " chars)" << std::endl;
     
     wgpu::ShaderSourceWGSL wgsl{{.code = src.c_str()}};
-    wgpu::ShaderModuleDescriptor shaderModuleDescriptor{.label = path.c_str(), .nextInChain = &wgsl};
+    wgpu::ShaderModuleDescriptor shaderModuleDescriptor{.nextInChain = &wgsl, .label = path.c_str()};
     return device.CreateShaderModule(&shaderModuleDescriptor);
 }
 
