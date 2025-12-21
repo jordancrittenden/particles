@@ -16,8 +16,8 @@ TracerBuffers create_tracer_buffers(wgpu::Device& device, const std::vector<glm:
     // Create E field tracer buffer
     wgpu::BufferDescriptor eBufferDesc = {
         .label = "E Tracer Buffer",
-        .size = tracerTrails.size() * sizeof(glm::f32vec4),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex | wgpu::BufferUsage::Storage,
+        .size = tracerTrails.size() * sizeof(glm::f32vec4),
         .mappedAtCreation = false
     };
     buffers.e_traces = device.CreateBuffer(&eBufferDesc);
@@ -26,8 +26,8 @@ TracerBuffers create_tracer_buffers(wgpu::Device& device, const std::vector<glm:
     // Create B field tracer buffer
     wgpu::BufferDescriptor bBufferDesc = {
         .label = "B Tracer Buffer",
-        .size = tracerTrails.size() * sizeof(glm::f32vec4),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex | wgpu::BufferUsage::Storage,
+        .size = tracerTrails.size() * sizeof(glm::f32vec4),
         .mappedAtCreation = false
     };
     buffers.b_traces = device.CreateBuffer(&bBufferDesc);

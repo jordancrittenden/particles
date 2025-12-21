@@ -44,8 +44,8 @@ ParticleBuffers create_particle_buffers(
     // Current number of particles
     wgpu::BufferDescriptor nCurDesc = {
         .label = "Particle Number Buffer",
-        .size = sizeof(glm::u32),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::Storage,
+        .size = sizeof(glm::u32),
         .mappedAtCreation = false
     };
     buf.nCur = device.CreateBuffer(&nCurDesc);
@@ -54,8 +54,8 @@ ParticleBuffers create_particle_buffers(
     // Particle position buffer
     wgpu::BufferDescriptor posDesc = {
         .label = "Particle Position Buffer",
-        .size = maxParticles * sizeof(glm::f32vec4),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Storage | wgpu::BufferUsage::Vertex,
+        .size = maxParticles * sizeof(glm::f32vec4),
         .mappedAtCreation = false
     };
     buf.pos = device.CreateBuffer(&posDesc);
@@ -64,8 +64,8 @@ ParticleBuffers create_particle_buffers(
     // Particle velocity buffer
     wgpu::BufferDescriptor velDesc = {
         .label = "Particle Velocity Buffer",
-        .size = maxParticles * sizeof(glm::f32vec4),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Storage,
+        .size = maxParticles * sizeof(glm::f32vec4),
         .mappedAtCreation = false
     };
     buf.vel = device.CreateBuffer(&velDesc);

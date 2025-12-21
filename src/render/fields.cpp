@@ -1,3 +1,4 @@
+#define _USE_MATH_DEFINES
 #include <iostream>
 #include <vector>
 #include <glm/glm.hpp>
@@ -83,8 +84,9 @@ FieldRender create_fields_render(wgpu::Device& device, std::vector<glm::f32vec4>
     std::vector<glm::f32> vertices = create_vector_geometry(length);
     wgpu::BufferDescriptor vertexBufferDesc = {
         .label = "Field Vertex Buffer",
+        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex,
         .size = vertices.size() * sizeof(glm::f32),
-        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex
+        .mappedAtCreation = false
     };
     render.vertexBuffer = device.CreateBuffer(&vertexBufferDesc);
     device.GetQueue().WriteBuffer(render.vertexBuffer, 0, vertices.data(), vertices.size() * sizeof(glm::f32));
@@ -92,8 +94,9 @@ FieldRender create_fields_render(wgpu::Device& device, std::vector<glm::f32vec4>
     // Create instance buffers
     wgpu::BufferDescriptor instanceBufferDesc = {
         .label = "Field Instance Buffer",
+        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex,
         .size = loc.size() * sizeof(glm::f32vec4),
-        .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex
+        .mappedAtCreation = false
     };
     render.instanceBuffer = device.CreateBuffer(&instanceBufferDesc);
     device.GetQueue().WriteBuffer(render.instanceBuffer, 0, loc.data(), loc.size() * sizeof(glm::f32vec4));
@@ -101,8 +104,9 @@ FieldRender create_fields_render(wgpu::Device& device, std::vector<glm::f32vec4>
     // Create uniform buffer
     wgpu::BufferDescriptor uniformBufferDesc = {
         .label = "Field Uniform Buffer",
+        .usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst,
         .size = sizeof(Uniforms),
-        .usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst
+        .mappedAtCreation = false
     };
     render.uniformBuffer = device.CreateBuffer(&uniformBufferDesc);
     
@@ -183,9 +187,9 @@ FieldRender create_fields_render(wgpu::Device& device, std::vector<glm::f32vec4>
 
     // Create depth stencil state
     wgpu::DepthStencilState depthStencilState = {
+        .format = wgpu::TextureFormat::Depth24Plus,
         .depthWriteEnabled = true,
-        .depthCompare = wgpu::CompareFunction::Less,
-        .format = wgpu::TextureFormat::Depth24Plus
+        .depthCompare = wgpu::CompareFunction::Less
     };
 
     // Create render pipeline
@@ -198,11 +202,11 @@ FieldRender create_fields_render(wgpu::Device& device, std::vector<glm::f32vec4>
             .bufferCount = vertexBufferLayouts.size(),
             .buffers = vertexBufferLayouts.data()
         },
-        .fragment = &fragmentState,
         .primitive = {
             .topology = wgpu::PrimitiveTopology::TriangleList
         },
-        .depthStencil = &depthStencilState
+        .depthStencil = &depthStencilState,
+        .fragment = &fragmentState
     };
     render.pipeline = device.CreateRenderPipeline(&renderPipelineDesc);
     

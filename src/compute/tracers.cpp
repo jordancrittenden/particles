@@ -118,8 +118,8 @@ void create_e_tracer_compute(
     // Create debug storage buffer for E tracer compute shader
     wgpu::BufferDescriptor eDebugStorageBufDesc = {
         .label = "E Tracer Debug Storage Buffer",
-        .size = tracerBuf.nTracers * sizeof(glm::f32vec4),
         .usage = wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::Storage,
+        .size = tracerBuf.nTracers * sizeof(glm::f32vec4),
         .mappedAtCreation = false
     };
     compute.eDebugStorageBuf = device.CreateBuffer(&eDebugStorageBufDesc);
@@ -127,8 +127,8 @@ void create_e_tracer_compute(
     // Create debug read buffer for E tracer CPU access
     wgpu::BufferDescriptor eDebugReadBufDesc = {
         .label = "E Tracer Debug Read Buffer",
-        .size = tracerBuf.nTracers * sizeof(glm::f32vec4),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead,
+        .size = tracerBuf.nTracers * sizeof(glm::f32vec4),
         .mappedAtCreation = false
     };
     compute.eDebugReadBuf = device.CreateBuffer(&eDebugReadBufDesc);
@@ -136,8 +136,9 @@ void create_e_tracer_compute(
     // Params buffer
     wgpu::BufferDescriptor eParamsBufferDesc = {
         .label = "E Tracer Params Buffer",
+        .usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst,
         .size = sizeof(ETracerParams),
-        .usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst
+        .mappedAtCreation = false
     };
     compute.eParamsBuffer = device.CreateBuffer(&eParamsBufferDesc);
 
@@ -291,8 +292,8 @@ void create_b_tracer_compute(
     // Create debug storage buffer for B tracer compute shader
     wgpu::BufferDescriptor bDebugStorageBufDesc = {
         .label = "B Tracer Debug Storage Buffer",
-        .size = tracerBuf.nTracers * sizeof(glm::f32vec4),
         .usage = wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::Storage,
+        .size = tracerBuf.nTracers * sizeof(glm::f32vec4),
         .mappedAtCreation = false
     };
     compute.bDebugStorageBuf = device.CreateBuffer(&bDebugStorageBufDesc);
@@ -300,8 +301,8 @@ void create_b_tracer_compute(
     // Create debug read buffer for B tracer CPU access
     wgpu::BufferDescriptor bDebugReadBufDesc = {
         .label = "B Tracer Debug Read Buffer",
-        .size = tracerBuf.nTracers * sizeof(glm::f32vec4),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead,
+        .size = tracerBuf.nTracers * sizeof(glm::f32vec4),
         .mappedAtCreation = false
     };
     compute.bDebugReadBuf = device.CreateBuffer(&bDebugReadBufDesc);
@@ -309,8 +310,9 @@ void create_b_tracer_compute(
     // Params buffer
     wgpu::BufferDescriptor bParamsBufferDesc = {
         .label = "B Tracer Params Buffer",
+        .usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst,
         .size = sizeof(BTracerParams),
-        .usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst
+        .mappedAtCreation = false
     };
     compute.bParamsBuffer = device.CreateBuffer(&bParamsBufferDesc);
 

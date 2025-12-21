@@ -31,8 +31,8 @@ ParticleCompute create_particle_compute(
     // Read buffer for number of current particles
     wgpu::BufferDescriptor nParticlesReadBufDesc = {
         .label = "Particle Number Read Buffer",
-        .size = sizeof(glm::u32),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead,
+        .size = sizeof(glm::u32),
         .mappedAtCreation = false
     };
     particleCompute.nParticlesReadBuf = device.CreateBuffer(&nParticlesReadBufDesc);
@@ -40,8 +40,8 @@ ParticleCompute create_particle_compute(
     // Create debug storage buffer for compute shader
     wgpu::BufferDescriptor debugStorageBufDesc = {
         .label = "Particle Debug Storage Buffer",
-        .size = maxParticles * sizeof(glm::f32vec4),
         .usage = wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::Storage,
+        .size = maxParticles * sizeof(glm::f32vec4),
         .mappedAtCreation = false
     };
     particleCompute.debugStorageBuf = device.CreateBuffer(&debugStorageBufDesc);
@@ -49,8 +49,8 @@ ParticleCompute create_particle_compute(
     // Create debug read buffer for CPU access
     wgpu::BufferDescriptor debugReadBufDesc = {
         .label = "Particle Debug Read Buffer",
-        .size = maxParticles * sizeof(glm::f32vec4),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead,
+        .size = maxParticles * sizeof(glm::f32vec4),
         .mappedAtCreation = false
     };
     particleCompute.debugReadBuf = device.CreateBuffer(&debugReadBufDesc);
@@ -58,8 +58,8 @@ ParticleCompute create_particle_compute(
     // Create params uniform buffer
     wgpu::BufferDescriptor paramsBufferDesc = {
         .label = "Particle Compute Params Buffer",
-        .size = sizeof(ComputeMotionParams),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
+        .size = sizeof(ComputeMotionParams),
         .mappedAtCreation = false
     };
     particleCompute.paramsBuffer = device.CreateBuffer(&paramsBufferDesc);

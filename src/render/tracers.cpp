@@ -25,8 +25,8 @@ TracerRender create_tracer_render(wgpu::Device& device) {
     // Create uniform buffer
     wgpu::BufferDescriptor uniformBufferDesc = {
         .label = "Tracer Uniform Buffer",
-        .size = sizeof(Uniforms),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
+        .size = sizeof(Uniforms),
         .mappedAtCreation = false
     };
     render.uniformBuffer = device.CreateBuffer(&uniformBufferDesc);
@@ -74,14 +74,14 @@ TracerRender create_tracer_render(wgpu::Device& device) {
     // Create color target state
     wgpu::BlendState blendState = {
         .color = {
+            .operation = wgpu::BlendOperation::Add,
             .srcFactor = wgpu::BlendFactor::SrcAlpha,
-            .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
-            .operation = wgpu::BlendOperation::Add
+            .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha
         },
         .alpha = {
+            .operation = wgpu::BlendOperation::Add,
             .srcFactor = wgpu::BlendFactor::One,
-            .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
-            .operation = wgpu::BlendOperation::Add
+            .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha
         }
     };
     
@@ -101,9 +101,9 @@ TracerRender create_tracer_render(wgpu::Device& device) {
     
     // Create depth stencil state
     wgpu::DepthStencilState depthStencilState = {
+        .format = wgpu::TextureFormat::Depth24Plus,
         .depthWriteEnabled = false,
-        .depthCompare = wgpu::CompareFunction::Always,
-        .format = wgpu::TextureFormat::Depth24Plus
+        .depthCompare = wgpu::CompareFunction::Always
     };
     
     // Create render pipeline
@@ -116,11 +116,11 @@ TracerRender create_tracer_render(wgpu::Device& device) {
             .bufferCount = 1,
             .buffers = &vertexBufferLayout
         },
-        .fragment = &fragmentState,
         .primitive = {
             .topology = wgpu::PrimitiveTopology::PointList
         },
-        .depthStencil = &depthStencilState
+        .depthStencil = &depthStencilState,
+        .fragment = &fragmentState
     };
     render.pipeline = device.CreateRenderPipeline(&pipelineDesc);
     

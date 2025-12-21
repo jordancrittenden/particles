@@ -1,6 +1,7 @@
 #define _USE_MATH_DEFINES
 #include <iostream>
 #include <algorithm>
+#include <chrono>
 #include <glm/gtc/matrix_transform.hpp>
 #include "shared/particles.h"
 #include "shared/fields.h"
@@ -24,7 +25,7 @@ inline float rand_range(float min, float max) {
 }
 
 void Scene::init_webgpu() {
-    wgpu::InstanceDescriptor instanceDesc{.capabilities = {.timedWaitAnyEnable = true}};
+    wgpu::InstanceDescriptor instanceDesc{};
     instance = wgpu::CreateInstance(&instanceDesc);
 
     wgpu::Future f1 = instance.RequestAdapter(

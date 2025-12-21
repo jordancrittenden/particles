@@ -38,8 +38,9 @@ FieldCompute create_field_compute(
     }
     wgpu::BufferDescriptor cellLocationBufferDesc = {
         .label = "Cell Location Buffer",
+        .usage = wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopyDst,
         .size = cellLocations.size() * sizeof(glm::f32vec4),
-        .usage = wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopyDst
+        .mappedAtCreation = false
     };
     fieldCompute.cellLocationBuffer = device.CreateBuffer(&cellLocationBufferDesc);
     device.GetQueue().WriteBuffer(fieldCompute.cellLocationBuffer, 0, cellLocations.data(), cellLocations.size() * sizeof(glm::f32vec4));
@@ -47,16 +48,17 @@ FieldCompute create_field_compute(
     // Create debug buffer
     wgpu::BufferDescriptor debugBufferDesc = {
         .label = "Debug Buffer",
+        .usage = wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopyDst,
         .size = cells.size() * sizeof(glm::f32vec4),
-        .usage = wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopyDst
+        .mappedAtCreation = false
     };
     fieldCompute.debugBuffer = device.CreateBuffer(&debugBufferDesc);
 
     // Create params uniform buffer
     wgpu::BufferDescriptor paramsBufferDesc = {
         .label = "Fields Params Buffer",
-        .size = sizeof(ComputeFieldsParams),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
+        .size = sizeof(ComputeFieldsParams),
         .mappedAtCreation = false
     };
     fieldCompute.paramsBuffer = device.CreateBuffer(&paramsBufferDesc);

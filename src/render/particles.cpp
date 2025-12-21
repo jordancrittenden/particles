@@ -17,8 +17,8 @@ ParticleRender create_particle_render(wgpu::Device& device) {
     // Create uniform buffer for rendering
     wgpu::BufferDescriptor uniformBufferDesc = {
         .label = "Particle Uniform Buffer",
-        .size = sizeof(glm::mat4) * 2,  // view, projection
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
+        .size = sizeof(glm::mat4) * 2,  // view, projection
         .mappedAtCreation = false
     };
     render.uniformBuffer = device.CreateBuffer(&uniformBufferDesc);
@@ -83,9 +83,9 @@ ParticleRender create_particle_render(wgpu::Device& device) {
 
     // Create depth stencil state
     wgpu::DepthStencilState depthStencilState = {
+        .format = wgpu::TextureFormat::Depth24Plus,
         .depthWriteEnabled = true,
-        .depthCompare = wgpu::CompareFunction::Less,
-        .format = wgpu::TextureFormat::Depth24Plus
+        .depthCompare = wgpu::CompareFunction::Less
     };
 
     // Create render pipeline
@@ -98,11 +98,11 @@ ParticleRender create_particle_render(wgpu::Device& device) {
             .bufferCount = 1,
             .buffers = &vertexBufferLayout
         },
-        .fragment = &fragmentState,
         .primitive = {
             .topology = wgpu::PrimitiveTopology::PointList
         },
-        .depthStencil = &depthStencilState
+        .depthStencil = &depthStencilState,
+        .fragment = &fragmentState
     };
     render.pipeline = device.CreateRenderPipeline(&pipelineDesc);
 
