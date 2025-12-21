@@ -67,8 +67,8 @@ SphereRender create_sphere_render(wgpu::Device& device) {
     // Create vertex buffer for sphere geometry
     wgpu::BufferDescriptor vertexBufferDesc = {
         .label = "Sphere Vertex Buffer",
-        .size = sphereVertices.size() * sizeof(glm::f32vec3),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex,
+        .size = sphereVertices.size() * sizeof(glm::f32vec3),
         .mappedAtCreation = false
     };
     render.vertexBuffer = device.CreateBuffer(&vertexBufferDesc);
@@ -77,8 +77,8 @@ SphereRender create_sphere_render(wgpu::Device& device) {
     // Create index buffer for sphere geometry
     wgpu::BufferDescriptor indexBufferDesc = {
         .label = "Sphere Index Buffer",
-        .size = sphereIndices.size() * sizeof(glm::u32),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Index,
+        .size = sphereIndices.size() * sizeof(glm::u32),
         .mappedAtCreation = false
     };
     render.indexBuffer = device.CreateBuffer(&indexBufferDesc);
@@ -88,8 +88,8 @@ SphereRender create_sphere_render(wgpu::Device& device) {
     // Create uniform buffer for rendering
     wgpu::BufferDescriptor uniformBufferDesc = {
         .label = "Sphere Uniform Buffer",
-        .size = sizeof(glm::mat4) * 2,  // view, projection
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
+        .size = sizeof(glm::mat4) * 2,  // view, projection
         .mappedAtCreation = false
     };
     render.uniformBuffer = device.CreateBuffer(&uniformBufferDesc);
@@ -145,9 +145,9 @@ SphereRender create_sphere_render(wgpu::Device& device) {
 
     wgpu::VertexBufferLayout instanceBufferLayout = {
         .arrayStride = sizeof(glm::f32vec4),
-        .attributeCount = instanceAttributes.size(),
-        .attributes = instanceAttributes.data(),
-        .stepMode = wgpu::VertexStepMode::Instance
+        .stepMode = wgpu::VertexStepMode::Instance,
+        .attributeCount = static_cast<uint32_t>(instanceAttributes.size()),
+        .attributes = instanceAttributes.data()
     };
 
     std::vector<wgpu::VertexBufferLayout> bufferLayouts = {sphereBufferLayout, instanceBufferLayout};
@@ -168,9 +168,9 @@ SphereRender create_sphere_render(wgpu::Device& device) {
 
     // Create depth stencil state
     wgpu::DepthStencilState depthStencilState = {
+        .format = wgpu::TextureFormat::Depth24Plus,
         .depthWriteEnabled = true,
-        .depthCompare = wgpu::CompareFunction::Less,
-        .format = wgpu::TextureFormat::Depth24Plus
+        .depthCompare = wgpu::CompareFunction::Less
     };
 
     // Create render pipeline
@@ -183,11 +183,11 @@ SphereRender create_sphere_render(wgpu::Device& device) {
             .bufferCount = bufferLayouts.size(),
             .buffers = bufferLayouts.data()
         },
-        .fragment = &fragmentState,
         .primitive = {
             .topology = wgpu::PrimitiveTopology::TriangleList
         },
-        .depthStencil = &depthStencilState
+        .depthStencil = &depthStencilState,
+        .fragment = &fragmentState
     };
     render.pipeline = device.CreateRenderPipeline(&pipelineDesc);
 

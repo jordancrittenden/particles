@@ -42,8 +42,8 @@ ParticleCompute create_particle_pic_compute(
     // Read buffer for number of current particles
     wgpu::BufferDescriptor nParticlesReadBufDesc = {
         .label = "Particle Number Read Buffer",
-        .size = sizeof(glm::u32),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead,
+        .size = sizeof(glm::u32),
         .mappedAtCreation = false
     };
     particleCompute.nParticlesReadBuf = device.CreateBuffer(&nParticlesReadBufDesc);
@@ -51,8 +51,8 @@ ParticleCompute create_particle_pic_compute(
     // Create debug storage buffer for compute shader
     wgpu::BufferDescriptor debugStorageBufDesc = {
         .label = "Particle Debug Storage Buffer",
-        .size = maxParticles * sizeof(glm::f32vec4),
         .usage = wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::Storage,
+        .size = maxParticles * sizeof(glm::f32vec4),
         .mappedAtCreation = false
     };
     particleCompute.debugStorageBuf = device.CreateBuffer(&debugStorageBufDesc);
@@ -60,8 +60,8 @@ ParticleCompute create_particle_pic_compute(
     // Create debug read buffer for CPU access
     wgpu::BufferDescriptor debugReadBufDesc = {
         .label = "Particle Debug Read Buffer",
-        .size = maxParticles * sizeof(glm::f32vec4),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead,
+        .size = maxParticles * sizeof(glm::f32vec4),
         .mappedAtCreation = false
     };
     particleCompute.debugReadBuf = device.CreateBuffer(&debugReadBufDesc);
@@ -69,8 +69,8 @@ ParticleCompute create_particle_pic_compute(
     // Create dt uniform buffer
     wgpu::BufferDescriptor paramsBufferDesc = {
         .label = "Particle Compute Params Buffer",
-        .size = sizeof(glm::f32),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
+        .size = sizeof(glm::f32),
         .mappedAtCreation = false
     };
     particleCompute.paramsBuffer = device.CreateBuffer(&paramsBufferDesc);
@@ -78,8 +78,8 @@ ParticleCompute create_particle_pic_compute(
     // Create mesh uniform buffer
     wgpu::BufferDescriptor meshBufferDesc = {
         .label = "Particle Compute Mesh Buffer",
-        .size = sizeof(MeshPropertiesUniform),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
+        .size = sizeof(MeshPropertiesUniform),
         .mappedAtCreation = false
     };
     particleCompute.meshBuffer = device.CreateBuffer(&meshBufferDesc);

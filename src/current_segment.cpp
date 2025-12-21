@@ -16,8 +16,8 @@ wgpu::Buffer get_current_segment_buffer(wgpu::Device& device, const std::vector<
     std::vector<glm::f32vec4> unrolled = unroll_currents(currents);
     wgpu::BufferDescriptor currentSegmentsBufferDesc = {
         .label = "Current Segments Buffer",
-        .size = unrolled.size() * sizeof(glm::f32vec4),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Storage,
+        .size = unrolled.size() * sizeof(glm::f32vec4),
         .mappedAtCreation = false
     };
     wgpu::Buffer currentSegmentsBuffer = device.CreateBuffer(&currentSegmentsBufferDesc);

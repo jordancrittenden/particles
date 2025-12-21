@@ -29,8 +29,8 @@ AxesBuffers create_axes_buffers(wgpu::Device& device) {
 
     wgpu::BufferDescriptor vertexBufferDesc = {
         .label = "Axes Vertex Buffer",
-        .size = sizeof(axisVertices),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex,
+        .size = sizeof(axisVertices),
         .mappedAtCreation = false
     };
     buf.vertexBuffer = device.CreateBuffer(&vertexBufferDesc);
@@ -39,8 +39,8 @@ AxesBuffers create_axes_buffers(wgpu::Device& device) {
     // Create uniform buffer
     wgpu::BufferDescriptor uniformBufferDesc = {
         .label = "Axes Uniform Buffer",
-        .size = sizeof(glm::mat4) * 3,  // model, view, projection
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
+        .size = sizeof(glm::mat4) * 3,  // model, view, projection
         .mappedAtCreation = false
     };
     buf.uniformBuffer = device.CreateBuffer(&uniformBufferDesc);
@@ -103,9 +103,9 @@ AxesBuffers create_axes_buffers(wgpu::Device& device) {
     };
 
     wgpu::DepthStencilState depthStencilState = {
+        .format = wgpu::TextureFormat::Depth24Plus,
         .depthWriteEnabled = true,
-        .depthCompare = wgpu::CompareFunction::Less,
-        .format = wgpu::TextureFormat::Depth24Plus
+        .depthCompare = wgpu::CompareFunction::Less
     };
 
     // Create render pipeline
@@ -118,11 +118,11 @@ AxesBuffers create_axes_buffers(wgpu::Device& device) {
             .bufferCount = 1,
             .buffers = &vertexBufferLayout
         },
-        .fragment = &fragmentState,
         .primitive = {
             .topology = wgpu::PrimitiveTopology::LineList
         },
-        .depthStencil = &depthStencilState
+        .depthStencil = &depthStencilState,
+        .fragment = &fragmentState
     };
     buf.pipeline = device.CreateRenderPipeline(&pipelineDesc);
 

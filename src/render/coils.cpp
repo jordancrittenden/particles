@@ -38,8 +38,8 @@ CoilsBuffers create_coils_buffers(wgpu::Device& device, const Ring& ring, glm::u
     // Create vertex buffer
     wgpu::BufferDescriptor vertexBufferDesc = {
         .label = "Coils Vertex Buffer",
-        .size = vertices.size() * sizeof(glm::f32),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex,
+        .size = vertices.size() * sizeof(glm::f32),
         .mappedAtCreation = false
     };
     buf.vertexBuffer = device.CreateBuffer(&vertexBufferDesc);
@@ -48,8 +48,8 @@ CoilsBuffers create_coils_buffers(wgpu::Device& device, const Ring& ring, glm::u
     // Create index buffer
     wgpu::BufferDescriptor indexBufferDesc = {
         .label = "Coils Index Buffer",
-        .size = buf.indices.size() * sizeof(glm::u32),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Index,
+        .size = buf.indices.size() * sizeof(glm::u32),
         .mappedAtCreation = false
     };
     buf.indexBuffer = device.CreateBuffer(&indexBufferDesc);
@@ -58,8 +58,8 @@ CoilsBuffers create_coils_buffers(wgpu::Device& device, const Ring& ring, glm::u
     // Create instance buffer for model matrices
     wgpu::BufferDescriptor instanceBufferDesc = {
         .label = "Coils Instance Buffer",
-        .size = sizeof(glm::mat4) * nCoils,
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex,
+        .size = sizeof(glm::mat4) * nCoils,
         .mappedAtCreation = false
     };
     buf.instanceBuffer = device.CreateBuffer(&instanceBufferDesc);
@@ -67,8 +67,8 @@ CoilsBuffers create_coils_buffers(wgpu::Device& device, const Ring& ring, glm::u
     // Create uniform buffer for view and projection matrices
     wgpu::BufferDescriptor uniformBufferDesc = {
         .label = "Coils Uniform Buffer",
-        .size = sizeof(UniformData),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
+        .size = sizeof(UniformData),
         .mappedAtCreation = false
     };
     buf.uniformBuffer = device.CreateBuffer(&uniformBufferDesc);
@@ -138,9 +138,9 @@ CoilsBuffers create_coils_buffers(wgpu::Device& device, const Ring& ring, glm::u
 
     wgpu::VertexBufferLayout instanceBufferLayout = {
         .arrayStride = sizeof(glm::mat4),
+        .stepMode = wgpu::VertexStepMode::Instance,
         .attributeCount = instanceAttributes.size(),
-        .attributes = instanceAttributes.data(),
-        .stepMode = wgpu::VertexStepMode::Instance
+        .attributes = instanceAttributes.data()
     };
 
     std::vector<wgpu::VertexBufferLayout> bufferLayouts = {vertexBufferLayout, instanceBufferLayout};
@@ -161,9 +161,9 @@ CoilsBuffers create_coils_buffers(wgpu::Device& device, const Ring& ring, glm::u
     };
 
     wgpu::DepthStencilState depthStencilState = {
+        .format = wgpu::TextureFormat::Depth24Plus,
         .depthWriteEnabled = true,
-        .depthCompare = wgpu::CompareFunction::Less,
-        .format = wgpu::TextureFormat::Depth24Plus
+        .depthCompare = wgpu::CompareFunction::Less
     };
 
     // Create render pipeline
@@ -176,12 +176,12 @@ CoilsBuffers create_coils_buffers(wgpu::Device& device, const Ring& ring, glm::u
             .bufferCount = bufferLayouts.size(),
             .buffers = bufferLayouts.data()
         },
-        .fragment = &fragmentState,
         .primitive = {
             .topology = wgpu::PrimitiveTopology::TriangleList,
             .frontFace = wgpu::FrontFace::CCW
         },
-        .depthStencil = &depthStencilState
+        .depthStencil = &depthStencilState,
+        .fragment = &fragmentState
     };
     buf.pipeline = device.CreateRenderPipeline(&pipelineDesc);
 

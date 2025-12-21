@@ -55,8 +55,8 @@ CellBoxBuffers create_cell_box_buffers(wgpu::Device& device, const std::vector<C
     // Create vertex buffer
     wgpu::BufferDescriptor vertexBufferDesc = {
         .label = "Cell Box Vertex Buffer",
-        .size = vertices.size() * sizeof(glm::f32),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex,
+        .size = vertices.size() * sizeof(glm::f32),
         .mappedAtCreation = false
     };
     buf.vertexBuffer = device.CreateBuffer(&vertexBufferDesc);
@@ -65,8 +65,8 @@ CellBoxBuffers create_cell_box_buffers(wgpu::Device& device, const std::vector<C
     // Create index buffer
     wgpu::BufferDescriptor indexBufferDesc = {
         .label = "Cell Box Index Buffer",
-        .size = buf.indices.size() * sizeof(glm::u32),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Index,
+        .size = buf.indices.size() * sizeof(glm::u32),
         .mappedAtCreation = false
     };
     buf.indexBuffer = device.CreateBuffer(&indexBufferDesc);
@@ -76,8 +76,8 @@ CellBoxBuffers create_cell_box_buffers(wgpu::Device& device, const std::vector<C
     // Each instance contains: [centerX, centerY, centerZ, padding]
     wgpu::BufferDescriptor instanceBufferDesc = {
         .label = "Cell Box Instance Buffer",
-        .size = sizeof(glm::f32vec4) * buf.nCells, // 1 vec4 per instance
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex,
+        .size = sizeof(glm::f32vec4) * buf.nCells, // 1 vec4 per instance
         .mappedAtCreation = false
     };
     buf.instanceBuffer = device.CreateBuffer(&instanceBufferDesc);
@@ -95,8 +95,8 @@ CellBoxBuffers create_cell_box_buffers(wgpu::Device& device, const std::vector<C
     // Create uniform buffer for view and projection matrices
     wgpu::BufferDescriptor uniformBufferDesc = {
         .label = "Cell Box Uniform Buffer",
-        .size = sizeof(UniformData),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
+        .size = sizeof(UniformData),
         .mappedAtCreation = false
     };
     buf.uniformBuffer = device.CreateBuffer(&uniformBufferDesc);
@@ -152,9 +152,9 @@ CellBoxBuffers create_cell_box_buffers(wgpu::Device& device, const std::vector<C
 
     wgpu::VertexBufferLayout instanceBufferLayout = {
         .arrayStride = sizeof(glm::f32vec4),
+        .stepMode = wgpu::VertexStepMode::Instance,
         .attributeCount = instanceAttributes.size(),
-        .attributes = instanceAttributes.data(),
-        .stepMode = wgpu::VertexStepMode::Instance
+        .attributes = instanceAttributes.data()
     };
 
     std::vector<wgpu::VertexBufferLayout> bufferLayouts = {vertexBufferLayout, instanceBufferLayout};
@@ -175,9 +175,9 @@ CellBoxBuffers create_cell_box_buffers(wgpu::Device& device, const std::vector<C
     };
 
     wgpu::DepthStencilState depthStencilState = {
+        .format = wgpu::TextureFormat::Depth24Plus,
         .depthWriteEnabled = true,
-        .depthCompare = wgpu::CompareFunction::Less,
-        .format = wgpu::TextureFormat::Depth24Plus
+        .depthCompare = wgpu::CompareFunction::Less
     };
 
     // Create render pipeline
@@ -190,12 +190,12 @@ CellBoxBuffers create_cell_box_buffers(wgpu::Device& device, const std::vector<C
             .bufferCount = bufferLayouts.size(),
             .buffers = bufferLayouts.data()
         },
-        .fragment = &fragmentState,
         .primitive = {
             .topology = wgpu::PrimitiveTopology::LineList,
             .frontFace = wgpu::FrontFace::CCW
         },
-        .depthStencil = &depthStencilState
+        .depthStencil = &depthStencilState,
+        .fragment = &fragmentState
     };
     buf.pipeline = device.CreateRenderPipeline(&pipelineDesc);
 

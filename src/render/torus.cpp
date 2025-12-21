@@ -85,8 +85,8 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, float r1, float r2, int 
     // Create vertex buffer
     wgpu::BufferDescriptor vertexBufferDesc = {
         .label = "Torus Structure Vertex Buffer",
-        .size = vertices.size() * sizeof(glm::f32),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex,
+        .size = vertices.size() * sizeof(glm::f32),
         .mappedAtCreation = false
     };
     buf.vertexBuffer = device.CreateBuffer(&vertexBufferDesc);
@@ -95,8 +95,8 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, float r1, float r2, int 
     // Create index buffer
     wgpu::BufferDescriptor indexBufferDesc = {
         .label = "Torus Structure Index Buffer",
-        .size = buf.indices.size() * sizeof(glm::u32),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Index,
+        .size = buf.indices.size() * sizeof(glm::u32),
         .mappedAtCreation = false
     };
     buf.indexBuffer = device.CreateBuffer(&indexBufferDesc);
@@ -105,8 +105,8 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, float r1, float r2, int 
     // Create uniform buffer
     wgpu::BufferDescriptor uniformBufferDesc = {
         .label = "Torus Structure Uniform Buffer",
-        .size = sizeof(UniformData),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
+        .size = sizeof(UniformData),
         .mappedAtCreation = false
     };
     buf.uniformBuffer = device.CreateBuffer(&uniformBufferDesc);
@@ -172,9 +172,9 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, float r1, float r2, int 
     };
 
     wgpu::DepthStencilState depthStencilState = {
+        .format = wgpu::TextureFormat::Depth24Plus,
         .depthWriteEnabled = true,
-        .depthCompare = wgpu::CompareFunction::Less,
-        .format = wgpu::TextureFormat::Depth24Plus
+        .depthCompare = wgpu::CompareFunction::Less
     };
 
     // Create render pipeline
@@ -187,12 +187,12 @@ TorusBuffers create_torus_buffers(wgpu::Device& device, float r1, float r2, int 
             .bufferCount = 1,
             .buffers = &vertexBufferLayout
         },
-        .fragment = &fragmentState,
         .primitive = {
             .topology = wgpu::PrimitiveTopology::TriangleList,
             .frontFace = wgpu::FrontFace::CCW
         },
-        .depthStencil = &depthStencilState
+        .depthStencil = &depthStencilState,
+        .fragment = &fragmentState
     };
     buf.pipeline = device.CreateRenderPipeline(&pipelineDesc);
 

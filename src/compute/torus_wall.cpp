@@ -22,8 +22,8 @@ TorusWallCompute create_torus_wall_compute(wgpu::Device& device, const ParticleB
     // Create params uniform buffer
     wgpu::BufferDescriptor paramsBufferDesc = {
         .label = "Torus Wall Compute Params Buffer",
-        .size = sizeof(TorusWallParams),
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
+        .size = sizeof(TorusWallParams),
         .mappedAtCreation = false
     };
     torusWallCompute.paramsBuffer = device.CreateBuffer(&paramsBufferDesc);
