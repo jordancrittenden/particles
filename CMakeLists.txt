@@ -40,8 +40,18 @@ add_executable(sim
 	src/sim.cpp
 )
 
+# Platform-specific GLM paths
+if(APPLE)
+	set(GLM_INCLUDE_DIR /opt/homebrew/Cellar/glm/1.0.1/include)
+	set(GLM_LIBRARY /opt/homebrew/Cellar/glm/1.0.1/lib/libglm.dylib)
+elseif(WIN32)
+	set(GLM_INCLUDE_DIR C:/code/glm-1.0.2)
+	# GLM is typically header-only on Windows, no library needed
+	set(GLM_LIBRARY "")
+endif()
+
 target_include_directories(sim PRIVATE
-	/opt/homebrew/Cellar/glm/1.0.1/include
+	${GLM_INCLUDE_DIR}
 	include
 	kernel
 	src
@@ -66,6 +76,8 @@ else()
 		dawn::webgpu_dawn
 		glfw
 		webgpu_glfw
-		/opt/homebrew/Cellar/glm/1.0.1/lib/libglm.dylib
 	)
+	if(APPLE AND GLM_LIBRARY)
+		target_link_libraries(sim PRIVATE ${GLM_LIBRARY})
+	endif()
 endif()
