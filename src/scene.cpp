@@ -25,7 +25,10 @@ inline float rand_range(float min, float max) {
 }
 
 void Scene::init_webgpu() {
+    static constexpr auto kTimedWaitAny = wgpu::InstanceFeatureName::TimedWaitAny;
     wgpu::InstanceDescriptor instanceDesc{};
+    instanceDesc.requiredFeatureCount = 1;
+    instanceDesc.requiredFeatures = &kTimedWaitAny;
     instance = wgpu::CreateInstance(&instanceDesc);
 
     wgpu::Future f1 = instance.RequestAdapter(
