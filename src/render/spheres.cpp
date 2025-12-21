@@ -1,3 +1,4 @@
+#define _USE_MATH_DEFINES
 #include <vector>
 #include <glm/glm.hpp>
 #include <iostream>
@@ -144,8 +145,8 @@ SphereRender create_sphere_render(wgpu::Device& device) {
     };
 
     wgpu::VertexBufferLayout instanceBufferLayout = {
-        .arrayStride = sizeof(glm::f32vec4),
         .stepMode = wgpu::VertexStepMode::Instance,
+        .arrayStride = sizeof(glm::f32vec4),
         .attributeCount = static_cast<uint32_t>(instanceAttributes.size()),
         .attributes = instanceAttributes.data()
     };

@@ -155,15 +155,15 @@ FieldRender create_fields_render(wgpu::Device& device, std::vector<glm::f32vec4>
             .attributeCount = 1,
             .attributes = &vertexAttribute
         }, { // Instance buffer layout
+            .stepMode = wgpu::VertexStepMode::Instance,
             .arrayStride = sizeof(glm::f32vec4),
             .attributeCount = 1,
-            .attributes = &locationAttribute,
-            .stepMode = wgpu::VertexStepMode::Instance
+            .attributes = &locationAttribute
         }, { // Field buffer layout
+            .stepMode = wgpu::VertexStepMode::Instance,
             .arrayStride = sizeof(glm::f32vec4),
             .attributeCount = 1,
-            .attributes = &fieldAttribute,
-            .stepMode = wgpu::VertexStepMode::Instance
+            .attributes = &fieldAttribute
         }
     };
     

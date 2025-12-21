@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+
 // Header to be included in C++ and kernels
 #ifndef _PHYSICAL_CONSTANTS_H_
 #define _PHYSICAL_CONSTANTS_H_

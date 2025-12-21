@@ -151,8 +151,8 @@ CellBoxBuffers create_cell_box_buffers(wgpu::Device& device, const std::vector<C
     };
 
     wgpu::VertexBufferLayout instanceBufferLayout = {
-        .arrayStride = sizeof(glm::f32vec4),
         .stepMode = wgpu::VertexStepMode::Instance,
+        .arrayStride = sizeof(glm::f32vec4),
         .attributeCount = instanceAttributes.size(),
         .attributes = instanceAttributes.data()
     };

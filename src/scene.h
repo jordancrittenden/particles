@@ -1,5 +1,6 @@
 #pragma once
 
+#define _USE_MATH_DEFINES
 #include <glm/glm.hpp>
 #include <webgpu/webgpu_cpp.h>
 #include "util/wgpu_util.h"

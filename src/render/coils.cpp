@@ -1,3 +1,4 @@
+#define _USE_MATH_DEFINES
 #include <iostream>
 #include <vector>
 #include <cmath>
@@ -137,8 +138,8 @@ CoilsBuffers create_coils_buffers(wgpu::Device& device, const Ring& ring, glm::u
     };
 
     wgpu::VertexBufferLayout instanceBufferLayout = {
-        .arrayStride = sizeof(glm::mat4),
         .stepMode = wgpu::VertexStepMode::Instance,
+        .arrayStride = sizeof(glm::mat4),
         .attributeCount = instanceAttributes.size(),
         .attributes = instanceAttributes.data()
     };
