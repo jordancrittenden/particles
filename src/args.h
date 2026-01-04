@@ -13,8 +13,8 @@ struct SimulationParams {
     SceneType sceneType = SCENE_TYPE_TOKAMAK;
 
     // Rendering parameters
-    glm::u32 windowWidth = 1024;                 // Window width, px
-    glm::u32 windowHeight = 768;                 // Window height, px
+    glm::u32 windowWidth = 1920;                 // Window width, px
+    glm::u32 windowHeight = 1080;                // Window height, px
     glm::u16 targetFPS = 60;                     // Target FPS
     glm::f32 tracerDensity = 2.0;                // Tracer density, % of cells
 

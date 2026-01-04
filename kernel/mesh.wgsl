@@ -19,14 +19,14 @@ struct CellNeighbors {
 
 // Vector values for the 8 mesh nodes that surround a position in space
 struct CellNeighborVectors {
-    xp_yp_zp: vec4<f32>, // x+, y+, z+
-    xp_yp_zm: vec4<f32>, // x+, y+, z-
-    xp_ym_zp: vec4<f32>, // x+, y-, z+
-    xp_ym_zm: vec4<f32>, // x+, y-, z-
-    xm_yp_zp: vec4<f32>, // x-, y+, z+
-    xm_yp_zm: vec4<f32>, // x-, y+, z-
-    xm_ym_zp: vec4<f32>, // x-, y-, z+
-    xm_ym_zm: vec4<f32>, // x-, y-, z-
+    xp_yp_zp: vec3<f32>, // x+, y+, z+
+    xp_yp_zm: vec3<f32>, // x+, y+, z-
+    xp_ym_zp: vec3<f32>, // x+, y-, z+
+    xp_ym_zm: vec3<f32>, // x+, y-, z-
+    xm_yp_zp: vec3<f32>, // x-, y+, z+
+    xm_yp_zm: vec3<f32>, // x-, y+, z-
+    xm_ym_zp: vec3<f32>, // x-, y-, z+
+    xm_ym_zm: vec3<f32>, // x-, y-, z-
 }
     
 // Helper function to convert 3D coordinates back to linear index
@@ -57,9 +57,9 @@ fn cell_neighbors(pos: vec3<f32>, mesh: ptr<uniform, MeshProperties>) -> CellNei
     
     // Calculate which cell the particle is in and local position within that cell
     let cell_idx_frac: vec3<f32> = (pos - (*mesh).min) / (*mesh).cell_size;                                    // [x.aaa, y.bbb, z.ccc]
-    let cell_idx_i32: vec3<i32> = vec3<i32>(i32(cell_idx_frac.x), i32(cell_idx_frac.y), i32(cell_idx_frac.z)); // [x, y, z]
-    let cell_idx_f32: vec3<f32> = vec3<f32>(f32(cell_idx_i32.x), f32(cell_idx_i32.y), f32(cell_idx_i32.z));    // [x.000, y.000, z.000]
-    let local_pos: vec3<f32> = cell_idx_frac - cell_idx_f32;                                                   // [0.aaa, 0.bbb, 0.ccc]
+    let cell_idx_i32 = vec3<i32>(i32(cell_idx_frac.x), i32(cell_idx_frac.y), i32(cell_idx_frac.z)); // [x, y, z]
+    let cell_idx_f32 = vec3<f32>(f32(cell_idx_i32.x), f32(cell_idx_i32.y), f32(cell_idx_i32.z));    // [x.000, y.000, z.000]
+    let local_pos = cell_idx_frac - cell_idx_f32;                                                   // [0.aaa, 0.bbb, 0.ccc]
     
     // Calculate which cell to base calculations off of
     let base_x: i32 = cell_idx_i32.x + select(-1, 0, local_pos.x > 0.5);
@@ -94,14 +94,14 @@ fn cell_neighbor_vectors(
     }
 
     // Get field values at the 8 corner cells
-    vectors.xm_ym_zm = (*field)[u32(neighbors.xm_ym_zm)];
-    vectors.xm_ym_zp = (*field)[u32(neighbors.xm_ym_zp)];
-    vectors.xm_yp_zm = (*field)[u32(neighbors.xm_yp_zm)];
-    vectors.xm_yp_zp = (*field)[u32(neighbors.xm_yp_zp)];
-    vectors.xp_ym_zm = (*field)[u32(neighbors.xp_ym_zm)];
-    vectors.xp_ym_zp = (*field)[u32(neighbors.xp_ym_zp)];
-    vectors.xp_yp_zm = (*field)[u32(neighbors.xp_yp_zm)];
-    vectors.xp_yp_zp = (*field)[u32(neighbors.xp_yp_zp)];
+    vectors.xm_ym_zm = (*field)[u32(neighbors.xm_ym_zm)].xyz;
+    vectors.xm_ym_zp = (*field)[u32(neighbors.xm_ym_zp)].xyz;
+    vectors.xm_yp_zm = (*field)[u32(neighbors.xm_yp_zm)].xyz;
+    vectors.xm_yp_zp = (*field)[u32(neighbors.xm_yp_zp)].xyz;
+    vectors.xp_ym_zm = (*field)[u32(neighbors.xp_ym_zm)].xyz;
+    vectors.xp_ym_zp = (*field)[u32(neighbors.xp_ym_zp)].xyz;
+    vectors.xp_yp_zm = (*field)[u32(neighbors.xp_yp_zm)].xyz;
+    vectors.xp_yp_zp = (*field)[u32(neighbors.xp_yp_zp)].xyz;
 
     return vectors;
 }
@@ -109,42 +109,35 @@ fn cell_neighbor_vectors(
 // Interpolates the value of a vector field defined over a mesh at a given position in space by tri-linearly interpolating from the field for the closest cell neighbors to the given position
 fn interp(
     mesh: ptr<uniform, MeshProperties>,
-    neighbors: ptr<function, CellNeighbors>,
-    field: ptr<storage, array<vec4<f32>>, read_write>,
+    neighbors: ptr<function, CellNeighborVectors>,
     pos: vec3<f32>
-) -> vec4<f32> {
-    // Check if particle is outside mesh bounds
-    if (neighbors.xp_yp_zp == -1i) {
-        return vec4<f32>(0.0, 0.0, 0.0, 0.0); // Return zero if outside bounds
-    }
-    
+) -> vec3<f32> {
     // Calculate which cell the particle is in and local position within that cell
-    let cell_idx_frac: vec3<f32> = (pos - (*mesh).min) / (*mesh).cell_size;                                          // [x.aaa, y.bbb, z.ccc]
-    let cell_idx_f32: vec3<f32> = vec3<f32>(floor(cell_idx_frac.x), floor(cell_idx_frac.y), floor(cell_idx_frac.z)); // [x.000, y.000, z.000]
-    let w: vec3<f32> = cell_idx_frac - cell_idx_f32;                                                         // [0.aaa, 0.bbb, 0.ccc]
+    let cell_idx_frac = (pos - (*mesh).min) / (*mesh).cell_size;                                          // [x.aaa, y.bbb, z.ccc]
+    let cell_idx_f32 = vec3<f32>(floor(cell_idx_frac.x), floor(cell_idx_frac.y), floor(cell_idx_frac.z)); // [x.000, y.000, z.000]
+    let w = cell_idx_frac - cell_idx_f32;                                                                 // [0.aaa, 0.bbb, 0.ccc]
     
-    var vectors: CellNeighborVectors = cell_neighbor_vectors(neighbors, field);
-    return trilinear(&vectors, w);
+    return trilinear(neighbors, w);
 }
 
 // Trilinear interpolation for a vector field
 fn trilinear(
     neighbors: ptr<function, CellNeighborVectors>,
     w: vec3<f32>
-) -> vec4<f32> {
+) -> vec3<f32> {
     // Perform trilinear interpolation
     // Interpolate along x-axis first
-    let v_ym_zm: vec4<f32> = mix(neighbors.xm_ym_zm, neighbors.xp_ym_zm, w.x);
-    let v_ym_zp: vec4<f32> = mix(neighbors.xm_ym_zp, neighbors.xp_ym_zp, w.x);
-    let v_yp_zm: vec4<f32> = mix(neighbors.xm_yp_zm, neighbors.xp_yp_zm, w.x);
-    let v_yp_zp: vec4<f32> = mix(neighbors.xm_yp_zp, neighbors.xp_yp_zp, w.x);
+    let v_ym_zm: vec3<f32> = mix(neighbors.xm_ym_zm, neighbors.xp_ym_zm, w.x);
+    let v_ym_zp: vec3<f32> = mix(neighbors.xm_ym_zp, neighbors.xp_ym_zp, w.x);
+    let v_yp_zm: vec3<f32> = mix(neighbors.xm_yp_zm, neighbors.xp_yp_zm, w.x);
+    let v_yp_zp: vec3<f32> = mix(neighbors.xm_yp_zp, neighbors.xp_yp_zp, w.x);
     
     // Interpolate along y-axis
-    let v_zm: vec4<f32> = mix(v_ym_zm, v_yp_zm, w.y);
-    let v_zp: vec4<f32> = mix(v_ym_zp, v_yp_zp, w.y);
+    let v_zm: vec3<f32> = mix(v_ym_zm, v_yp_zm, w.y);
+    let v_zp: vec3<f32> = mix(v_ym_zp, v_yp_zp, w.y);
     
     // Interpolate along z-axis
-    let result: vec4<f32> = mix(v_zm, v_zp, w.z);
+    let result: vec3<f32> = mix(v_zm, v_zp, w.z);
     
     return result;
 }

@@ -170,8 +170,8 @@ void Scene::init(const SimulationParams& params) {
         // Skip inactive cells
         if (cells[i].pos.w == 0.0f) continue;
 
-        glm::f32 r2 = std::sqrt(cells[i].pos.x * cells[i].pos.x + cells[i].pos.z * cells[i].pos.z);
-        if (r2 > 1.2f || r2 < 0.8f || cells[i].pos.y < -0.2f || cells[i].pos.y > 0.2f) continue;
+        //glm::f32 r2 = std::sqrt(cells[i].pos.x * cells[i].pos.x + cells[i].pos.z * cells[i].pos.z);
+        //if (r2 > 1.2f || r2 < 0.8f || cells[i].pos.y < -0.2f || cells[i].pos.y > 0.2f) continue;
 
         if (rand_range(0.0f, 100.0f) < params.tracerDensity) {
             tracerLoc.push_back(glm::f32vec4(cells[i].pos.x, cells[i].pos.y, cells[i].pos.z, 0.0f));

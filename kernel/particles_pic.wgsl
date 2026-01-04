@@ -28,17 +28,35 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Locate the particle in the mesh
     var neighbors: CellNeighbors = cell_neighbors(pos, &mesh);
+    
+    // Abort if particle is outside mesh bounds and set to inactive
+    if (neighbors.xp_yp_zp == -1i) {
+        particlePos[id] = vec4<f32>(pos, 0.0);
+        return;
+    }
+
+    // Compute the E and B fields at the neighbor cells
+    var neighbors_E: CellNeighborVectors = cell_neighbor_vectors(&neighbors, &eField);
+    var neighbors_B: CellNeighborVectors = cell_neighbor_vectors(&neighbors, &bField);
 
     // Compute this particle's contribution to neighbor cell fields so that it can be subtracted out
-    //var self_contribution_E: CellNeighborVectors;
-    //var self_contribution_B: CellNeighborVectors;
-    //compute_self_field_contribution(pos, vel, species, &neighbors, &cellLocation, &self_contribution_E, &self_contribution_B);
+    var self_contribution_E: CellNeighborVectors;
+    var self_contribution_B: CellNeighborVectors;
+    compute_self_field_contribution(pos, vel, species, &neighbors, &cellLocation, &self_contribution_E, &self_contribution_B);
+
+    // Subtract out this particle's contribution from the neighbor cell fields
+    neighbors_E.xm_ym_zm -= self_contribution_E.xm_ym_zm;
+    neighbors_E.xm_ym_zp -= self_contribution_E.xm_ym_zp;
+    neighbors_E.xm_yp_zm -= self_contribution_E.xm_yp_zm;
+    neighbors_E.xm_yp_zp -= self_contribution_E.xm_yp_zp;
+    neighbors_E.xp_ym_zm -= self_contribution_E.xp_ym_zm;
+    neighbors_E.xp_ym_zp -= self_contribution_E.xp_ym_zp;
+    neighbors_E.xp_yp_zm -= self_contribution_E.xp_yp_zm;
+    neighbors_E.xp_yp_zp -= self_contribution_E.xp_yp_zp;
 
     // Interpolate the E and B field at particle position from the mesh
-    let E_interp = interp(&mesh, &neighbors, &eField, pos);
-    let B_interp = interp(&mesh, &neighbors, &bField, pos);
-    let E = vec3<f32>(E_interp.x, E_interp.y, E_interp.z);
-    let B = vec3<f32>(B_interp.x, B_interp.y, B_interp.z);
+    let E = interp(&mesh, &neighbors_E, pos);
+    let B = interp(&mesh, &neighbors_B, pos);
 
     // Push the particle through the electric and magnetic field: dv/dt = q/m (E + v x B);
     let t = q_over_m * B * 0.5 * dt;
@@ -65,12 +83,12 @@ fn compute_self_field_contribution(
     self_contribution_E: ptr<function, CellNeighborVectors>,  // E field
     self_contribution_B: ptr<function, CellNeighborVectors>,  // B field
 ) {
-    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_ym_zm)].xyz, self_contribution_E.xm_ym_zm, self_contribution_B.xm_ym_zm);
-    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_ym_zp)].xyz, self_contribution_E.xm_ym_zp, self_contribution_B.xm_ym_zp);
-    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_yp_zm)].xyz, self_contribution_E.xm_yp_zm, self_contribution_B.xm_yp_zm);
-    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_yp_zp)].xyz, self_contribution_E.xm_yp_zp, self_contribution_B.xm_yp_zp);
-    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_ym_zm)].xyz, self_contribution_E.xp_ym_zm, self_contribution_B.xp_ym_zm);
-    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_ym_zp)].xyz, self_contribution_E.xp_ym_zp, self_contribution_B.xp_ym_zp);
-    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_yp_zm)].xyz, self_contribution_E.xp_yp_zm, self_contribution_B.xp_yp_zm);
-    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_yp_zp)].xyz, self_contribution_E.xp_yp_zp, self_contribution_B.xp_yp_zp);
+    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_ym_zm)].xyz, &self_contribution_E.xm_ym_zm, &self_contribution_B.xm_ym_zm);
+    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_ym_zp)].xyz, &self_contribution_E.xm_ym_zp, &self_contribution_B.xm_ym_zp);
+    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_yp_zm)].xyz, &self_contribution_E.xm_yp_zm, &self_contribution_B.xm_yp_zm);
+    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_yp_zp)].xyz, &self_contribution_E.xm_yp_zp, &self_contribution_B.xm_yp_zp);
+    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_ym_zm)].xyz, &self_contribution_E.xp_ym_zm, &self_contribution_B.xp_ym_zm);
+    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_ym_zp)].xyz, &self_contribution_E.xp_ym_zp, &self_contribution_B.xp_ym_zp);
+    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_yp_zm)].xyz, &self_contribution_E.xp_yp_zm, &self_contribution_B.xp_yp_zm);
+    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_yp_zp)].xyz, &self_contribution_E.xp_yp_zp, &self_contribution_B.xp_yp_zp);
 }
