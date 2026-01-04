@@ -1,3 +1,4 @@
+// Computes E and B field at a given location due to all particles in the scene
 fn compute_particle_field_contributions(
     nParticles: u32,
     particlePos: ptr<storage, array<vec4<f32>>, read_write>,
@@ -37,6 +38,35 @@ fn compute_particle_field_contributions(
     }
 }
 
+// Computes E and B field at a given location due to a given particle
+fn compute_single_particle_field_contribution(
+    pos: vec3<f32>,               // particle position
+    vel: vec3<f32>,               // particle velocity
+    species: f32,                 // particle species
+    loc: vec3<f32>,               // location to compute fields
+    E: ptr<function, vec3<f32>>,  // E field
+    B: ptr<function, vec3<f32>>,  // B field
+) {
+    if (species == 0.0) {
+        return; // inactive particle
+    }
+
+    let charge = particle_charge(species);
+
+    let r = loc - pos;
+    let r_norm = normalize(r);
+    let r_mag = length(r);
+
+    // Avoid division by zero
+    if (r_mag < 0.00001) {
+        return;
+    } else {
+        *E += ((K_E * charge) / (r_mag * r_mag)) * r_norm;
+        *B += ((MU_0_OVER_4_PI * charge) / (r_mag * r_mag)) * cross(vel, r_norm);
+    }
+}
+
+// Compute B field at a given location due to electric currents in the scene
 fn compute_currents_b_field(
     currentSegments: ptr<storage, array<vec4<f32>>, read>,
     nCurrentSegments: u32,
@@ -57,6 +87,7 @@ fn compute_currents_b_field(
     return B;
 }
 
+// Compute E field at a given location due to the central solenoid
 fn compute_solenoid_e_field(
     solenoidFlux: f32,
     loc: vec3<f32>,

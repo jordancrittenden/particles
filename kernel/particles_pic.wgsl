@@ -8,6 +8,7 @@
 @group(0) @binding(7) var<uniform> mesh: MeshProperties;
 
 @compute @workgroup_size(256)
+// Lorentz particle push based on E and B fields interpolated from mesh
 fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let id = global_id.x;
     if (id >= nParticles) {

@@ -16,6 +16,7 @@ struct ComputeFieldsParams {
 @group(0) @binding(8) var<uniform> params: ComputeFieldsParams;
 
 @compute @workgroup_size(256)
+// Computes the value of the E and B field at each cell location
 fn computeFields(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let id = global_id.x;
     if (id >= params.nCells) {

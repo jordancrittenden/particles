@@ -5,6 +5,7 @@ struct MeshProperties {
     cell_size: vec3<f32>, // cell size
 }
 
+// Indices in the mesh array for the 8 mesh nodes that surround a position in space
 struct CellNeighbors {
     xp_yp_zp: i32, // x+, y+, z+
     xp_yp_zm: i32, // x+, y+, z-
@@ -15,6 +16,18 @@ struct CellNeighbors {
     xm_ym_zp: i32, // x-, y-, z+
     xm_ym_zm: i32, // x-, y-, z-
 }
+
+// Vector values for the 8 mesh nodes that surround a position in space
+struct CellNeighborVectors {
+    xp_yp_zp: vec4<f32>, // x+, y+, z+
+    xp_yp_zm: vec4<f32>, // x+, y+, z-
+    xp_ym_zp: vec4<f32>, // x+, y-, z+
+    xp_ym_zm: vec4<f32>, // x+, y-, z-
+    xm_yp_zp: vec4<f32>, // x-, y+, z+
+    xm_yp_zm: vec4<f32>, // x-, y+, z-
+    xm_ym_zp: vec4<f32>, // x-, y-, z+
+    xm_ym_zm: vec4<f32>, // x-, y-, z-
+}
     
 // Helper function to convert 3D coordinates back to linear index
 fn to_linear_index(x: i32, y: i32, z: i32, dim: vec3<u32>) -> i32 {
@@ -24,6 +37,7 @@ fn to_linear_index(x: i32, y: i32, z: i32, dim: vec3<u32>) -> i32 {
     return i32((u32(x) * dim.z * dim.y) + (u32(z) * dim.y) + u32(y));
 }
 
+// Computes the cell neighbors for a given position in space, or -1 for all neighbors if the position is outside the mesh
 fn cell_neighbors(pos: vec3<f32>, mesh: ptr<uniform, MeshProperties>) -> CellNeighbors {
     // Check if particle is outside the mesh bounds
     if (pos.x < (*mesh).min.x || pos.x >= (*mesh).max.x ||
@@ -67,6 +81,32 @@ fn cell_neighbors(pos: vec3<f32>, mesh: ptr<uniform, MeshProperties>) -> CellNei
     return neighbors;
 }
 
+// Computes the cell neighbor vectors for a vector field
+fn cell_neighbors_vectors(
+    neighbors: ptr<function, CellNeighbors>,
+    field: ptr<storage, array<vec4<f32>>, read_write>
+) -> CellNeighborVectors {
+    var vectors: CellNeighborVectors;
+
+    // Check if particle is outside mesh bounds
+    if (neighbors.xp_yp_zp == -1i) {
+        return vectors;
+    }
+
+    // Get field values at the 8 corner cells
+    vectors.xm_ym_zm = (*field)[u32(neighbors.xm_ym_zm)];
+    vectors.xm_ym_zp = (*field)[u32(neighbors.xm_ym_zp)];
+    vectors.xm_yp_zm = (*field)[u32(neighbors.xm_yp_zm)];
+    vectors.xm_yp_zp = (*field)[u32(neighbors.xm_yp_zp)];
+    vectors.xp_ym_zm = (*field)[u32(neighbors.xp_ym_zm)];
+    vectors.xp_ym_zp = (*field)[u32(neighbors.xp_ym_zp)];
+    vectors.xp_yp_zm = (*field)[u32(neighbors.xp_yp_zm)];
+    vectors.xp_yp_zp = (*field)[u32(neighbors.xp_yp_zp)];
+
+    return vectors;
+}
+
+// Interpolates the value of a vector field defined over a mesh at a given position in space by tri-linearly interpolating from the field for the closest cell neighbors to the given position
 fn interp(
     mesh: ptr<uniform, MeshProperties>,
     neighbors: ptr<function, CellNeighbors>,
@@ -111,6 +151,28 @@ fn interp(
     
     // Interpolate along z-axis
     let result: vec4<f32> = mix(v0, v1, wz);
+    
+    return result;
+}
+
+// Trilinear interpolation for a vector field
+fn trilinear(
+    neighbors: ptr<function, CellNeighborVectors>,
+    w: vec3<f32>
+) -> vec4<f32> {
+    // Perform trilinear interpolation
+    // Interpolate along x-axis first
+    let v_ym_zm: vec4<f32> = mix(neighbors.xm_ym_zm, neighbors.xp_ym_zm, w.x);
+    let v_ym_zp: vec4<f32> = mix(neighbors.xm_ym_zp, neighbors.xp_ym_zp, w.x);
+    let v_yp_zm: vec4<f32> = mix(neighbors.xm_yp_zm, neighbors.xp_yp_zm, w.x);
+    let v_yp_zp: vec4<f32> = mix(neighbors.xm_yp_zp, neighbors.xp_yp_zp, w.x);
+    
+    // Interpolate along y-axis
+    let v_zm: vec4<f32> = mix(v_ym_zm, v_yp_zm, w.y);
+    let v_zp: vec4<f32> = mix(v_ym_zp, v_yp_zp, w.y);
+    
+    // Interpolate along z-axis
+    let result: vec4<f32> = mix(v_zm, v_zp, w.z);
     
     return result;
 }

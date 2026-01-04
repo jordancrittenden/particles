@@ -17,6 +17,7 @@ struct ComputeMotionParams {
 @group(0) @binding(5) var<uniform> params: ComputeMotionParams;
 
 @compute @workgroup_size(256)
+// Lorentz particle push based on exact calculations of E and B field from the scene
 fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let id = global_id.x;
     if (id >= nParticles) {
