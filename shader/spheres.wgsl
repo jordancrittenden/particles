@@ -25,7 +25,7 @@ fn vertexMain(input: VertexInput, instance: InstanceInput) -> VertexOutput {
     var output: VertexOutput;
     
     // Scale the sphere vertex by a small radius
-    let sphereRadius = 0.001; // Small sphere radius
+    let sphereRadius = 0.01; // Small sphere radius
     let worldPos = instance.instancePosition.xyz + input.position * sphereRadius;
     
     // Calculate the position in view space
@@ -50,7 +50,7 @@ fn vertexMain(input: VertexInput, instance: InstanceInput) -> VertexOutput {
     else if (species == TRITON)                 { output.color = vec4f(0.8, 0.0, 0.8, 1.0); } // purple
     else if (species == ELECTRON_MACROPARTICLE) { output.color = vec4f(0.0, 0.0, 1.0, 1.0); } // blue
     else if (species == PROTON_MACROPARTICLE)   { output.color = vec4f(1.0, 0.0, 0.0, 1.0); } // red
-    else                                              { output.color = vec4f(1.0, 1.0, 1.0, 1.0); } // default white
+    else                                        { output.color = vec4f(1.0, 1.0, 1.0, 1.0); } // default white
     
     return output;
 }

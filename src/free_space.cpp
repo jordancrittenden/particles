@@ -14,7 +14,7 @@ FreeSpaceScene::FreeSpaceScene() : Scene() {
 void FreeSpaceScene::init(const SimulationParams& params) {
     Scene::init(params);
 
-    this->cameraDistance = 2.0f * _M;
+    this->cameraDistance = 3.0f * _M;
 }
 
 void FreeSpaceScene::render_details(wgpu::RenderPassEncoder& pass) {
