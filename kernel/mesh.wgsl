@@ -82,7 +82,7 @@ fn cell_neighbors(pos: vec3<f32>, mesh: ptr<uniform, MeshProperties>) -> CellNei
 }
 
 // Computes the cell neighbor vectors for a vector field
-fn cell_neighbors_vectors(
+fn cell_neighbor_vectors(
     neighbors: ptr<function, CellNeighbors>,
     field: ptr<storage, array<vec4<f32>>, read_write>
 ) -> CellNeighborVectors {
@@ -121,38 +121,10 @@ fn interp(
     // Calculate which cell the particle is in and local position within that cell
     let cell_idx_frac: vec3<f32> = (pos - (*mesh).min) / (*mesh).cell_size;                                          // [x.aaa, y.bbb, z.ccc]
     let cell_idx_f32: vec3<f32> = vec3<f32>(floor(cell_idx_frac.x), floor(cell_idx_frac.y), floor(cell_idx_frac.z)); // [x.000, y.000, z.000]
-    let local_pos: vec3<f32> = cell_idx_frac - cell_idx_f32;                                                         // [0.aaa, 0.bbb, 0.ccc]
+    let w: vec3<f32> = cell_idx_frac - cell_idx_f32;                                                         // [0.aaa, 0.bbb, 0.ccc]
     
-    // Calculate interpolation weights for trilinear interpolation
-    let wx: f32 = local_pos.x;
-    let wy: f32 = local_pos.y;
-    let wz: f32 = local_pos.z;
-    
-    // Get field values at the 8 corner cells
-    let v000: vec4<f32> = (*field)[u32(neighbors.xm_ym_zm)];
-    let v001: vec4<f32> = (*field)[u32(neighbors.xm_ym_zp)];
-    let v010: vec4<f32> = (*field)[u32(neighbors.xm_yp_zm)];
-    let v011: vec4<f32> = (*field)[u32(neighbors.xm_yp_zp)];
-    let v100: vec4<f32> = (*field)[u32(neighbors.xp_ym_zm)];
-    let v101: vec4<f32> = (*field)[u32(neighbors.xp_ym_zp)];
-    let v110: vec4<f32> = (*field)[u32(neighbors.xp_yp_zm)];
-    let v111: vec4<f32> = (*field)[u32(neighbors.xp_yp_zp)];
-    
-    // Perform trilinear interpolation
-    // Interpolate along x-axis first
-    let v00: vec4<f32> = mix(v000, v100, wx);
-    let v01: vec4<f32> = mix(v001, v101, wx);
-    let v10: vec4<f32> = mix(v010, v110, wx);
-    let v11: vec4<f32> = mix(v011, v111, wx);
-    
-    // Interpolate along y-axis
-    let v0: vec4<f32> = mix(v00, v10, wy);
-    let v1: vec4<f32> = mix(v01, v11, wy);
-    
-    // Interpolate along z-axis
-    let result: vec4<f32> = mix(v0, v1, wz);
-    
-    return result;
+    var vectors: CellNeighborVectors = cell_neighbor_vectors(neighbors, field);
+    return trilinear(&vectors, w);
 }
 
 // Trilinear interpolation for a vector field
