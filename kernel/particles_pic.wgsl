@@ -30,16 +30,9 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var neighbors: CellNeighbors = cell_neighbors(pos, &mesh);
 
     // Compute this particle's contribution to neighbor cell fields so that it can be subtracted out
-    var self_contribution_E: CellNeighborVectors;
-    var self_contribution_B: CellNeighborVectors;
-    //compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_ym_zm)].xyz, self_contribution_E.xm_ym_zm, self_contribution_B.xm_ym_zm);
-    //compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_ym_zp)].xyz, self_contribution_E.xm_ym_zp, self_contribution_B.xm_ym_zp);
-    //compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_yp_zm)].xyz, self_contribution_E.xm_yp_zm, self_contribution_B.xm_yp_zm);
-    //compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_yp_zp)].xyz, self_contribution_E.xm_yp_zp, self_contribution_B.xm_yp_zp);
-    //compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_ym_zm)].xyz, self_contribution_E.xp_ym_zm, self_contribution_B.xp_ym_zm);
-    //compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_ym_zp)].xyz, self_contribution_E.xp_ym_zp, self_contribution_B.xp_ym_zp);
-    //compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_yp_zm)].xyz, self_contribution_E.xp_yp_zm, self_contribution_B.xp_yp_zm);
-    //compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_yp_zp)].xyz, self_contribution_E.xp_yp_zp, self_contribution_B.xp_yp_zp);
+    //var self_contribution_E: CellNeighborVectors;
+    //var self_contribution_B: CellNeighborVectors;
+    //compute_self_field_contribution(pos, vel, species, &neighbors, &cellLocation, &self_contribution_E, &self_contribution_B);
 
     // Interpolate the E and B field at particle position from the mesh
     let E_interp = interp(&mesh, &neighbors, &eField, pos);
@@ -60,4 +53,24 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
     particleVel[id] = vec4<f32>(vel_new, 0.0);
 
     //debug[id] = vec4<f32>(0.0, 0.0, 0.0, 0.0);
-} 
+}
+
+// Compute this particle's contribution to neighbor cell fields so that it can be subtracted out
+fn compute_self_field_contribution(
+    pos: vec3<f32>,               // particle position
+    vel: vec3<f32>,               // particle velocity
+    species: f32,                 // particle species
+    neighbors: ptr<function, CellNeighbors>,
+    cellLocation: ptr<storage, array<vec4<f32>>, read>,
+    self_contribution_E: ptr<function, CellNeighborVectors>,  // E field
+    self_contribution_B: ptr<function, CellNeighborVectors>,  // B field
+) {
+    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_ym_zm)].xyz, self_contribution_E.xm_ym_zm, self_contribution_B.xm_ym_zm);
+    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_ym_zp)].xyz, self_contribution_E.xm_ym_zp, self_contribution_B.xm_ym_zp);
+    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_yp_zm)].xyz, self_contribution_E.xm_yp_zm, self_contribution_B.xm_yp_zm);
+    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_yp_zp)].xyz, self_contribution_E.xm_yp_zp, self_contribution_B.xm_yp_zp);
+    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_ym_zm)].xyz, self_contribution_E.xp_ym_zm, self_contribution_B.xp_ym_zm);
+    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_ym_zp)].xyz, self_contribution_E.xp_ym_zp, self_contribution_B.xp_ym_zp);
+    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_yp_zm)].xyz, self_contribution_E.xp_yp_zm, self_contribution_B.xp_yp_zm);
+    compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_yp_zp)].xyz, self_contribution_E.xp_yp_zp, self_contribution_B.xp_yp_zp);
+}
