@@ -33,7 +33,17 @@ const char shaderCode[] = R"(
 )";
 
 void init_webgpu(glm::u32 windowWidth, glm::u32 windowHeight) {
+#ifdef __APPLE__
+    // Old API: use capabilities field (Mac)
     wgpu::InstanceDescriptor instanceDesc{.capabilities = {.timedWaitAnyEnable = true}};
+#else
+    // New API: use requiredFeatures (Windows)
+    wgpu::InstanceFeatureName requiredFeatures[] = {wgpu::InstanceFeatureName::TimedWaitAny};
+    wgpu::InstanceDescriptor instanceDesc{
+        .requiredFeatureCount = 1,
+        .requiredFeatures = requiredFeatures
+    };
+#endif
 	instance = wgpu::CreateInstance(&instanceDesc);
 
 	wgpu::Future f1 = instance.RequestAdapter(
