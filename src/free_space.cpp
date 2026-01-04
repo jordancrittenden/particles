@@ -1,21 +1,59 @@
+#define _USE_MATH_DEFINES
 #include <iostream>
-#include <glm/glm.hpp>
-#include "mesh.h"
+#include <cmath>
+#include "free_space.h"
+#include "emscripten_key.h"
 
 inline float rand_range(float min, float max) {
     return static_cast<float>(rand()) / RAND_MAX * (max - min) + min;
 }
 
-glm::f32vec4 free_space_rand_particle_position(glm::f32vec3 minCoord, glm::f32vec3 maxCoord) {
-    float x = rand_range(minCoord.x, maxCoord.x);
-    float y = rand_range(minCoord.y, maxCoord.y);
-    float z = rand_range(minCoord.z, maxCoord.z);
-
-    // [x, y, z, unused]
-    return glm::f32vec4 { x, y, z, 0.0f };
+FreeSpaceScene::FreeSpaceScene() : Scene() {
 }
 
-std::vector<Cell> get_free_space_mesh_cells(glm::f32vec3 minCoord, glm::f32vec3 maxCoord, glm::f32vec3 size, MeshProperties& mesh) {
+void FreeSpaceScene::init(const SimulationParams& params) {
+    Scene::init(params);
+
+    this->cameraDistance = 2.0f * _M;
+}
+
+void FreeSpaceScene::render_details(wgpu::RenderPassEncoder& pass) {
+    Scene::render_details(pass);
+}
+
+void FreeSpaceScene::compute_field_step(wgpu::ComputePassEncoder& pass) {
+    run_field_compute(
+        device,
+        pass,
+        fieldCompute,
+        static_cast<glm::u32>(cells.size()),
+        static_cast<glm::u32>(cachedCurrents.size()),
+        0.0f,
+        enableParticleFieldContributions);
+
+    // Run tracer compute
+    run_tracer_compute(
+        device,
+        pass,
+        tracerCompute,
+        dt,
+        0.0f,
+        enableParticleFieldContributions,
+        static_cast<glm::u32>(cachedCurrents.size()),
+        nParticles,
+        tracers.nTracers,
+        TRACER_LENGTH);
+}
+
+void FreeSpaceScene::compute_wall_interactions(wgpu::ComputePassEncoder& pass) {
+    // No wall interactions in free space
+}
+
+std::vector<Cell> FreeSpaceScene::get_mesh_cells(glm::f32vec3 size, MeshProperties& mesh) {
+    float s = 1.0f * _M;
+    glm::vec3 minCoord { -s, -s, -s };
+    glm::vec3 maxCoord { s, s, s };
+    
     std::vector<Cell> cells;
     glm::u32 nx = 0, ny = 0, nz = 0;
     bool countZ = true, countY = true;
@@ -41,4 +79,37 @@ std::vector<Cell> get_free_space_mesh_cells(glm::f32vec3 minCoord, glm::f32vec3 
     mesh.max = maxCoord;
     
     return cells;
+}
+
+glm::f32vec4 FreeSpaceScene::rand_particle_position() {
+    float s = 1.0f * _M;
+    glm::vec3 minCoord { -s, -s, -s };
+    glm::vec3 maxCoord { s, s, s };
+
+    float x = rand_range(minCoord.x, maxCoord.x);
+    float y = rand_range(minCoord.y, maxCoord.y);
+    float z = rand_range(minCoord.z, maxCoord.z);
+
+    // [x, y, z, unused]
+    return glm::f32vec4 { x, y, z, 0.0f };
+}
+
+std::vector<CurrentVector> FreeSpaceScene::get_currents() {
+    std::vector<CurrentVector> currents;
+    // Dummy current (compute shader fails if currents is empty)
+    currents.push_back(CurrentVector {
+        .x = glm::f32vec4(0.0f, 0.0f, 0.0f, 0.0f),
+        .dx = glm::f32vec4(1.0f, 0.0f, 0.0f, 0.0f),
+        .i = 0.0f
+    });
+    return currents;
+}
+
+bool FreeSpaceScene::process_input(bool (*debounce_input)()) {
+#if defined(__EMSCRIPTEN__)
+    
+#else
+    
+#endif
+    return Scene::process_input(debounce_input);
 }

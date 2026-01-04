@@ -351,56 +351,23 @@ void Scene::compute() {
 }
 
 void Scene::compute_field_step(wgpu::ComputePassEncoder& pass) {
-    run_field_compute(
-        device,
-        pass,
-        fieldCompute,
-        static_cast<glm::u32>(cells.size()),
-        static_cast<glm::u32>(cachedCurrents.size()),
-        0.0f,
-        enableParticleFieldContributions);
-
-    // Run tracer compute
-    run_tracer_compute(
-        device,
-        pass,
-        tracerCompute,
-        dt,
-        0.0f,
-        enableParticleFieldContributions,
-        static_cast<glm::u32>(cachedCurrents.size()),
-        nParticles,
-        tracers.nTracers,
-        TRACER_LENGTH);
+    throw std::runtime_error("compute_field_step not implemented for base Scene class");
 }
 
 void Scene::compute_wall_interactions(wgpu::ComputePassEncoder& pass) {
-    // TODO: Implement wall interactions
+    throw std::runtime_error("compute_wall_interactions not implemented for base Scene class");
 }
 
 std::vector<Cell> Scene::get_mesh_cells(glm::f32vec3 size, MeshProperties& mesh) {
-    float s = 0.1f * _M;
-    glm::vec3 minCoord { -s, -s, -s };
-    glm::vec3 maxCoord { s, s, s };
-    return get_free_space_mesh_cells(minCoord, maxCoord, size, mesh);
+    throw std::runtime_error("get_mesh_cells not implemented for base Scene class");
 }
 
 glm::f32vec4 Scene::rand_particle_position() {
-    float s = 0.1f * _M;
-    glm::vec3 minCoord { -s, -s, -s };
-    glm::vec3 maxCoord { s, s, s };
-    return free_space_rand_particle_position(minCoord, maxCoord);
+    throw std::runtime_error("rand_particle_position not implemented for base Scene class");
 }
 
 std::vector<CurrentVector> Scene::get_currents() {
-    std::vector<CurrentVector> currents;
-    // Dummy current (compute shader fails if currents is empty)
-    currents.push_back(CurrentVector {
-        .x = glm::f32vec4(0.0f, 0.0f, 0.0f, 0.0f),
-        .dx = glm::f32vec4(1.0f, 0.0f, 0.0f, 0.0f),
-        .i = 0.0f
-    });
-    return currents;
+    throw std::runtime_error("get_currents not implemented for base Scene class");
 }
 
 bool Scene::process_input(bool (*debounce_input)()) {

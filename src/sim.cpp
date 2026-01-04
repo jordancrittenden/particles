@@ -1,6 +1,7 @@
 #include <iostream>
 #include "args.h"
 #include "scene.h"
+#include "free_space.h"
 #include "tokamak.h"
 
 // Main function
@@ -43,7 +44,7 @@ int main(int argc, char* argv[]) {
     Scene* scene;
     switch (params.sceneType) {
         case SCENE_TYPE_FREE_SPACE:
-            scene = new Scene();
+            scene = new FreeSpaceScene();
             break;
         case SCENE_TYPE_TOKAMAK:
             scene = new TokamakScene(torus, solenoid);
