@@ -16,6 +16,7 @@ struct ParticleCompute {
     wgpu::Buffer debugReadBuf;
     wgpu::Buffer paramsBuffer;
     wgpu::Buffer meshBuffer;
+    wgpu::Buffer cellLocationBuffer;
 };
 
 ParticleCompute create_particle_compute(
@@ -27,6 +28,7 @@ ParticleCompute create_particle_compute(
 
 ParticleCompute create_particle_pic_compute(
     wgpu::Device& device,
+    const std::vector<Cell>& cells,
     const ParticleBuffers& particleBuf,
     const FieldBuffers& fieldBuf,
     glm::u32 maxParticles);

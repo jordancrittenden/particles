@@ -32,6 +32,7 @@ FieldCompute create_field_compute(
     }
 
     // Create cell location buffer
+    glm::u32 nCells = static_cast<glm::u32>(cells.size());
     std::vector<glm::f32vec4> cellLocations;
     for (const auto& cell : cells) {
         cellLocations.push_back(cell.pos);
@@ -39,17 +40,17 @@ FieldCompute create_field_compute(
     wgpu::BufferDescriptor cellLocationBufferDesc = {
         .label = "Cell Location Buffer",
         .usage = wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopyDst,
-        .size = cellLocations.size() * sizeof(glm::f32vec4),
+        .size = nCells * sizeof(glm::f32vec4),
         .mappedAtCreation = false
     };
     fieldCompute.cellLocationBuffer = device.CreateBuffer(&cellLocationBufferDesc);
-    device.GetQueue().WriteBuffer(fieldCompute.cellLocationBuffer, 0, cellLocations.data(), cellLocations.size() * sizeof(glm::f32vec4));
+    device.GetQueue().WriteBuffer(fieldCompute.cellLocationBuffer, 0, cellLocations.data(), nCells * sizeof(glm::f32vec4));
     
     // Create debug buffer
     wgpu::BufferDescriptor debugBufferDesc = {
         .label = "Debug Buffer",
         .usage = wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopyDst,
-        .size = cells.size() * sizeof(glm::f32vec4),
+        .size = nCells * sizeof(glm::f32vec4),
         .mappedAtCreation = false
     };
     fieldCompute.debugBuffer = device.CreateBuffer(&debugBufferDesc);
@@ -77,21 +78,21 @@ FieldCompute create_field_compute(
             .visibility = wgpu::ShaderStage::Compute,
             .buffer = {
                 .type = wgpu::BufferBindingType::ReadOnlyStorage,
-                .minBindingSize = cellLocations.size() * sizeof(glm::f32vec4)
+                .minBindingSize = nCells * sizeof(glm::f32vec4)
             }
         }, { // eField
             .binding = 2,
             .visibility = wgpu::ShaderStage::Compute,
             .buffer = {
                 .type = wgpu::BufferBindingType::Storage,
-                .minBindingSize = cells.size() * sizeof(glm::f32vec4)
+                .minBindingSize = nCells * sizeof(glm::f32vec4)
             }
         }, { // bField
             .binding = 3,
             .visibility = wgpu::ShaderStage::Compute,
             .buffer = {
                 .type = wgpu::BufferBindingType::Storage,
-                .minBindingSize = cells.size() * sizeof(glm::f32vec4)
+                .minBindingSize = nCells * sizeof(glm::f32vec4)
             }
         }, { // particlePos
             .binding = 4,
@@ -119,7 +120,7 @@ FieldCompute create_field_compute(
             .visibility = wgpu::ShaderStage::Compute,
             .buffer = {
                 .type = wgpu::BufferBindingType::Storage,
-                .minBindingSize = cells.size() * sizeof(glm::f32vec4)
+                .minBindingSize = nCells * sizeof(glm::f32vec4)
             }
         }, { // params
             .binding = 8,
@@ -167,17 +168,17 @@ FieldCompute create_field_compute(
             .binding = 1,
             .buffer = fieldCompute.cellLocationBuffer,
             .offset = 0,
-            .size = cells.size() * sizeof(glm::f32vec4)
+            .size = nCells * sizeof(glm::f32vec4)
         }, { // eField
             .binding = 2,
             .buffer = fieldBuf.eField,
             .offset = 0,
-            .size = cells.size() * sizeof(glm::f32vec4)
+            .size = nCells * sizeof(glm::f32vec4)
         }, { // bField
             .binding = 3,
             .buffer = fieldBuf.bField,
             .offset = 0,
-            .size = cells.size() * sizeof(glm::f32vec4)
+            .size = nCells * sizeof(glm::f32vec4)
         }, { // particlePos
             .binding = 4,
             .buffer = particleBuf.pos,
@@ -197,7 +198,7 @@ FieldCompute create_field_compute(
             .binding = 7,
             .buffer = fieldCompute.debugBuffer,
             .offset = 0,
-            .size = cells.size() * sizeof(glm::f32vec4)
+            .size = nCells * sizeof(glm::f32vec4)
         }, { // params
             .binding = 8,
             .buffer = fieldCompute.paramsBuffer,

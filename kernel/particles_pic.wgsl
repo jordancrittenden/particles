@@ -6,6 +6,7 @@
 @group(0) @binding(5) var<storage, read_write> debug: array<vec4<f32>>;
 @group(0) @binding(6) var<uniform> dt: f32;
 @group(0) @binding(7) var<uniform> mesh: MeshProperties;
+@group(0) @binding(8) var<storage, read> cellLocation: array<vec4<f32>>;
 
 @compute @workgroup_size(256)
 // Lorentz particle push based on E and B fields interpolated from mesh
@@ -27,6 +28,18 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Locate the particle in the mesh
     var neighbors: CellNeighbors = cell_neighbors(pos, &mesh);
+
+    // Compute this particle's contribution to neighbor cell fields so that it can be subtracted out
+    var self_contribution_E: CellNeighborVectors;
+    var self_contribution_B: CellNeighborVectors;
+    //compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_ym_zm)].xyz, self_contribution_E.xm_ym_zm, self_contribution_B.xm_ym_zm);
+    //compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_ym_zp)].xyz, self_contribution_E.xm_ym_zp, self_contribution_B.xm_ym_zp);
+    //compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_yp_zm)].xyz, self_contribution_E.xm_yp_zm, self_contribution_B.xm_yp_zm);
+    //compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xm_yp_zp)].xyz, self_contribution_E.xm_yp_zp, self_contribution_B.xm_yp_zp);
+    //compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_ym_zm)].xyz, self_contribution_E.xp_ym_zm, self_contribution_B.xp_ym_zm);
+    //compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_ym_zp)].xyz, self_contribution_E.xp_ym_zp, self_contribution_B.xp_ym_zp);
+    //compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_yp_zm)].xyz, self_contribution_E.xp_yp_zm, self_contribution_B.xp_yp_zm);
+    //compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_yp_zp)].xyz, self_contribution_E.xp_yp_zp, self_contribution_B.xp_yp_zp);
 
     // Interpolate the E and B field at particle position from the mesh
     let E_interp = interp(&mesh, &neighbors, &eField, pos);

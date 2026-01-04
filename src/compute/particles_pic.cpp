@@ -18,11 +18,27 @@ struct MeshPropertiesUniform {
 
 ParticleCompute create_particle_pic_compute(
     wgpu::Device& device,
+    const std::vector<Cell>& cells,
     const ParticleBuffers& particleBuf,
     const FieldBuffers& fieldBuf,
     glm::u32 maxParticles)
 {
     ParticleCompute particleCompute = {};
+
+    // Create cell location buffer
+    glm::u32 nCells = static_cast<glm::u32>(cells.size());
+    std::vector<glm::f32vec4> cellLocations;
+    for (const auto& cell : cells) {
+        cellLocations.push_back(cell.pos);
+    }
+    wgpu::BufferDescriptor cellLocationBufferDesc = {
+        .label = "Cell Location Buffer",
+        .usage = wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopyDst,
+        .size = nCells * sizeof(glm::f32vec4),
+        .mappedAtCreation = false
+    };
+    particleCompute.cellLocationBuffer = device.CreateBuffer(&cellLocationBufferDesc);
+    device.GetQueue().WriteBuffer(particleCompute.cellLocationBuffer, 0, cellLocations.data(), nCells * sizeof(glm::f32vec4));
 
     // Create compute shader module
     wgpu::ShaderModule computeShaderModule = create_shader_module(
@@ -142,6 +158,13 @@ ParticleCompute create_particle_pic_compute(
                 .type = wgpu::BufferBindingType::Uniform,
                 .minBindingSize = sizeof(MeshPropertiesUniform)
             }
+        }, { // cellLocation
+            .binding = 8,
+            .visibility = wgpu::ShaderStage::Compute,
+            .buffer = {
+                .type = wgpu::BufferBindingType::ReadOnlyStorage,
+                .minBindingSize = nCells * sizeof(glm::f32vec4)
+            }
         }
     };
 
@@ -212,6 +235,11 @@ ParticleCompute create_particle_pic_compute(
             .buffer = particleCompute.meshBuffer,
             .offset = 0,
             .size = sizeof(MeshPropertiesUniform)
+        }, { // cellLocation
+            .binding = 8,
+            .buffer = particleCompute.cellLocationBuffer,
+            .offset = 0,
+            .size = nCells * sizeof(glm::f32vec4)
         }
     };
 

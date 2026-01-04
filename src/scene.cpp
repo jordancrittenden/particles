@@ -25,10 +25,7 @@ inline float rand_range(float min, float max) {
 }
 
 void Scene::init_webgpu() {
-    static constexpr auto kTimedWaitAny = wgpu::InstanceFeatureName::TimedWaitAny;
-    wgpu::InstanceDescriptor instanceDesc{};
-    instanceDesc.requiredFeatureCount = 1;
-    instanceDesc.requiredFeatures = &kTimedWaitAny;
+    wgpu::InstanceDescriptor instanceDesc{.capabilities = {.timedWaitAnyEnable = true}};
     instance = wgpu::CreateInstance(&instanceDesc);
 
     wgpu::Future f1 = instance.RequestAdapter(
@@ -179,7 +176,7 @@ void Scene::init(const SimulationParams& params) {
 	this->currentSegmentsBuffer = get_current_segment_buffer(device, this->cachedCurrents);
 
     // Initialize particle compute
-	this->particleCompute = create_particle_pic_compute(device, particles, fields, params.maxParticles);
+	this->particleCompute = create_particle_pic_compute(device, cells, particles, fields, params.maxParticles);
 
     // Initialize field compute    
     this->fieldCompute = create_field_compute(device, cells, particles, fields, this->currentSegmentsBuffer, static_cast<glm::u32>(this->cachedCurrents.size()), params.maxParticles);
