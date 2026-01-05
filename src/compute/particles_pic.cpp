@@ -5,6 +5,12 @@
 #include "compute/particles.h"
 #include "mesh.h"
 
+// C++ struct matching the WGSL ComputeMotionParams struct
+struct ComputeMotionParams {
+    glm::f32 dt;
+    glm::u32 enableParticleFieldContributions;
+};
+
 struct MeshPropertiesUniform {
     glm::f32vec3 min; // minimum cell center
     glm::f32 _padding1; // padding for 16-byte alignment
@@ -82,11 +88,11 @@ ParticleCompute create_particle_pic_compute(
     };
     particleCompute.debugReadBuf = device.CreateBuffer(&debugReadBufDesc);
 
-    // Create dt uniform buffer
+    // Create params uniform buffer
     wgpu::BufferDescriptor paramsBufferDesc = {
         .label = "Particle Compute Params Buffer",
         .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
-        .size = sizeof(glm::f32),
+        .size = sizeof(ComputeMotionParams),
         .mappedAtCreation = false
     };
     particleCompute.paramsBuffer = device.CreateBuffer(&paramsBufferDesc);
@@ -144,12 +150,12 @@ ParticleCompute create_particle_pic_compute(
                 .type = wgpu::BufferBindingType::Storage,
                 .minBindingSize = maxParticles * sizeof(glm::f32vec4)
             }
-        }, { // dt
+        }, { // params
             .binding = 6,
             .visibility = wgpu::ShaderStage::Compute,
             .buffer = {
                 .type = wgpu::BufferBindingType::Uniform,
-                .minBindingSize = sizeof(glm::f32)
+                .minBindingSize = sizeof(ComputeMotionParams)
             }
         }, { // mesh
             .binding = 7,
@@ -225,11 +231,11 @@ ParticleCompute create_particle_pic_compute(
             .buffer = particleCompute.debugStorageBuf,
             .offset = 0,
             .size = maxParticles * sizeof(glm::f32vec4)
-        }, { // dt
+        }, { // params
             .binding = 6,
             .buffer = particleCompute.paramsBuffer,
             .offset = 0,
-            .size = sizeof(glm::f32)
+            .size = sizeof(ComputeMotionParams)
         }, { // mesh
             .binding = 7,
             .buffer = particleCompute.meshBuffer,
@@ -260,10 +266,15 @@ void run_particle_pic_compute(
     const ParticleCompute& particleCompute,
     const MeshProperties& mesh,
     glm::f32 dt,
+    glm::u32 enableParticleFieldContributions,
     glm::u32 nParticles)
 {
-    // Update dt
-    device.GetQueue().WriteBuffer(particleCompute.paramsBuffer, 0, &dt, sizeof(glm::f32));
+    // Update params buffer
+    ComputeMotionParams params = {
+        .dt = dt,
+        .enableParticleFieldContributions = enableParticleFieldContributions
+    };
+    device.GetQueue().WriteBuffer(particleCompute.paramsBuffer, 0, &params, sizeof(ComputeMotionParams));
 
     MeshPropertiesUniform meshUniform = {
         .min = mesh.min,

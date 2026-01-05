@@ -322,6 +322,7 @@ void Scene::compute() {
         particleCompute,
         mesh,
         dt,
+        enableParticleFieldContributions,
         nParticles);
 
     this->compute_wall_interactions(pass);

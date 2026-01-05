@@ -1,10 +1,15 @@
+struct ComputeMotionParams {
+    dt: f32,
+    enableParticleFieldContributions: u32,
+}
+
 @group(0) @binding(0) var<storage, read_write> nParticles: u32;
 @group(0) @binding(1) var<storage, read_write> particlePos: array<vec4<f32>>;
 @group(0) @binding(2) var<storage, read_write> particleVel: array<vec4<f32>>;
 @group(0) @binding(3) var<storage, read_write> eField: array<vec4<f32>>;
 @group(0) @binding(4) var<storage, read_write> bField: array<vec4<f32>>;
 @group(0) @binding(5) var<storage, read_write> debug: array<vec4<f32>>;
-@group(0) @binding(6) var<uniform> dt: f32;
+@group(0) @binding(6) var<uniform> params: ComputeMotionParams;
 @group(0) @binding(7) var<uniform> mesh: MeshProperties;
 @group(0) @binding(8) var<storage, read> cellLocation: array<vec4<f32>>;
 
@@ -39,33 +44,29 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var neighbors_E: CellNeighborVectors = cell_neighbor_vectors(&neighbors, &eField);
     var neighbors_B: CellNeighborVectors = cell_neighbor_vectors(&neighbors, &bField);
 
-    // Compute this particle's contribution to neighbor cell fields so that it can be subtracted out
-    var self_contribution_E: CellNeighborVectors;
-    var self_contribution_B: CellNeighborVectors;
-    compute_self_field_contribution(pos, vel, species, &neighbors, &cellLocation, &self_contribution_E, &self_contribution_B);
+    // Compute this particle's self contribution and subtract it out
+    if (params.enableParticleFieldContributions != 0u) {
+        var self_contribution_E: CellNeighborVectors;
+        var self_contribution_B: CellNeighborVectors;
+        compute_self_field_contribution(pos, vel, species, &neighbors, &cellLocation, &self_contribution_E, &self_contribution_B);
 
-    // Subtract out this particle's contribution from the neighbor cell fields
-    neighbors_E.xm_ym_zm -= self_contribution_E.xm_ym_zm;
-    neighbors_E.xm_ym_zp -= self_contribution_E.xm_ym_zp;
-    neighbors_E.xm_yp_zm -= self_contribution_E.xm_yp_zm;
-    neighbors_E.xm_yp_zp -= self_contribution_E.xm_yp_zp;
-    neighbors_E.xp_ym_zm -= self_contribution_E.xp_ym_zm;
-    neighbors_E.xp_ym_zp -= self_contribution_E.xp_ym_zp;
-    neighbors_E.xp_yp_zm -= self_contribution_E.xp_yp_zm;
-    neighbors_E.xp_yp_zp -= self_contribution_E.xp_yp_zp;
+        // Subtract out this particle's contribution from the neighbor cell fields
+        subtract_self_field_contribution(&neighbors_E, &self_contribution_E);
+        subtract_self_field_contribution(&neighbors_B, &self_contribution_B);
+    }
 
     // Interpolate the E and B field at particle position from the mesh
     let E = interp(&mesh, &neighbors_E, pos);
     let B = interp(&mesh, &neighbors_B, pos);
 
     // Push the particle through the electric and magnetic field: dv/dt = q/m (E + v x B);
-    let t = q_over_m * B * 0.5 * dt;
+    let t = q_over_m * B * 0.5 * params.dt;
     let s = 2.0 * t / (1.0 + (length(t) * length(t)));
-    let v_minus = vel + q_over_m * E * 0.5 * dt;
+    let v_minus = vel + q_over_m * E * 0.5 * params.dt;
     let v_prime = v_minus + cross(v_minus, t);
     let v_plus = v_minus + cross(v_prime, s);
-    let vel_new = v_plus + (q_over_m * E * 0.5 * dt);
-    let pos_new = pos + (vel_new * dt);
+    let vel_new = v_plus + (q_over_m * E * 0.5 * params.dt);
+    let pos_new = pos + (vel_new * params.dt);
 
     particlePos[id] = vec4<f32>(pos_new, species);
     particleVel[id] = vec4<f32>(vel_new, 0.0);
@@ -91,4 +92,18 @@ fn compute_self_field_contribution(
     compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_ym_zp)].xyz, &self_contribution_E.xp_ym_zp, &self_contribution_B.xp_ym_zp);
     compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_yp_zm)].xyz, &self_contribution_E.xp_yp_zm, &self_contribution_B.xp_yp_zm);
     compute_single_particle_field_contribution(pos, vel, species, cellLocation[u32(neighbors.xp_yp_zp)].xyz, &self_contribution_E.xp_yp_zp, &self_contribution_B.xp_yp_zp);
+}
+
+fn subtract_self_field_contribution(
+    neighbors: ptr<function, CellNeighborVectors>,
+    self_contribution: ptr<function, CellNeighborVectors>,
+) {
+    neighbors.xm_ym_zm -= self_contribution.xm_ym_zm;
+    neighbors.xm_ym_zp -= self_contribution.xm_ym_zp;
+    neighbors.xm_yp_zm -= self_contribution.xm_yp_zm;
+    neighbors.xm_yp_zp -= self_contribution.xm_yp_zp;
+    neighbors.xp_ym_zm -= self_contribution.xp_ym_zm;
+    neighbors.xp_ym_zp -= self_contribution.xp_ym_zp;
+    neighbors.xp_yp_zm -= self_contribution.xp_yp_zm;
+    neighbors.xp_yp_zp -= self_contribution.xp_yp_zp;
 }
