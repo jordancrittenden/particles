@@ -33,31 +33,33 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Locate the particle in the mesh
     var neighbors: CellNeighbors = cell_neighbors(pos, &mesh);
-    
-    // Abort if particle is outside mesh bounds and set to inactive
+
+    var E: vec3<f32>;
+    var B: vec3<f32>;
     if (neighbors.xp_yp_zp == -1i) {
-        particlePos[id] = vec4<f32>(pos, 0.0);
-        return;
+        // Outside mesh: assume zero field so particle continues with constant velocity; boundary will wrap.
+        E = vec3<f32>(0.0, 0.0, 0.0);
+        B = vec3<f32>(0.0, 0.0, 0.0);
+    } else {
+        // Compute the E and B fields at the neighbor cells
+        var neighbors_E: CellNeighborVectors = cell_neighbor_vectors(&neighbors, &eField);
+        var neighbors_B: CellNeighborVectors = cell_neighbor_vectors(&neighbors, &bField);
+
+        // Compute this particle's self contribution and subtract it out
+        if (params.enableParticleFieldContributions != 0u) {
+            var self_contribution_E: CellNeighborVectors;
+            var self_contribution_B: CellNeighborVectors;
+            compute_self_field_contribution(pos, vel, species, &neighbors, &cellLocation, &self_contribution_E, &self_contribution_B);
+
+            // Subtract out this particle's contribution from the neighbor cell fields
+            subtract_self_field_contribution(&neighbors_E, &self_contribution_E);
+            subtract_self_field_contribution(&neighbors_B, &self_contribution_B);
+        }
+
+        // Interpolate the E and B field at particle position from the mesh
+        E = interp(&mesh, &neighbors_E, pos);
+        B = interp(&mesh, &neighbors_B, pos);
     }
-
-    // Compute the E and B fields at the neighbor cells
-    var neighbors_E: CellNeighborVectors = cell_neighbor_vectors(&neighbors, &eField);
-    var neighbors_B: CellNeighborVectors = cell_neighbor_vectors(&neighbors, &bField);
-
-    // Compute this particle's self contribution and subtract it out
-    if (params.enableParticleFieldContributions != 0u) {
-        var self_contribution_E: CellNeighborVectors;
-        var self_contribution_B: CellNeighborVectors;
-        compute_self_field_contribution(pos, vel, species, &neighbors, &cellLocation, &self_contribution_E, &self_contribution_B);
-
-        // Subtract out this particle's contribution from the neighbor cell fields
-        subtract_self_field_contribution(&neighbors_E, &self_contribution_E);
-        subtract_self_field_contribution(&neighbors_B, &self_contribution_B);
-    }
-
-    // Interpolate the E and B field at particle position from the mesh
-    let E = interp(&mesh, &neighbors_E, pos);
-    let B = interp(&mesh, &neighbors_B, pos);
 
     // Push the particle through the electric and magnetic field: dv/dt = q/m (E + v x B);
     let t = q_over_m * B * 0.5 * params.dt;

@@ -2,6 +2,7 @@
 
 #include "util/wgpu_util.h"
 #include "scene.h"
+#include "compute/boundary.h"
 #include "args.h"
 
 
@@ -26,4 +27,5 @@ public:
     bool process_input(bool (*debounce_input)()) override;
 
 private:
+    BoundaryCompute boundaryCompute;
 };

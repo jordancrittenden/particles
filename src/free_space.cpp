@@ -14,6 +14,7 @@ FreeSpaceScene::FreeSpaceScene() : Scene() {
 void FreeSpaceScene::init(const SimulationParams& params) {
     Scene::init(params);
 
+    this->boundaryCompute = create_boundary_compute(device, particles, params.maxParticles);
     this->cameraDistance = 3.0f * _M;
 }
 
@@ -46,7 +47,17 @@ void FreeSpaceScene::compute_field_step(wgpu::ComputePassEncoder& pass) {
 }
 
 void FreeSpaceScene::compute_wall_interactions(wgpu::ComputePassEncoder& pass) {
-    // No wall interactions in free space
+    run_boundary_compute(
+        device,
+        pass,
+        boundaryCompute,
+        mesh.min.x,
+        mesh.max.x,
+        mesh.min.y,
+        mesh.max.y,
+        mesh.min.z,
+        mesh.max.z,
+        nParticles);
 }
 
 std::vector<Cell> FreeSpaceScene::get_mesh_cells(glm::f32vec3 size, MeshProperties& mesh) {
