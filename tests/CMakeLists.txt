@@ -20,4 +20,4 @@ target_sources(particles_tests PRIVATE
 )
 
 include(GoogleTest)
-gtest_discover_tests(particles_tests)
+gtest_discover_tests(particles_tests PROPERTIES LABELS particles)

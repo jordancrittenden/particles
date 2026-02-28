@@ -57,11 +57,11 @@ A WebGPU-based particle simulation (native and web).
 
 Tests are built only for the **native** target (not the Emscripten build).
 
-From the native build directory:
+From the native build directory, run only this project’s tests (Dawn’s tests are also registered and may not be built, so plain `ctest` can fail):
 
 ```bash
 cd build
-ctest
+ctest -L particles
 ```
 
 Or run the test executable directly:
