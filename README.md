@@ -18,18 +18,16 @@ A WebGPU-based particle simulation (native and web).
    git submodule update --init --recursive
    ```
 
-2. Configure and build:
+2. Configure and build (from the project root):
    ```bash
-   mkdir build && cd build
-   cmake ..
-   cmake --build .
+   cmake -B build && cmake --build build
    ```
 
 3. Run the simulation:
    ```bash
-   ./sim
+   ./build/sim
    ```
-   (On Windows the executable may be `sim.exe`.)
+   (On Windows the executable may be `build\sim.exe`.)
 
 ## Building the Dawn webapp (Emscripten)
 
@@ -55,17 +53,16 @@ A WebGPU-based particle simulation (native and web).
 
 ## Running tests
 
-Tests are built only for the **native** target (not the Emscripten build).
+Tests are built only for the **native** target (not the Emscripten build). The test executable `particles_tests` is built automatically when you run `cmake --build build`.
 
-From the native build directory, run only this project’s tests (Dawn’s tests are also registered and may not be built, so plain `ctest` can fail):
+From the project root, run only this project’s tests (Dawn’s tests are also registered and may not be built, so plain `ctest` can fail):
 
 ```bash
-cd build
-ctest -L particles
+ctest --test-dir build -L particles
 ```
 
 Or run the test executable directly:
 
 ```bash
-./particles_tests
+./build/tests/particles_tests
 ```
