@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.13) # CMake version check
 project(app)                         # Create project "app"
 set(CMAKE_CXX_STANDARD 20)           # Enable C++20 standard
 
+enable_testing()
 
 set(DAWN_FETCH_DEPENDENCIES ON)
 add_subdirectory("dawn" EXCLUDE_FROM_ALL)
@@ -81,4 +82,7 @@ else()
 	if(APPLE AND GLM_LIBRARY)
 		target_link_libraries(sim PRIVATE ${GLM_LIBRARY})
 	endif()
+
+	# Unit tests (native builds only); gtest/gtest_main come from Dawn's build
+	add_subdirectory(tests)
 endif()
