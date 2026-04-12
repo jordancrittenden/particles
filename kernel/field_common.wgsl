@@ -92,8 +92,15 @@ fn compute_solenoid_e_field(
     solenoidFlux: f32,
     loc: vec3<f32>,
 ) -> vec3<f32> {
+    if (abs(solenoidFlux) < 1e-10) {
+        return vec3<f32>(0.0, 0.0, 0.0);
+    }
     let solenoid_axis = vec3<f32>(0.0, 1.0, 0.0);
     let solenoid_r = vec3<f32>(loc.x, 0.0, loc.z);
-    let solenoid_e_mag = solenoidFlux / (2.0 * PI * length(solenoid_r));
-    return solenoid_e_mag * cross(solenoid_axis, normalize(solenoid_r));
+    let r_len = length(solenoid_r);
+    if (r_len < 1e-20) {
+        return vec3<f32>(0.0, 0.0, 0.0);
+    }
+    let solenoid_e_mag = solenoidFlux / (2.0 * PI * r_len);
+    return solenoid_e_mag * cross(solenoid_axis, solenoid_r / r_len);
 } 

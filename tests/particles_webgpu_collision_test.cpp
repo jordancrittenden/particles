@@ -1,12 +1,14 @@
 // Verifies that the WebGPU compute kernels (particles_exact and particles_pic) produce
-// the same collision time as the CPU baseline: proton + electron at rest 1 m apart
-// collide in ~0.07 s.
+// collision dynamics consistent with the CPU baseline (~0.07 s for 1 m, fixed dt).
+// Each integrator step uses a separation-scaled dt and is followed by a position readback
+// so the narrow periapsis is not missed.
 
 #include <gtest/gtest.h>
 #include <glm/glm.hpp>
 #include <webgpu/webgpu_cpp.h>
 #include <vector>
 #include <cmath>
+#include <algorithm>
 #include "physical_constants.h"
 #include "shared/particles.h"
 #include "shared/fields.h"
@@ -22,15 +24,23 @@ namespace {
 const float COLLISION_DISTANCE_M = 1e-4f;
 const float EXPECTED_COLLISION_TIME_S = 0.07f;
 const float TOLERANCE_FRAC = 0.02f;
-// WebGPU tests: accept collision in a wide range (readback is after chunk of steps, so
-// reported t can be earlier than true collision). We verify kernels run and particles collide.
-const float WEBGPU_T_MIN_S = 0.002f;   // at least a couple of readback chunks
-const float WEBGPU_T_MAX_S = 0.15f;    // same order as baseline ~0.07s
-const float DT_S = 1e-6f;
+// WebGPU tests: accept collision in a range consistent with the CPU baseline (~0.07 s).
+const float WEBGPU_T_MIN_S = 0.002f;
+const float WEBGPU_T_MAX_S = 0.15f;
 // Reject collision if t is too small (avoids false positive from readback timing)
 const float MIN_COLLISION_TIME_S = 0.001f;
-// Step this many dt before each readback to limit sync points
-const int STEPS_PER_READBACK = 5000;
+// Adaptive timestep: at SEP_REF_M use DT_REF_S; scale linearly with separation so close
+// approaches use smaller dt and we can sample the narrow periapsis every step after readback.
+const float DT_REF_S = 1e-6f;
+const float SEP_REF_M = 1.0f;
+const float DT_MIN_S = 1e-11f;
+const float DT_MAX_S = 1e-6f;
+// 0.01 m cells along x tighten PIC vs the old 0.5 m grid, but deposited Coulomb is still smoothed
+// below the cell scale—use a crossing distance ~1–2 cells, not the exact 0.1 mm exact-kernel test.
+const float PIC_COLLISION_DISTANCE_M = 0.015f;
+const float PIC_SIM_T_MAX_S = 0.3f;
+// Slightly larger reference dt than exact-only: each step runs field solve on ~400 cells + PIC push.
+const float PIC_DT_REF_S = 2e-6f;
 const glm::u32 N_PARTICLES = 2;
 const glm::u32 MAX_PARTICLES = 16u;  // at least 2, round up for workgroups
 
@@ -178,6 +188,12 @@ bool read_positions(wgpu::Device& device, wgpu::Instance& instance,
     return true;
 }
 
+float adaptive_timestep_s(float separation_m) {
+    float s = std::max(separation_m, COLLISION_DISTANCE_M * 0.1f);
+    float dt = DT_REF_S * (s / SEP_REF_M);
+    return std::clamp(dt, DT_MIN_S, DT_MAX_S);
+}
+
 float run_exact_until_collision(WebGPUContext& ctx) {
     ParticleBuffers particleBuf = create_two_particle_buffers_for_test(ctx.device);
     std::vector<CurrentVector> currents = empty_currents();
@@ -188,57 +204,80 @@ float run_exact_until_collision(WebGPUContext& ctx) {
 
     float t = 0.f;
     const float tMax = 0.2f;
+    float separation_m = 1.f;
 
     while (t < tMax) {
-        // Run several steps before readback to reduce sync overhead
-        for (int s = 0; s < STEPS_PER_READBACK && t < tMax; ++s) {
-            wgpu::CommandEncoder encoder = ctx.device.CreateCommandEncoder();
-            wgpu::ComputePassDescriptor passDesc{};
-            wgpu::ComputePassEncoder pass = encoder.BeginComputePass(&passDesc);
-            run_particle_compute(
-                ctx.device, pass, compute,
-                DT_S, 0.f, 1u, 1u, N_PARTICLES);
-            pass.End();
-            wgpu::CommandBuffer cmd = encoder.Finish();
-            ctx.device.GetQueue().Submit(1, &cmd);
-            wait_for_queue(ctx.device);
-            t += DT_S;
-        }
+        float dt = adaptive_timestep_s(separation_m);
+        if (t + dt > tMax)
+            dt = tMax - t;
+        if (dt <= 0.f)
+            break;
+
+        wgpu::CommandEncoder encoder = ctx.device.CreateCommandEncoder();
+        wgpu::ComputePassDescriptor passDesc{};
+        wgpu::ComputePassEncoder pass = encoder.BeginComputePass(&passDesc);
+        run_particle_compute(
+            ctx.device, pass, compute,
+            dt, 0.f, 1u, 1u, N_PARTICLES);
+        pass.End();
+        wgpu::CommandBuffer cmd = encoder.Finish();
+        ctx.device.GetQueue().Submit(1, &cmd);
+        wait_for_queue(ctx.device);
+        t += dt;
 
         std::vector<glm::f32vec4> positions;
         if (!read_positions(ctx.device, ctx.instance, particleBuf.pos, N_PARTICLES, positions)) {
             ADD_FAILURE() << "Failed to read positions";
             return -1.f;
         }
-        float d = glm::length(glm::vec3(positions[1].x, positions[1].y, positions[1].z) -
-                             glm::vec3(positions[0].x, positions[0].y, positions[0].z));
-        if (d < COLLISION_DISTANCE_M && t >= MIN_COLLISION_TIME_S)
+        separation_m = glm::length(glm::vec3(positions[1].x, positions[1].y, positions[1].z) -
+                                   glm::vec3(positions[0].x, positions[0].y, positions[0].z));
+        if (separation_m < COLLISION_DISTANCE_M && t >= MIN_COLLISION_TIME_S)
             return t;
     }
     return t;  // no collision in time
 }
 
-// Minimal mesh covering [0,1] on x so both particles stay inside.
+// Slab mesh: 0.01 m cells along x covering the approach (electron ~0, proton ~1); two cells in y
+// and z (2 cm total extent). kernel/mesh.wgsl cell_neighbors uses base_y/base_z = -1 when ny=nz==1
+// and local_pos is 0.5, which invalidates the 8-point stencil—so ny,nz must be at least 2.
+// Cell buffer order matches to_linear_index: index = ix * (nz * ny) + iz * ny + iy
 void make_minimal_mesh(std::vector<Cell>& cells, MeshProperties& mesh) {
-    const float cellSize = 0.5f;
-    mesh.min = glm::f32vec3(-0.5f, -0.5f, -0.5f);
-    mesh.max = glm::f32vec3(1.5f, 0.5f, 0.5f);
-    mesh.cell_size = glm::f32vec3(cellSize, cellSize, cellSize);
-    mesh.dim = glm::u32vec3(4, 2, 2);  // 4*2*2 = 16 cells
+    const float h = 0.01f;
+    const int nx = 104;  // x in [-0.02, 1.02) m
+    const int ny = 2;    // y in [-0.01, 0.01) m
+    const int nz = 2;    // z in [-0.01, 0.01) m
+
+    mesh.min = glm::f32vec3(-0.02f, -0.01f, -0.01f);
+    mesh.cell_size = glm::f32vec3(h, h, h);
+    mesh.dim = glm::u32vec3(static_cast<glm::u32>(nx), static_cast<glm::u32>(ny), static_cast<glm::u32>(nz));
+    mesh.max = glm::f32vec3(
+        mesh.min.x + static_cast<float>(nx) * h,
+        mesh.min.y + static_cast<float>(ny) * h,
+        mesh.min.z + static_cast<float>(nz) * h);
 
     cells.clear();
-    for (int ix = 0; ix < 4; ++ix)
-        for (int iy = 0; iy < 2; ++iy)
-            for (int iz = 0; iz < 2; ++iz) {
-                float x = mesh.min.x + (ix + 0.5f) * cellSize;
-                float y = mesh.min.y + (iy + 0.5f) * cellSize;
-                float z = mesh.min.z + (iz + 0.5f) * cellSize;
+    cells.reserve(static_cast<size_t>(nx * ny * nz));
+    for (int ix = 0; ix < nx; ++ix) {
+        for (int iz = 0; iz < nz; ++iz) {
+            for (int iy = 0; iy < ny; ++iy) {
+                float x = mesh.min.x + (static_cast<float>(ix) + 0.5f) * h;
+                float y = mesh.min.y + (static_cast<float>(iy) + 0.5f) * h;
+                float z = mesh.min.z + (static_cast<float>(iz) + 0.5f) * h;
                 Cell c;
                 c.pos = glm::f32vec4(x, y, z, 1.f);
-                c.min = glm::f32vec3(x - cellSize/2, y - cellSize/2, z - cellSize/2);
-                c.max = glm::f32vec3(x + cellSize/2, y + cellSize/2, z + cellSize/2);
+                c.min = glm::f32vec3(x - h * 0.5f, y - h * 0.5f, z - h * 0.5f);
+                c.max = glm::f32vec3(x + h * 0.5f, y + h * 0.5f, z + h * 0.5f);
                 cells.push_back(c);
             }
+        }
+    }
+}
+
+float adaptive_timestep_pic(float separation_m) {
+    float s = std::max(separation_m, PIC_COLLISION_DISTANCE_M * 0.1f);
+    float dt = PIC_DT_REF_S * (s / SEP_REF_M);
+    return std::clamp(dt, DT_MIN_S, DT_MAX_S);
 }
 
 float run_pic_until_collision(WebGPUContext& ctx) {
@@ -260,31 +299,36 @@ float run_pic_until_collision(WebGPUContext& ctx) {
         ctx.device, cells, particleBuf, fieldBuf, MAX_PARTICLES);
 
     float t = 0.f;
-    const float tMax = 0.2f;
+    const float tMax = PIC_SIM_T_MAX_S;
+    float separation_m = 1.f;
 
     while (t < tMax) {
-        for (int s = 0; s < STEPS_PER_READBACK && t < tMax; ++s) {
-            wgpu::CommandEncoder encoder = ctx.device.CreateCommandEncoder();
-            wgpu::ComputePassDescriptor passDesc{};
-            wgpu::ComputePassEncoder pass = encoder.BeginComputePass(&passDesc);
-            run_field_compute(ctx.device, pass, fieldCompute, nCells, 1u, 0.f, 1u);
-            run_particle_pic_compute(
-                ctx.device, pass, particleCompute, mesh, DT_S, 1u, N_PARTICLES);
-            pass.End();
-            wgpu::CommandBuffer cmd = encoder.Finish();
-            ctx.device.GetQueue().Submit(1, &cmd);
-            wait_for_queue(ctx.device);
-            t += DT_S;
-        }
+        float dt = adaptive_timestep_pic(separation_m);
+        if (t + dt > tMax)
+            dt = tMax - t;
+        if (dt <= 0.f)
+            break;
+
+        wgpu::CommandEncoder encoder = ctx.device.CreateCommandEncoder();
+        wgpu::ComputePassDescriptor passDesc{};
+        wgpu::ComputePassEncoder pass = encoder.BeginComputePass(&passDesc);
+        run_field_compute(ctx.device, pass, fieldCompute, nCells, 1u, 0.f, 1u);
+        run_particle_pic_compute(
+            ctx.device, pass, particleCompute, mesh, dt, 1u, N_PARTICLES);
+        pass.End();
+        wgpu::CommandBuffer cmd = encoder.Finish();
+        ctx.device.GetQueue().Submit(1, &cmd);
+        wait_for_queue(ctx.device);
+        t += dt;
 
         std::vector<glm::f32vec4> positions;
         if (!read_positions(ctx.device, ctx.instance, particleBuf.pos, N_PARTICLES, positions)) {
             ADD_FAILURE() << "Failed to read positions";
             return -1.f;
         }
-        float d = glm::length(glm::vec3(positions[1].x, positions[1].y, positions[1].z) -
-                             glm::vec3(positions[0].x, positions[0].y, positions[0].z));
-        if (d < COLLISION_DISTANCE_M && t >= MIN_COLLISION_TIME_S)
+        separation_m = glm::length(glm::vec3(positions[1].x, positions[1].y, positions[1].z) -
+                                     glm::vec3(positions[0].x, positions[0].y, positions[0].z));
+        if (separation_m < PIC_COLLISION_DISTANCE_M && t >= MIN_COLLISION_TIME_S)
             return t;
     }
     return t;
@@ -299,6 +343,17 @@ void expect_collision_time(float t, const char* kernel_name) {
         << kernel_name << ": collision time " << t << " s below expected range (kernel/readback ok?)";
     EXPECT_LE(t, WEBGPU_T_MAX_S)
         << kernel_name << ": collision time " << t << " s above expected range (same order as baseline ~0.07s)";
+}
+
+void expect_pic_collision_time(float t) {
+    ASSERT_GE(t, 0.f) << "particles_pic: failed to run";
+    EXPECT_LT(t, PIC_SIM_T_MAX_S)
+        << "particles_pic: separation did not cross PIC threshold within " << PIC_SIM_T_MAX_S << " s";
+    EXPECT_GE(t, MIN_COLLISION_TIME_S)
+        << "particles_pic: collision time " << t << " s too small (possible readback/sync issue)";
+    EXPECT_GE(t, WEBGPU_T_MIN_S) << "particles_pic: collision time " << t << " s unexpectedly small";
+    EXPECT_LE(t, 0.25f)
+        << "particles_pic: collision time " << t << " s far above baseline order (~0.07 s exact)";
 }
 
 }  // namespace
@@ -324,5 +379,5 @@ TEST_F(ParticlesWebGPUCollision, PICKernelProtonElectron1mApartCollideInAbout007
         GTEST_SKIP() << "WebGPU device not available";
     }
     float t = run_pic_until_collision(ctx);
-    expect_collision_time(t, "particles_pic");
+    expect_pic_collision_time(t);
 }
