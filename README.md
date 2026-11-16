@@ -66,3 +66,19 @@ Or run the test executable directly:
 ```bash
 ./build/tests/particles_tests
 ```
+
+## Most important physics not modeled correctly
+
+1. Poloidal field / rotational transform. This is the big one. With only toroidal field, grad-B and curvature drifts push ions and electrons vertically in opposite directions. The resulting charge separation creates an E field whose E×B drift throws the whole plasma outward. That’s why tokamaks drive a plasma current, which twists the field lines into helices. Your solenoid is meant to drive that current, but the current’s own magnetic field only exists via enableParticleFieldContributions (off by default). Even when on, 10⁵ real particles carry essentially no current. A good next step is to impose a plasma current as a ring of current segments (I_p ≈ 30 kA gives edge safety factor q ≈ 3 for your geometry). You’d then see passing vs. trapped (“banana”) orbits.
+
+1. Vertical / poloidal-field coils. A current-carrying plasma ring expands outward (hoop force) and needs an applied vertical field to hold it in place. These coils also shape the cross-section and form the divertor.
+
+1. Collective (self-consistent) behavior. 10⁵ particles in about 3 m³ is n ≈ 3×10⁴ m⁻³; a real tokamak has n ≈ 10²⁰. So there is effectively no plasma: no Debye shielding, no quasineutrality, no plasma oscillations. Getting there needs macroparticles of about 10¹⁵ each with finite-size shapes, charge and current deposition, and a field solve (Poisson/Maxwell) instead of direct Coulomb sums. With an explicit scheme the cell size must be near the Debye length (about 2 µm at your 8.6 eV temperature). That’s why real codes use implicit, gyrokinetic, or hybrid methods.
+
+1. Coulomb collisions. These give plasma resistance (Spitzer resistivity), which is what makes ohmic heating work and limits how much current the solenoid can drive. They also bring the plasma to thermal equilibrium and cause cross-field transport. Without them, solenoid-accelerated electrons speed up forever (runaway). A Monte Carlo binary-collision model such as Takizuka–Abe is the standard way to add them.
+
+1. Fusion, heating and losses. D-T reaction rates, alpha heating, auxiliary heating (neutral beams, RF), and radiation losses (bremsstrahlung, cyclotron, impurity lines). Note that 10⁵ K ≈ 8.6 eV, while fusion needs about 10 keV (≈10⁸ K).
+
+1. Plasma-wall and neutral physics. Right now particles that hit the wall are simply removed. Missing are the sheath, recycling, ionization and charge exchange with neutral D/T, and the divertor. Runaway electrons also need relativistic Boris, which only requires pushing γv.
+
+One thing you get for free: using 12 discrete coils gives you real toroidal field ripple, which actual machines have to deal with.
