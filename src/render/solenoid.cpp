@@ -10,7 +10,7 @@ struct UniformData {
     glm::mat4 model;
     glm::mat4 view;
     glm::mat4 projection;
-    glm::f32 solenoidFlux;
+    glm::f32 loopVoltage;
     glm::f32 padding[3]; // Padding to align to 16-byte boundary
 };
 
@@ -160,15 +160,15 @@ SolenoidBuffers create_solenoid_buffers(wgpu::Device& device, const Ring& ring) 
     return buf;
 }
 
-void render_solenoid(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const SolenoidBuffers& solenoidBuf, glm::f32 solenoidFlux, glm::mat4 view, glm::mat4 projection) {
-    // Update uniform buffer with matrices and solenoidFlux
+void render_solenoid(wgpu::Device& device, wgpu::RenderPassEncoder& pass, const SolenoidBuffers& solenoidBuf, glm::f32 loopVoltage, glm::mat4 view, glm::mat4 projection) {
+    // Update uniform buffer with matrices and loopVoltage
     glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f));
 
     UniformData uniformData = {
         .model = model,
         .view = view,
         .projection = projection,
-        .solenoidFlux = solenoidFlux,
+        .loopVoltage = loopVoltage,
         .padding = {0.0f, 0.0f, 0.0f}
     };
     

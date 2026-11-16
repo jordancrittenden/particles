@@ -38,7 +38,8 @@ void run_particle_compute(
     wgpu::ComputePassEncoder& computePass,
     const ParticleCompute& compute,
     glm::f32 dt,
-    glm::f32 solenoidFlux,
+    glm::f32 loopVoltage,
+    glm::f32 solenoidRadius,
     glm::u32 enableParticleFieldContributions,
     glm::u32 nCurrentSegments,
     glm::u32 nParticles);

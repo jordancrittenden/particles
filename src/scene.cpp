@@ -140,7 +140,8 @@ void Scene::init(const SimulationParams& params) {
 	this->particles = create_particle_buffers(
         device,
         [this](){ return rand_particle_position(); },
-        [&params](PARTICLE_SPECIES species){ return maxwell_boltzmann_particle_velocty(params.initialTemperature, particle_mass(species)); },
+        // Thermal speed is set by the mass of the underlying physical particle, not the macroparticle
+        [&params](PARTICLE_SPECIES species){ return maxwell_boltzmann_particle_velocty(params.initialTemperature, particle_mass(species) / macroparticle_weight(species)); },
         [](){ return rand_particle_species(0.0f, 0.5f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f); },
         params.initialParticles,
         params.maxParticles);

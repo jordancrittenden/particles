@@ -80,7 +80,7 @@ protected:
 
     // Physics state variables
     glm::f32 t = 0.0f * _S;    // Simulation time, s
-    glm::f32 dt = 1e-12f * _S;  // Simulation dt, s
+    glm::f32 dt = 1e-11f * _S;  // Simulation dt, s (overwritten by SimulationParams::dt in init)
     bool enableParticleFieldContributions = false;
 
     // Compute buffers

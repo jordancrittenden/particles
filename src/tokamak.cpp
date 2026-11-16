@@ -22,7 +22,7 @@ void TokamakScene::init(const SimulationParams& params) {
 
     // Create torus coils buffers
     Ring toroidalRing;
-    toroidalRing.r = torusParameters.r2;
+    toroidalRing.r = torusParameters.coilR;
     toroidalRing.t = 0.05f * _M;
     toroidalRing.d = 0.1f * _M;
     this->coilsBuf = create_coils_buffers(device, toroidalRing, torusParameters.toroidalCoils);
@@ -47,7 +47,7 @@ void TokamakScene::render_details(wgpu::RenderPassEncoder& pass) {
     Scene::render_details(pass);
     if (this->showTorus)    render_torus(device, pass, torusBuf, view, projection);
     if (this->showCoils)    render_coils(device, pass, coilsBuf, torusParameters.r1, this->toroidalI, view, projection);
-    if (this->showSolenoid) render_solenoid(device, pass, solenoidBuf, this->solenoidFlux, view, projection);
+    if (this->showSolenoid) render_solenoid(device, pass, solenoidBuf, this->loopVoltage, view, projection);
 }
 
 void TokamakScene::compute_field_step(wgpu::ComputePassEncoder& pass) {
@@ -57,7 +57,8 @@ void TokamakScene::compute_field_step(wgpu::ComputePassEncoder& pass) {
         fieldCompute,
         static_cast<glm::u32>(cells.size()),
         static_cast<glm::u32>(cachedCurrents.size()),
-        solenoidFlux,
+        loopVoltage,
+        solenoidParameters.r,
         enableParticleFieldContributions);
 
     // Run tracer compute
@@ -66,7 +67,8 @@ void TokamakScene::compute_field_step(wgpu::ComputePassEncoder& pass) {
         pass,
         tracerCompute,
         dt,
-        solenoidFlux,
+        loopVoltage,
+        solenoidParameters.r,
         enableParticleFieldContributions,
         static_cast<glm::u32>(this->cachedCurrents.size()),
         nParticles,
@@ -90,13 +92,17 @@ std::vector<Cell> TokamakScene::get_mesh_cells(glm::f32vec3 size, MeshProperties
     glm::vec3 minCoord(-(torusParameters.r1 + torusParameters.r2), -torusParameters.r2, -(torusParameters.r1 + torusParameters.r2));
     glm::vec3 maxCoord(torusParameters.r1 + torusParameters.r2, torusParameters.r2, torusParameters.r1 + torusParameters.r2);
 
-    glm::u32 nx = 0, ny = 0, nz = 0;
-    bool countZ = true, countY = true;
-    for (glm::f32 x = minCoord.x; x <= maxCoord.x; x += size.x) {
-        for (glm::f32 z = minCoord.z; z <= maxCoord.z; z += size.z) {
+    // Use integer counts so float accumulation can't drop the last row of nodes
+    glm::u32vec3 dim = glm::u32vec3(glm::round((maxCoord - minCoord) / size)) + 1u;
+
+    for (glm::u32 ix = 0; ix < dim.x; ix++) {
+        glm::f32 x = minCoord.x + ix * size.x;
+        for (glm::u32 iz = 0; iz < dim.z; iz++) {
+            glm::f32 z = minCoord.z + iz * size.z;
             glm::f32 radialDistFromOrigin = sqrt(x*x + z*z);
             glm::f32 radialDistFromTorusCenterline = radialDistFromOrigin - torusParameters.r1;
-            for (glm::f32 y = minCoord.y; y <= maxCoord.y; y += size.y) {
+            for (glm::u32 iy = 0; iy < dim.y; iy++) {
+                glm::f32 y = minCoord.y + iy * size.y;
                 glm::f32 distFromTorusCenterline = sqrt(radialDistFromTorusCenterline*radialDistFromTorusCenterline + y*y);
                 bool isActive = distFromTorusCenterline < torusParameters.r2;
 
@@ -105,19 +111,13 @@ std::vector<Cell> TokamakScene::get_mesh_cells(glm::f32vec3 size, MeshProperties
                 cell.min = glm::f32vec3 { x - size.x/2.0f, y - size.y/2.0f, z - size.z/2.0f };
                 cell.max = glm::f32vec3 { x + size.x/2.0f, y + size.y/2.0f, z + size.z/2.0f };
                 cells.push_back(cell);
-
-                if (countY) ny++;
             }
-            if (countZ) nz++;
-            countY = false;
         }
-        nx++;
-        countZ = false;
     }
-    mesh.dim = glm::u32vec3 { nx, ny, nz };
+    mesh.dim = dim;
     mesh.cell_size = size;
     mesh.min = minCoord;
-    mesh.max = maxCoord;
+    mesh.max = minCoord + glm::f32vec3(dim - 1u) * size; // last cell center actually generated
     
     return cells;
 }
@@ -138,7 +138,7 @@ std::vector<CurrentVector> TokamakScene::get_currents() {
     float thetaStep = 2.0f * M_PI / torusParameters.coilLoopSegments;
     for (int i = 0; i < torusParameters.coilLoopSegments; i++) {
         float theta = i * thetaStep;
-        circleVertices.push_back(glm::f32vec4 { torusParameters.r2 * cos(theta), torusParameters.r2 * sin(theta), 0.0f, 1.0f });
+        circleVertices.push_back(glm::f32vec4 { torusParameters.coilR * cos(theta), torusParameters.coilR * sin(theta), 0.0f, 1.0f });
     }
 
     int idx = 0;
@@ -185,7 +185,7 @@ bool TokamakScene::process_input(bool (*debounce_input)()) {
         return true;
     }
     if (is_key_pressed(70) && debounce_input()) { // F key
-        toggleEnableSolenoidFlux();
+        toggleEnableLoopVoltage();
         return true;
     }
 #else
@@ -206,7 +206,7 @@ bool TokamakScene::process_input(bool (*debounce_input)()) {
         return true;
     }
     if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && debounce_input()) {
-        toggleEnableSolenoidFlux();
+        toggleEnableLoopVoltage();
         return true;
     }
 #endif
@@ -232,8 +232,8 @@ void TokamakScene::toggleEnableToroidalRings() {
     std::cout << "toroidal rings: " << (this->enableToroidalRings ? "ENABLED" : "DISABLED") << std::endl;
 }
 
-void TokamakScene::toggleEnableSolenoidFlux() {
-    this->enableSolenoidFlux = !this->enableSolenoidFlux;
-    this->solenoidFlux = this->enableSolenoidFlux ? solenoidParameters.maxSolenoidFlux : 0.0f;
-    std::cout << "solenoid: " << (this->enableSolenoidFlux ? "ENABLED" : "DISABLED") << std::endl;
+void TokamakScene::toggleEnableLoopVoltage() {
+    this->enableLoopVoltage = !this->enableLoopVoltage;
+    this->loopVoltage = this->enableLoopVoltage ? solenoidParameters.maxLoopVoltage : 0.0f;
+    std::cout << "solenoid loop voltage: " << (this->enableLoopVoltage ? "ENABLED" : "DISABLED") << std::endl;
 }

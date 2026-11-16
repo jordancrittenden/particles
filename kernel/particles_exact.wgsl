@@ -5,8 +5,9 @@ const CONSTRAIN_TO: f32 = 0.1;  // meters
 struct ComputeMotionParams {
     dt: f32,
     nCurrentSegments: u32,
-    solenoidFlux: f32,
+    loopVoltage: f32,
     enableParticleFieldContributions: u32,
+    solenoidRadius: f32,
 }
 
 @group(0) @binding(0) var<storage, read_write> nParticles: u32;
@@ -53,7 +54,7 @@ fn computeMotion(@builtin(global_invocation_id) global_id: vec3<u32>) {
     B += compute_currents_b_field(&currentSegments, params.nCurrentSegments, pos);
 
     // Calculate the contribution of the central solenoid
-    E += compute_solenoid_e_field(params.solenoidFlux, pos);
+    E += compute_solenoid_e_field(params.loopVoltage, params.solenoidRadius, pos);
 
     // Push the particle through the electric and magnetic field: dv/dt = q/m (E + v x B);
     let t = q_over_m * B * 0.5 * params.dt;

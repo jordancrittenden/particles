@@ -29,7 +29,8 @@ void FreeSpaceScene::compute_field_step(wgpu::ComputePassEncoder& pass) {
         fieldCompute,
         static_cast<glm::u32>(cells.size()),
         static_cast<glm::u32>(cachedCurrents.size()),
-        0.0f,
+        0.0f, // loop voltage
+        0.0f, // solenoid radius
         enableParticleFieldContributions);
 
     // Run tracer compute
@@ -38,7 +39,8 @@ void FreeSpaceScene::compute_field_step(wgpu::ComputePassEncoder& pass) {
         pass,
         tracerCompute,
         dt,
-        0.0f,
+        0.0f, // loop voltage
+        0.0f, // solenoid radius
         enableParticleFieldContributions,
         static_cast<glm::u32>(cachedCurrents.size()),
         nParticles,
@@ -66,28 +68,28 @@ std::vector<Cell> FreeSpaceScene::get_mesh_cells(glm::f32vec3 size, MeshProperti
     glm::vec3 maxCoord { s, s, s };
     
     std::vector<Cell> cells;
-    glm::u32 nx = 0, ny = 0, nz = 0;
-    bool countZ = true, countY = true;
-    for (float x = minCoord.x; x <= maxCoord.x; x += size.x) {
-        for (float z = minCoord.z; z <= maxCoord.z; z += size.z) {
-            for (float y = minCoord.y; y <= maxCoord.y; y += size.y) {
+
+    // Use integer counts so float accumulation can't drop the last row of nodes
+    glm::u32vec3 dim = glm::u32vec3(glm::round((maxCoord - minCoord) / size)) + 1u;
+
+    for (glm::u32 ix = 0; ix < dim.x; ix++) {
+        float x = minCoord.x + ix * size.x;
+        for (glm::u32 iz = 0; iz < dim.z; iz++) {
+            float z = minCoord.z + iz * size.z;
+            for (glm::u32 iy = 0; iy < dim.y; iy++) {
+                float y = minCoord.y + iy * size.y;
                 Cell cell;
                 cell.pos = glm::f32vec4 { x, y, z, 1.0f };
                 cell.min = glm::f32vec3 { x - size.x/2.0f, y - size.y/2.0f, z - size.z/2.0f };
                 cell.max = glm::f32vec3 { x + size.x/2.0f, y + size.y/2.0f, z + size.z/2.0f };
                 cells.push_back(cell);
-                if (countY) ny++;
             }
-            if (countZ) nz++;
-            countY = false;
         }
-        nx++;
-        countZ = false;
     }
-    mesh.dim = glm::u32vec3 { nx, ny, nz };
+    mesh.dim = dim;
     mesh.cell_size = size;
     mesh.min = minCoord;
-    mesh.max = maxCoord;
+    mesh.max = minCoord + glm::f32vec3(dim - 1u) * size; // last cell center actually generated
     
     return cells;
 }

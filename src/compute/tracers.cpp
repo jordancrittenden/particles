@@ -4,11 +4,12 @@
 #include <iostream>
 
 struct ETracerParams {
-    glm::f32 solenoidFlux;
+    glm::f32 loopVoltage;
     glm::u32 enableParticleFieldContributions;
     glm::u32 nTracers;
     glm::u32 tracerLength;
     glm::u32 curTraceIdx;
+    glm::f32 solenoidRadius;
 };
 
 struct BTracerParams {
@@ -387,7 +388,8 @@ void run_tracer_compute(
     wgpu::ComputePassEncoder& computePass,
     TracerCompute& compute,
     glm::f32 dt,
-    glm::f32 solenoidFlux,
+    glm::f32 loopVoltage,
+    glm::f32 solenoidRadius,
     glm::u32 enableParticleFieldContributions,
     glm::u32 nCurrentSegments,
     glm::u32 nParticles,
@@ -396,11 +398,12 @@ void run_tracer_compute(
 {
     // Update E tracer params buffer
     ETracerParams eParams = {
-        .solenoidFlux = solenoidFlux,
+        .loopVoltage = loopVoltage,
         .enableParticleFieldContributions = enableParticleFieldContributions,
         .nTracers = nTracers,
         .tracerLength = tracerLength,
-        .curTraceIdx = compute.curTraceIdxE
+        .curTraceIdx = compute.curTraceIdxE,
+        .solenoidRadius = solenoidRadius
     };
     device.GetQueue().WriteBuffer(compute.eParamsBuffer, 0, &eParams, sizeof(ETracerParams));
     
@@ -413,16 +416,19 @@ void run_tracer_compute(
         .curTraceIdx = compute.curTraceIdxB
     };
     device.GetQueue().WriteBuffer(compute.bParamsBuffer, 0, &bParams, sizeof(BTracerParams));
+
+    // Must match @workgroup_size in e_tracer.wgsl and b_tracer.wgsl
+    glm::u32 nWorkgroups = (nTracers + 255) / 256;
     
     // Run E tracer compute
     computePass.SetPipeline(compute.ePipeline);
     computePass.SetBindGroup(0, compute.eBindGroup);
-    computePass.DispatchWorkgroups(nTracers, 1, 1);
+    computePass.DispatchWorkgroups(nWorkgroups, 1, 1);
     
     // Run B tracer compute
     computePass.SetPipeline(compute.bPipeline);
     computePass.SetBindGroup(0, compute.bBindGroup);
-    computePass.DispatchWorkgroups(nTracers, 1, 1);
+    computePass.DispatchWorkgroups(nWorkgroups, 1, 1);
 
     compute.curTraceIdxE = (compute.curTraceIdxE + 1) % TRACER_LENGTH;
     compute.curTraceIdxB = (compute.curTraceIdxB + 1) % TRACER_LENGTH;

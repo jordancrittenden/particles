@@ -1,8 +1,9 @@
 struct ComputeFieldsParams {
     nCells: u32,
     nCurrentSegments: u32,
-    solenoidFlux: f32,
+    loopVoltage: f32,
     enableParticleFieldContributions: u32,
+    solenoidRadius: f32,
 }
 
 @group(0) @binding(0) var<storage, read_write> nParticles: u32;
@@ -39,7 +40,7 @@ fn computeFields(@builtin(global_invocation_id) global_id: vec3<u32>) {
     B += compute_currents_b_field(&currentSegments, params.nCurrentSegments, loc);
 
     // Calculate the contribution of the central solenoid
-    E += compute_solenoid_e_field(params.solenoidFlux, loc);
+    E += compute_solenoid_e_field(params.loopVoltage, params.solenoidRadius, loc);
 
     eField[id] = vec4<f32>(E, 0.0);
     bField[id] = vec4<f32>(B, 0.0);

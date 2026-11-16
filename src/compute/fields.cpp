@@ -9,8 +9,9 @@
 struct ComputeFieldsParams {
     glm::u32 nCells;
     glm::u32 nCurrentSegments;
-    glm::f32 solenoidFlux;
-    glm::u32 enableParticleFieldContributions; 
+    glm::f32 loopVoltage;
+    glm::u32 enableParticleFieldContributions;
+    glm::f32 solenoidRadius;
 };
 
 FieldCompute create_field_compute(
@@ -224,15 +225,17 @@ void run_field_compute(
     FieldCompute& fieldCompute,
     glm::u32 nCells,
     glm::u32 nCurrentSegments,
-    glm::f32 solenoidFlux,
+    glm::f32 loopVoltage,
+    glm::f32 solenoidRadius,
     glm::u32 enableParticleFieldContributions)
 {
     // Update params buffer
     ComputeFieldsParams params = {
         .nCells = nCells,
         .nCurrentSegments = nCurrentSegments,
-        .solenoidFlux = solenoidFlux,
-        .enableParticleFieldContributions = enableParticleFieldContributions
+        .loopVoltage = loopVoltage,
+        .enableParticleFieldContributions = enableParticleFieldContributions,
+        .solenoidRadius = solenoidRadius
     };
     device.GetQueue().WriteBuffer(fieldCompute.paramsBuffer, 0, &params, sizeof(ComputeFieldsParams));
 

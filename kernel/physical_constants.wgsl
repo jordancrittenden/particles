@@ -1,5 +1,5 @@
 // Physical constants
-const PI: f32 = 3.14159265953;
+const PI: f32 = 3.14159265358979;
 const EPSILON_0: f32 = 8.854187817e-12;
 const MU_0: f32 = 1.25663706144e-6;
 const Q_E: f32 = 1.602176487e-19;
@@ -20,7 +20,7 @@ const M_TRITON: f32 = 5.00735629e-27;
 // Charge-to-mass ratios
 const Q_OVER_M_ELECTRON: f32 = -1.75882020109e11;
 const Q_OVER_M_PROTON: f32 = 9.57883424534e7;
-const Q_OVER_M_HELIUM_4_NUC: f32 = 2.41056642418e7;
+const Q_OVER_M_HELIUM_4_NUC: f32 = 4.82113284837e7;
 const Q_OVER_M_DEUTERON: f32 = 4.79179449646e7;
 const Q_OVER_M_TRITON: f32 = 3.19964547001e7;
 

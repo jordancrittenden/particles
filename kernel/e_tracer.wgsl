@@ -1,11 +1,12 @@
 const TRACER_STEP: f32 = 0.005 * _M;
 
 struct ETracerParams {
-    solenoidFlux: f32,
+    loopVoltage: f32,
     enableParticleFieldContributions: u32,
     nTracers: u32,
     tracerLength: u32,
     curTraceIdx: u32,
+    solenoidRadius: f32,
 }
 
 @group(0) @binding(0) var<storage, read_write> nParticles: u32;
@@ -38,7 +39,7 @@ fn updateTrails(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Calculate the contribution of the central solenoid
-    E += compute_solenoid_e_field(params.solenoidFlux, pLoc);
+    E += compute_solenoid_e_field(params.loopVoltage, params.solenoidRadius, pLoc);
 
     // Compute normalized E vector
     // First scale up the field to avoid underflow when normalizing

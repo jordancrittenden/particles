@@ -8,8 +8,9 @@
 struct ComputeMotionParams {
     glm::f32 dt;
     glm::u32 nCurrentSegments;
-    glm::f32 solenoidFlux;
+    glm::f32 loopVoltage;
     glm::u32 enableParticleFieldContributions;
+    glm::f32 solenoidRadius;
 };
 
 ParticleCompute create_particle_compute(
@@ -187,7 +188,8 @@ void run_particle_compute(
     wgpu::ComputePassEncoder& computePass,
     const ParticleCompute& particleCompute,
     glm::f32 dt,
-    glm::f32 solenoidFlux,
+    glm::f32 loopVoltage,
+    glm::f32 solenoidRadius,
     glm::u32 enableParticleFieldContributions,
     glm::u32 nCurrentSegments,
     glm::u32 nParticles)
@@ -196,13 +198,14 @@ void run_particle_compute(
     ComputeMotionParams params = {
         .dt = dt,
         .nCurrentSegments = nCurrentSegments,
-        .solenoidFlux = solenoidFlux,
-        .enableParticleFieldContributions = enableParticleFieldContributions
+        .loopVoltage = loopVoltage,
+        .enableParticleFieldContributions = enableParticleFieldContributions,
+        .solenoidRadius = solenoidRadius
     };
     device.GetQueue().WriteBuffer(particleCompute.paramsBuffer, 0, &params, sizeof(ComputeMotionParams));
 
-    // Each workgroup processes 16 particles (workgroup_size(16))
-    glm::u32 workgroupSize = 16;
+    // Must match @workgroup_size in particles_exact.wgsl
+    glm::u32 workgroupSize = 256;
     glm::u32 nWorkgroups = (nParticles + workgroupSize - 1) / workgroupSize;
 
     computePass.SetPipeline(particleCompute.pipeline);

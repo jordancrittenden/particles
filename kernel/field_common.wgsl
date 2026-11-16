@@ -87,9 +87,13 @@ fn compute_currents_b_field(
     return B;
 }
 
-// Compute E field at a given location due to the central solenoid
+// Compute the induced E field at a given location due to a changing flux in the central solenoid.
+// From Faraday's law, the loop voltage around a circle of radius r is V = -dPhi/dt, so outside the
+// solenoid E = V / (2 pi r). Inside, the enclosed flux grows as r^2, so E = V r / (2 pi R^2).
+// Positive loopVoltage points along +phi = y x r_hat.
 fn compute_solenoid_e_field(
-    solenoidFlux: f32,
+    loopVoltage: f32,   // V
+    solenoidRadius: f32, // m
     loc: vec3<f32>,
 ) -> vec3<f32> {
     if (abs(solenoidFlux) < 1e-10) {
@@ -97,10 +101,25 @@ fn compute_solenoid_e_field(
     }
     let solenoid_axis = vec3<f32>(0.0, 1.0, 0.0);
     let solenoid_r = vec3<f32>(loc.x, 0.0, loc.z);
+<<<<<<< HEAD
     let r_len = length(solenoid_r);
     if (r_len < 1e-20) {
         return vec3<f32>(0.0, 0.0, 0.0);
     }
     let solenoid_e_mag = solenoidFlux / (2.0 * PI * r_len);
     return solenoid_e_mag * cross(solenoid_axis, solenoid_r / r_len);
+=======
+    let r = length(solenoid_r);
+    if (r == 0.0) {
+        return vec3<f32>(0.0, 0.0, 0.0);
+    }
+
+    var solenoid_e_mag: f32;
+    if (r < solenoidRadius) {
+        solenoid_e_mag = loopVoltage * r / (2.0 * PI * solenoidRadius * solenoidRadius);
+    } else {
+        solenoid_e_mag = loopVoltage / (2.0 * PI * r);
+    }
+    return solenoid_e_mag * cross(solenoid_axis, solenoid_r / r);
+>>>>>>> 0c6b7b7 (AI bug fixes)
 } 

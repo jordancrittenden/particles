@@ -22,20 +22,11 @@ CellNeighbors cell_neighbors(glm::f32vec3 pos, const MeshProperties& mesh) {
         return neighbors;
     }
     
-    // Calculate which cell the particle is in
-    glm::i32 cell_x = glm::i32((pos.x - mesh.min.x) / mesh.cell_size.x);
-    glm::i32 cell_y = glm::i32((pos.y - mesh.min.y) / mesh.cell_size.y);
-    glm::i32 cell_z = glm::i32((pos.z - mesh.min.z) / mesh.cell_size.z);
-    
-    // Determine which of the 8 surrounding cells to use based on particle position within the cell
-    glm::f32 local_x = (pos.x - mesh.min.x) / mesh.cell_size.x - glm::f32(cell_x);
-    glm::f32 local_y = (pos.y - mesh.min.y) / mesh.cell_size.y - glm::f32(cell_y);
-    glm::f32 local_z = (pos.z - mesh.min.z) / mesh.cell_size.z - glm::f32(cell_z);
-    
-    // Calculate which cell to base calculations off of
-    glm::i32 base_x = cell_x + (local_x > 0.5 ? 0 : -1);
-    glm::i32 base_y = cell_y + (local_y > 0.5 ? 0 : -1);
-    glm::i32 base_z = cell_z + (local_z > 0.5 ? 0 : -1);
+    // mesh.min is the first cell center, so the integer part of the fractional index is the lower
+    // corner node of the interpolation stencil
+    glm::i32 base_x = glm::i32(glm::floor((pos.x - mesh.min.x) / mesh.cell_size.x));
+    glm::i32 base_y = glm::i32(glm::floor((pos.y - mesh.min.y) / mesh.cell_size.y));
+    glm::i32 base_z = glm::i32(glm::floor((pos.z - mesh.min.z) / mesh.cell_size.z));
     
     // Calculate the 8 corner cells around the particle
     CellNeighbors neighbors;

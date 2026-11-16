@@ -55,16 +55,12 @@ fn cell_neighbors(pos: vec3<f32>, mesh: ptr<uniform, MeshProperties>) -> CellNei
         return neighbors;
     }
     
-    // Calculate which cell the particle is in and local position within that cell
-    let cell_idx_frac: vec3<f32> = (pos - (*mesh).min) / (*mesh).cell_size;                                    // [x.aaa, y.bbb, z.ccc]
-    let cell_idx_i32 = vec3<i32>(i32(cell_idx_frac.x), i32(cell_idx_frac.y), i32(cell_idx_frac.z)); // [x, y, z]
-    let cell_idx_f32 = vec3<f32>(f32(cell_idx_i32.x), f32(cell_idx_i32.y), f32(cell_idx_i32.z));    // [x.000, y.000, z.000]
-    let local_pos = cell_idx_frac - cell_idx_f32;                                                   // [0.aaa, 0.bbb, 0.ccc]
-    
-    // Calculate which cell to base calculations off of
-    let base_x: i32 = cell_idx_i32.x + select(-1, 0, local_pos.x > 0.5);
-    let base_y: i32 = cell_idx_i32.y + select(-1, 0, local_pos.y > 0.5);
-    let base_z: i32 = cell_idx_i32.z + select(-1, 0, local_pos.z > 0.5);
+    // mesh.min is the first cell center, so the integer part of the fractional index is the lower
+    // corner node of the interpolation stencil (and the fractional part is the weight used in interp)
+    let cell_idx_frac: vec3<f32> = (pos - (*mesh).min) / (*mesh).cell_size;                         // [x.aaa, y.bbb, z.ccc]
+    let base_x: i32 = i32(floor(cell_idx_frac.x));
+    let base_y: i32 = i32(floor(cell_idx_frac.y));
+    let base_z: i32 = i32(floor(cell_idx_frac.z));
     
     // Calculate the 8 corner cells around the particle
     var neighbors: CellNeighbors;

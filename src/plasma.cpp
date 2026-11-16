@@ -15,9 +15,9 @@ glm::f32vec4 maxwell_boltzmann_particle_velocty(float T, float mass) {
     // Define parameters for the Maxwell-Boltzmann distribution
     float sigma = std::sqrt(k_B * T / mass); // Standard deviation for the velocity distribution
 
-    // Random number generation
-    std::random_device rd;  // Seed for the random number engine
-    std::mt19937 gen(rd()); // Mersenne Twister random number generator
+    // Random number generation. The generator is seeded once and shared across calls; re-seeding per
+    // particle is slow and, where std::random_device is deterministic, yields identical velocities.
+    static std::mt19937 gen(std::random_device{}());
     std::normal_distribution<> normal(0.0, sigma); // Gaussian distribution with mean 0 and std dev sigma
 
     // Sample velocities in 3D and calculate the magnitude

@@ -11,6 +11,7 @@
 typedef struct TorusParameters {
     float r1 = 1.0f * _M;                   // Radius of torus, m
     float r2 = 0.4f * _M;                   // Radius of torus cross section, m
+    float coilR = 0.55f * _M;               // Radius of the toroidal field coils (outside the vessel wall), m
 
     int toroidalCoils = 12;                 // Number of toroidal coils
     int coilLoopSegments = 20;              // Number of current segments per circle for approximation
@@ -20,7 +21,7 @@ typedef struct TorusParameters {
 
 typedef struct SolenoidParameters {
     float r = 0.15f * _M;                   // Radius of the central solenoid, m
-    float maxSolenoidFlux = 0.3f * _V * _S; // Maximum central solenoid magnetic flux, V s
+    float maxLoopVoltage = 0.3f * _V;       // Toroidal loop voltage induced by the solenoid, V (= -dPhi/dt)
 } SolenoidParameters;
 
 
@@ -49,7 +50,7 @@ public:
     void toggleShowCoils();
     void toggleShowSolenoid();
     void toggleEnableToroidalRings();
-    void toggleEnableSolenoidFlux();
+    void toggleEnableLoopVoltage();
 
 private:
     const TorusParameters& torusParameters;
@@ -67,8 +68,8 @@ private:
     bool showCoils = true;
     bool showSolenoid = true;
     bool enableToroidalRings = true;
-    bool enableSolenoidFlux = false;
+    bool enableLoopVoltage = false;
 
-    glm::f32 solenoidFlux = 0.0f * _V * _S; // Flux through the solenoid, V s
+    glm::f32 loopVoltage = 0.0f * _V;       // Toroidal loop voltage induced by the changing solenoid flux, V
     glm::f32 toroidalI = 50000.0f * _A;     // Current through the toroidal coils, A
 };

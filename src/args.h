@@ -22,7 +22,7 @@ struct SimulationParams {
     glm::f32 initialTemperature = 100000.0 * _K; // Initial plasma temperature, K
     glm::u32 initialParticles = 100000;          // Number of initial particles
     glm::u32 maxParticles = 150000;              // Maximum number of particles
-    glm::f32 dt = 1e-10f * _S;                   // Simulation dt, s
+    glm::f32 dt = 1e-11f * _S;                   // Simulation dt, s (keep electron w_ce*dt <~ 0.2; w_ce ~ 2e10 rad/s at 0.12 T)
 
     // Cell parameters
     glm::f32 cellSpacing = 0.05f * _M;           // Distance between simulation mesh cells, m

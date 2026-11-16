@@ -31,5 +31,6 @@ void run_field_compute(
     FieldCompute& fieldCompute,
     glm::u32 nCells,
     glm::u32 nCurrentSegments,
-    glm::f32 solenoidFlux,
+    glm::f32 loopVoltage,
+    glm::f32 solenoidRadius,
     glm::u32 enableParticleFieldContributions); 

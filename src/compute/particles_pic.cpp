@@ -284,8 +284,8 @@ void run_particle_pic_compute(
     };
     device.GetQueue().WriteBuffer(particleCompute.meshBuffer, 0, &meshUniform, sizeof(MeshPropertiesUniform));
 
-    // Each workgroup processes 16 particles (workgroup_size(16))
-    glm::u32 workgroupSize = 16;
+    // Must match @workgroup_size in particles_pic.wgsl
+    glm::u32 workgroupSize = 256;
     glm::u32 nWorkgroups = (nParticles + workgroupSize - 1) / workgroupSize;
 
     computePass.SetPipeline(particleCompute.pipeline);
